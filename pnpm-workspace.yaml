@@ -4,3 +4,19 @@ packages:
   - "admin"
   - "packages/*"
   - "infra"
+
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "esbuild"
+  - "prisma"
+
+ignoredBuiltDependencies:
+  - "@scarf/scarf"
+
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@scarf/scarf": false
+  "esbuild": true
+  "prisma": true

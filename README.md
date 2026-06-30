@@ -50,6 +50,34 @@ pnpm check
 
 For now, checks focus on repo hygiene and documentation links. More app-specific linting, tests, and builds will be added as app work begins.
 
+## Local API Development
+
+The API foundation uses NestJS, Prisma, and local Postgres through Docker Compose.
+
+```bash
+pnpm install
+cp api/.env.example api/.env
+docker compose up -d postgres
+pnpm --filter @mydivelog/api prisma:migrate
+pnpm --filter @mydivelog/api start:dev
+```
+
+Health checks:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/health/db
+```
+
+Useful API commands:
+
+```bash
+pnpm --filter @mydivelog/api check
+pnpm --filter @mydivelog/api build
+pnpm --filter @mydivelog/api prisma:validate
+pnpm --filter @mydivelog/api prisma:generate
+```
+
 ## Documentation
 
 Start here:

@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UnitSystem {
+  imperial
+  metric
+}
+
+enum AuthProvider {
+  google
+  apple
+}
+
+enum SessionKind {
+  user
+  admin
+  mobile
+}
+
+enum WaterType {
+  fresh
+  salt
+  mixed
+  unknown
+}
+
+enum DiveVisibility {
+  private
+  unlisted
+  shared
+  public
+}
+
+enum GasType {
+  air
+  nitrox
+  trimix
+  oxygen
+  other
+}
+
+enum CanonicalStatus {
+  draft
+  active
+  merged
+  archived
+}
+
+enum ReviewStatus {
+  pending
+  accepted
+  rejected
+  skipped
+}
+
+enum ImportStatus {
+  pending
+  processing
+  ready
+  committed
+  failed
+  canceled
+}
+
+enum ImportRowStatus {
+  pending
+  parsed
+  skipped
+  committed
+  failed
+}
+
+model User {
+  id                  String         @id @default(uuid()) @db.Uuid
+  email               String         @unique
+  displayName         String?
+  primaryAuthProvider AuthProvider?
+  homeUnitSystem      UnitSystem     @default(imperial)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  identities          UserIdentity[]
+  sessions            Session[]
+  diverProfile        DiverProfile?
+  dives               Dive[]
+  locations           Location[]
+  diveSites           DiveSite[]
+  diveTypeTags        DiveTypeTag[]
+  gearItems           GearItem[]
+  mediaAssets         MediaAsset[]
+  importBatches       ImportBatch[]
+
+  @@map("users")
+}
+
+model UserIdentity {
+  id                    String       @id @default(uuid()) @db.Uuid
+  userId                String       @db.Uuid
+  provider              AuthProvider
+  providerSubject       String
+  emailAtProvider       String?
+  emailVerified         Boolean      @default(false)
+  displayNameAtProvider String?
+  linkedAt              DateTime     @default(now())
+  lastLoginAt           DateTime?
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userId])
+  @@map("user_identities")
+}
+
+model Session {
+  id               String      @id @default(uuid()) @db.Uuid
+  userId           String      @db.Uuid
+  sessionTokenHash String      @unique
+  refreshTokenHash String?     @unique
+  kind             SessionKind
+  createdAt        DateTime    @default(now())
+  expiresAt        DateTime
+  refreshExpiresAt DateTime?
+  rotatedAt        DateTime?
+  revokedAt        DateTime?
+  lastSeenAt       DateTime?
+  ipHash           String?
+  userAgentHash    String?
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("sessions")
+}
+
+model DiverProfile {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @unique @db.Uuid
+  certificationLevel  String?
+  certificationAgency String?
+  startedDivingOn     DateTime?
+  bio                 String?
+  avatarMediaId       String?  @db.Uuid
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("diver_profiles")
+}
+
+model Dive {
+  id                         String              @id @default(uuid()) @db.Uuid
+  userId                     String              @db.Uuid
+  userDiveNumber             Int
+  diveDate                   DateTime
+  timeInLocal                String?
+  timeOutLocal               String?
+  durationSeconds            Int?
+  timezone                   String?
+  locationId                 String?             @db.Uuid
+  diveSiteId                 String?             @db.Uuid
+  waterType                  WaterType           @default(unknown)
+  entryType                  String?
+  maxDepthEnteredValue       Decimal?            @db.Decimal(10, 2)
+  maxDepthEnteredUnit        String?
+  maxDepthMeters             Decimal?            @db.Decimal(10, 2)
+  weightCarriedEnteredValue  Decimal?            @db.Decimal(10, 2)
+  weightCarriedEnteredUnit   String?
+  weightCarriedKilograms     Decimal?            @db.Decimal(10, 2)
+  notes                      String?
+  visibility                 DiveVisibility      @default(private)
+  publicSlug                 String?             @unique
+  publishedAt                DateTime?
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
+  deletedAt                  DateTime?
+  clientRevision             Int                 @default(0)
+  serverRevision             Int                 @default(0)
+  user                       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location                   Location?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  diveSite                   DiveSite?           @relation(fields: [diveSiteId], references: [id], onDelete: SetNull)
+  conditions                 DiveCondition?
+  gasMixes                   GasMix[]
+  gearUsage                  DiveGearUsage[]
+  tags                       DiveDiveTypeTag[]
+  media                      DiveMedia[]
+
+  @@unique([userId, userDiveNumber])
+  @@index([userId, diveDate, userDiveNumber])
+  @@index([userId, updatedAt])
+  @@index([userId, deletedAt])
+  @@map("dives")
+}
+
+model DiveCondition {
+  id                               String   @id @default(uuid()) @db.Uuid
+  diveId                           String   @unique @db.Uuid
+  airTemperatureEnteredValue       Decimal? @db.Decimal(10, 2)
+  airTemperatureEnteredUnit        String?
+  airTemperatureCelsius            Decimal? @db.Decimal(10, 2)
+  waterTemperatureEnteredValue     Decimal? @db.Decimal(10, 2)
+  waterTemperatureEnteredUnit      String?
+  waterTemperatureCelsius          Decimal? @db.Decimal(10, 2)
+  visibilityEnteredValue           Decimal? @db.Decimal(10, 2)
+  visibilityEnteredUnit            String?
+  visibilityMeters                 Decimal? @db.Decimal(10, 2)
+  current                          String?
+  surfaceConditions                String?
+  weather                          String?
+  dive                             Dive     @relation(fields: [diveId], references: [id], onDelete: Cascade)
+
+  @@map("dive_conditions")
+}
+
+model Location {
+  id                  String             @id @default(uuid()) @db.Uuid
+  userId              String             @db.Uuid
+  name                String
+  country             String?
+  region              String?
+  latitude            Decimal?           @db.Decimal(9, 6)
+  longitude           Decimal?           @db.Decimal(9, 6)
+  canonicalLocationId String?            @db.Uuid
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canonicalLocation   CanonicalLocation? @relation(fields: [canonicalLocationId], references: [id], onDelete: SetNull)
+  diveSites           DiveSite[]
+  dives               Dive[]
+
+  @@index([userId, name])
+  @@map("locations")
+}
+
+model DiveSite {
+  id                  String             @id @default(uuid()) @db.Uuid
+  userId              String             @db.Uuid
+  locationId          String?            @db.Uuid
+  name                String
+  latitude            Decimal?           @db.Decimal(9, 6)
+  longitude           Decimal?           @db.Decimal(9, 6)
+  siteType            String?
+  canonicalDiveSiteId String?            @db.Uuid
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location            Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  canonicalDiveSite   CanonicalDiveSite? @relation(fields: [canonicalDiveSiteId], references: [id], onDelete: SetNull)
+  dives               Dive[]
+
+  @@index([userId, locationId, name])
+  @@map("dive_sites")
+}
+
+model CanonicalLocation {
+  id             String              @id @default(uuid()) @db.Uuid
+  name           String
+  country        String?
+  region         String?
+  latitude       Decimal?            @db.Decimal(9, 6)
+  longitude      Decimal?            @db.Decimal(9, 6)
+  status         CanonicalStatus     @default(draft)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  locations      Location[]
+  diveSites      CanonicalDiveSite[]
+
+  @@index([name])
+  @@map("canonical_locations")
+}
+
+model CanonicalDiveSite {
+  id                  String                    @id @default(uuid()) @db.Uuid
+  canonicalLocationId String?                   @db.Uuid
+  name                String
+  aliases             String[]                  @default([])
+  latitude            Decimal?                  @db.Decimal(9, 6)
+  longitude           Decimal?                  @db.Decimal(9, 6)
+  siteType            String?
+  status              CanonicalStatus           @default(draft)
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  canonicalLocation   CanonicalLocation?        @relation(fields: [canonicalLocationId], references: [id], onDelete: SetNull)
+  diveSites           DiveSite[]
+  reviewItems         CanonicalSiteReviewItem[]
+
+  @@index([canonicalLocationId, name])
+  @@map("canonical_dive_sites")
+}
+
+model CanonicalSiteReviewItem {
+  id                           String              @id @default(uuid()) @db.Uuid
+  userLocationId               String?             @db.Uuid
+  userDiveSiteId               String?             @db.Uuid
+  suggestedCanonicalLocationId String?             @db.Uuid
+  suggestedCanonicalDiveSiteId String?             @db.Uuid
+  matchReason                  String?
+  confidence                   Decimal?            @db.Decimal(5, 2)
+  status                       ReviewStatus        @default(pending)
+  reviewedByUserId             String?             @db.Uuid
+  reviewedAt                   DateTime?
+  suggestedCanonicalDiveSite   CanonicalDiveSite?  @relation(fields: [suggestedCanonicalDiveSiteId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("canonical_site_review_items")
+}
+
+model DiveTypeTag {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @db.Uuid
+  name      String
+  slug      String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dives     DiveDiveTypeTag[]
+
+  @@unique([userId, slug])
+  @@map("dive_type_tags")
+}
+
+model DiveDiveTypeTag {
+  diveId String      @db.Uuid
+  tagId  String      @db.Uuid
+  dive   Dive        @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  tag    DiveTypeTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, tagId])
+  @@map("dive_dive_type_tags")
+}
+
+model GasMix {
+  id                        String   @id @default(uuid()) @db.Uuid
+  diveId                    String   @db.Uuid
+  label                     String?
+  gasType                   GasType
+  oxygenPercent             Decimal? @db.Decimal(5, 2)
+  heliumPercent             Decimal? @db.Decimal(5, 2)
+  startPressureEnteredValue Decimal? @db.Decimal(10, 2)
+  startPressureEnteredUnit  String?
+  startPressureBar          Decimal? @db.Decimal(10, 2)
+  endPressureEnteredValue   Decimal? @db.Decimal(10, 2)
+  endPressureEnteredUnit    String?
+  endPressureBar            Decimal? @db.Decimal(10, 2)
+  tankSizeEnteredValue      Decimal? @db.Decimal(10, 2)
+  tankSizeEnteredUnit       String?
+  tankSizeLiters            Decimal? @db.Decimal(10, 2)
+  dive                      Dive     @relation(fields: [diveId], references: [id], onDelete: Cascade)
+
+  @@index([diveId])
+  @@map("gas_mixes")
+}
+
+model GearItem {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @db.Uuid
+  name            String
+  category        String?
+  brand           String?
+  model           String?
+  serialNumber    String?
+  purchaseDate    DateTime?
+  retiredAt       DateTime?
+  sourceImportRowId String?       @db.Uuid
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage           DiveGearUsage[]
+
+  @@index([userId, name])
+  @@map("gear_items")
+}
+
+model DiveGearUsage {
+  diveId     String   @db.Uuid
+  gearItemId String   @db.Uuid
+  notes      String?
+  dive       Dive     @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  gearItem   GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, gearItemId])
+  @@map("dive_gear_usage")
+}
+
+model MediaAsset {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  kind      String
+  storageKey String
+  mimeType  String?
+  byteSize  Int?
+  checksum  String?
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dives     DiveMedia[]
+
+  @@index([userId])
+  @@map("media_assets")
+}
+
+model DiveMedia {
+  diveId       String     @db.Uuid
+  mediaAssetId String     @db.Uuid
+  caption      String?
+  sortOrder    Int        @default(0)
+  dive         Dive       @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, mediaAssetId])
+  @@map("dive_media")
+}
+
+model ImportBatch {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @db.Uuid
+  sourceType     String
+  sourceFilename String?
+  status         ImportStatus @default(pending)
+  createdAt      DateTime    @default(now())
+  completedAt    DateTime?
+  errorSummary   String?
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rows           ImportRow[]
+
+  @@index([userId, createdAt])
+  @@map("import_batches")
+}
+
+model ImportRow {
+  id              String          @id @default(uuid()) @db.Uuid
+  importBatchId   String          @db.Uuid
+  sourceRowNumber Int
+  rawJson         Json
+  parsedJson      Json?
+  status          ImportRowStatus @default(pending)
+  targetDiveId    String?         @db.Uuid
+  errorMessage    String?
+  importBatch     ImportBatch     @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([importBatchId, sourceRowNumber])
+  @@map("import_rows")
+}
+
+model ShareLink {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  resourceType String
+  resourceId   String    @db.Uuid
+  token        String    @unique
+  visibility   String
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@map("share_links")
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @db.Uuid
+  targetUserId  String?  @db.Uuid
+  action        String
+  metadataJson  Json?
+  createdAt     DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@map("audit_events")
+}
