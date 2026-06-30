@@ -21,6 +21,38 @@ Health endpoints:
 - `GET http://localhost:3000/health`
 - `GET http://localhost:3000/health/db`
 
+Auth endpoints:
+
+- `GET http://localhost:3000/auth/providers`
+- `POST http://localhost:3000/auth/dev-login`
+- `GET http://localhost:3000/auth/me`
+- `GET http://localhost:3000/auth/admin/me`
+- `POST http://localhost:3000/auth/logout`
+
+Development user session:
+
+```bash
+curl -i -c /tmp/mydivelog-user.cookies \
+  -H "Content-Type: application/json" \
+  -d '{"email":"diver@example.com","displayName":"Local Diver"}' \
+  http://localhost:3000/auth/dev-login
+
+curl -b /tmp/mydivelog-user.cookies http://localhost:3000/auth/me
+```
+
+Development staff/admin session:
+
+```bash
+curl -i -c /tmp/mydivelog-admin.cookies \
+  -H "Content-Type: application/json" \
+  -d '{"email":"staff@example.com","displayName":"Local Staff","role":"staff","sessionKind":"admin"}' \
+  http://localhost:3000/auth/dev-login
+
+curl -b /tmp/mydivelog-admin.cookies http://localhost:3000/auth/admin/me
+```
+
+`POST /auth/dev-login` only exists when `NODE_ENV=development`.
+
 ## Useful Commands
 
 ```bash

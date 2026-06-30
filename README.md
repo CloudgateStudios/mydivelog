@@ -70,6 +70,17 @@ curl http://localhost:3000/health
 curl http://localhost:3000/health/db
 ```
 
+Development auth smoke test:
+
+```bash
+curl -i -c /tmp/mydivelog-admin.cookies \
+  -H "Content-Type: application/json" \
+  -d '{"email":"staff@example.com","displayName":"Local Staff","role":"staff","sessionKind":"admin"}' \
+  http://localhost:3000/auth/dev-login
+
+curl -b /tmp/mydivelog-admin.cookies http://localhost:3000/auth/admin/me
+```
+
 Useful API commands:
 
 ```bash
