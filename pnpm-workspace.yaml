@@ -1,0 +1,6 @@
+packages:
+  - "api"
+  - "web"
+  - "admin"
+  - "packages/*"
+  - "infra"
