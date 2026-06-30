@@ -53,6 +53,7 @@ For now, checks focus on repo hygiene and documentation links. More app-specific
 ## Local API Development
 
 The API foundation uses NestJS, Prisma, and local Postgres through Docker Compose.
+Docker publishes Postgres on `localhost:5433` so it can coexist with another local Postgres using the default `5432` port.
 
 ```bash
 pnpm install

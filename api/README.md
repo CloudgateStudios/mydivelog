@@ -14,6 +14,8 @@ pnpm --filter @mydivelog/api prisma:migrate
 pnpm --filter @mydivelog/api start:dev
 ```
 
+The local Docker database is available on `localhost:5433`, while Postgres still uses `5432` inside the container.
+
 Health endpoints:
 
 - `GET http://localhost:3000/health`
