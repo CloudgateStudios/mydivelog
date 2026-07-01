@@ -23,6 +23,12 @@ enum SessionKind {
   mobile
 }
 
+enum UserRole {
+  user
+  staff
+  admin
+}
+
 enum WaterType {
   fresh
   salt
@@ -81,6 +87,7 @@ model User {
   email               String         @unique
   displayName         String?
   primaryAuthProvider AuthProvider?
+  role                UserRole       @default(user)
   homeUnitSystem      UnitSystem     @default(imperial)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
