@@ -22,39 +22,39 @@ Use these statuses:
 
 ## Current Decisions
 
-| Area | Decision | Status | Notes |
-| --- | --- | --- | --- |
-| Product launch target | Public usable web launch | Decided | Not internal-only or private beta-only. |
-| App sequence | Admin, website, Flutter mobile/desktop | Decided | API/database/import foundation comes first. |
-| Admin deployment | Separate app/deployment | Decided | Prefer a staff-only subdomain and stricter access controls. |
-| Customer auth | Direct Google and Apple OAuth/OpenID Connect | Decided | No MyDiveLog-managed passwords for v1. |
-| Admin permissions | Read-only for user-owned dive data | Decided | Staff can inspect and add support notes, not edit logs. |
-| Core platform provider | Full GCP Lean | Decided | Start with Cloud Run, Cloud SQL shared-core, Cloud Storage, Cloud Tasks, Secret Manager, and Cloud Logging/Monitoring. |
-| Primary data store | PostgreSQL on Cloud SQL | Decided | Start lean with shared-core; revisit sizing and HA after real usage appears. |
-| DNS | Hover registrar with Cloud DNS authoritative DNS | Decided | Keep registration and renewal at Hover; change nameservers to Cloud DNS so records live with GCP infrastructure. |
-| Repository shape | Monorepo | Decided | Top-level folders such as `api`, `web`, `admin`, `app`, `docs`, `design`, `packages`, and `infra`. |
-| Web app | Next.js on Cloud Run | Decided | Public web and logged-in app. |
-| Admin app | Separate Next.js app on Cloud Run | Decided | Separate app within monorepo, separate deployment/staff subdomain. |
-| Backend runtime/framework | TypeScript/Node with NestJS | Decided | Strong structure, dependency injection, validation, testing, and OpenAPI support. |
-| API style | REST JSON with OpenAPI | Decided | Current docs assume this. |
-| Database access | Prisma | Decided | Use Prisma schema/migrations/client with PostgreSQL on Cloud SQL. |
-| Cloud SQL launch size | `db-g1-small` production, `db-f1-micro` staging/dev | Decided | Lean but less tiny for production; revisit dedicated-core/HA later. |
-| Async jobs | Cloud Tasks | Decided | Best first fit for command-style jobs: import, export, deletion, retries. |
-| Infrastructure as code | Terraform | Decided | GCP resources should be reproducible. |
-| CI/CD | GitHub Actions | Decided | Build, test, migrate, and deploy apps/services. |
-| Package manager/task runner | pnpm workspaces with Turborepo | Decided | Fast monorepo installs, workspace linking, task orchestration, and caching. |
-| Auth session strategy | HttpOnly cookie sessions for web/admin; access/refresh tokens for mobile/API clients | Decided | Safer browser default; token model for mobile/API clients. |
-| Cloud Run service layout | Separate services per app/workload | Decided | `mydivelog-api-*`, `mydivelog-web-*`, `mydivelog-admin-*`, `mydivelog-worker-*`, plus specific jobs. |
-| Preview environments | Web/admin preview services first | Decided | PR previews for web/admin on Cloud Run using staging API/DB initially; API previews later if needed. |
-| OAuth/session libraries | Passport.js/NestJS Passport plus OpenID client support | Decided | Use maintained OAuth/OIDC libraries; keep provider linking/session logic in our API. |
-| OpenAPI generation | NestJS Swagger decorators | Decided | Generate OpenAPI from DTOs/controllers and use generated clients for web/admin. |
-| Terraform layout | Shared modules plus environment roots | Decided | `infra/modules/*` and `infra/envs/{staging,prod}`. |
-| Flutter local persistence | Deferred until mobile phase | Deferred | Drift + SQLite is the current preferred option, but re-evaluate when mobile begins. |
-| Sync conflict strategy | Field-level merge plus explicit conflict resolution | Decided | Add concrete use cases and examples before mobile implementation. |
-| Dive computer profile imports | Deferred until after v1 | Decided | Spreadsheet/CSV first; reserve model space for future time-series profile samples. |
-| Canonical dive sites | Model from day one, workflow later | Decided | Add canonical tables/link fields now; defer public directory/moderation until after v1. |
-| Observability | GCP-native for v1 | Decided | Cloud Logging, Monitoring, and Error Reporting first. |
-| Mobile framework | Flutter | Proposed | Desired for cross-platform mobile/desktop after web launch. |
+| Area                          | Decision                                                                             | Status   | Notes                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Product launch target         | Public usable web launch                                                             | Decided  | Not internal-only or private beta-only.                                                                                |
+| App sequence                  | Admin, website, Flutter mobile/desktop                                               | Decided  | API/database/import foundation comes first.                                                                            |
+| Admin deployment              | Separate app/deployment                                                              | Decided  | Prefer a staff-only subdomain and stricter access controls.                                                            |
+| Customer auth                 | Direct Google and Apple OAuth/OpenID Connect                                         | Decided  | No MyDiveLog-managed passwords for v1.                                                                                 |
+| Admin permissions             | Read-only for user-owned dive data                                                   | Decided  | Staff can inspect and add support notes, not edit logs.                                                                |
+| Core platform provider        | Full GCP Lean                                                                        | Decided  | Start with Cloud Run, Cloud SQL shared-core, Cloud Storage, Cloud Tasks, Secret Manager, and Cloud Logging/Monitoring. |
+| Primary data store            | PostgreSQL on Cloud SQL                                                              | Decided  | Start lean with shared-core; revisit sizing and HA after real usage appears.                                           |
+| DNS                           | Hover registrar with Cloud DNS authoritative DNS                                     | Decided  | Keep registration and renewal at Hover; change nameservers to Cloud DNS so records live with GCP infrastructure.       |
+| Repository shape              | Monorepo                                                                             | Decided  | Top-level folders such as `api`, `web`, `admin`, `app`, `docs`, `design`, `packages`, and `infra`.                     |
+| Web app                       | Next.js on Cloud Run                                                                 | Decided  | Public web and logged-in app.                                                                                          |
+| Admin app                     | Separate Next.js app on Cloud Run                                                    | Decided  | Separate app within monorepo, separate deployment/staff subdomain.                                                     |
+| Backend runtime/framework     | TypeScript/Node with NestJS                                                          | Decided  | Strong structure, dependency injection, validation, testing, and OpenAPI support.                                      |
+| API style                     | REST JSON with OpenAPI                                                               | Decided  | Current docs assume this.                                                                                              |
+| Database access               | Prisma                                                                               | Decided  | Use Prisma schema/migrations/client with PostgreSQL on Cloud SQL.                                                      |
+| Cloud SQL launch size         | `db-g1-small` production, `db-f1-micro` staging/dev                                  | Decided  | Lean but less tiny for production; revisit dedicated-core/HA later.                                                    |
+| Async jobs                    | Cloud Tasks                                                                          | Decided  | Best first fit for command-style jobs: import, export, deletion, retries.                                              |
+| Infrastructure as code        | Terraform                                                                            | Decided  | GCP resources should be reproducible.                                                                                  |
+| CI/CD                         | GitHub Actions                                                                       | Decided  | Build, test, migrate, and deploy apps/services.                                                                        |
+| Package manager/task runner   | pnpm workspaces with Turborepo                                                       | Decided  | Fast monorepo installs, workspace linking, task orchestration, and caching.                                            |
+| Auth session strategy         | HttpOnly cookie sessions for web/admin; access/refresh tokens for mobile/API clients | Decided  | Safer browser default; token model for mobile/API clients.                                                             |
+| Cloud Run service layout      | Separate services per app/workload                                                   | Decided  | `mydivelog-api-*`, `mydivelog-web-*`, `mydivelog-admin-*`, `mydivelog-worker-*`, plus specific jobs.                   |
+| Preview environments          | Web/admin preview services first                                                     | Decided  | PR previews for web/admin on Cloud Run using staging API/DB initially; API previews later if needed.                   |
+| OAuth/session libraries       | Passport.js/NestJS Passport plus OpenID client support                               | Decided  | Use maintained OAuth/OIDC libraries; keep provider linking/session logic in our API.                                   |
+| OpenAPI generation            | NestJS Swagger decorators                                                            | Decided  | Generate OpenAPI from DTOs/controllers and use generated clients for web/admin.                                        |
+| Terraform layout              | Shared modules plus environment roots                                                | Decided  | `infra/modules/*` and `infra/envs/{staging,prod}`.                                                                     |
+| Flutter local persistence     | Deferred until mobile phase                                                          | Deferred | Drift + SQLite is the current preferred option, but re-evaluate when mobile begins.                                    |
+| Sync conflict strategy        | Field-level merge plus explicit conflict resolution                                  | Decided  | Add concrete use cases and examples before mobile implementation.                                                      |
+| Dive computer profile imports | Deferred until after v1                                                              | Decided  | Spreadsheet/CSV first; reserve model space for future time-series profile samples.                                     |
+| Canonical dive sites          | Model from day one, workflow later                                                   | Decided  | Add canonical tables/link fields now; defer public directory/moderation until after v1.                                |
+| Observability                 | GCP-native for v1                                                                    | Decided  | Cloud Logging, Monitoring, and Error Reporting first.                                                                  |
+| Mobile framework              | Flutter                                                                              | Proposed | Desired for cross-platform mobile/desktop after web launch.                                                            |
 
 ## Decision 1: Core Platform Provider
 

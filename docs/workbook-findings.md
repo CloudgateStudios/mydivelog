@@ -49,27 +49,27 @@ The workbook shows several important patterns:
 
 ## MVP Import Mapping
 
-| Workbook field | Proposed model target | Notes |
-| --- | --- | --- |
-| Dive Number | `dives.userDiveNumber` | User-scoped sequence, editable. |
-| Date | `dives.diveDate` | Preserve date even when time is unknown. |
-| Time In | `dives.timeInLocal` | Optional local time. |
-| Dive Time | `dives.durationSeconds` | Store as seconds. |
-| Time Out | Derived or `dives.timeOutLocal` | Can be recomputed when time in and duration are present. |
-| Running Total Time | Derived | Do not store as source of truth. |
-| Max Depth (ft) | `dives.maxDepthEnteredValue`, `dives.maxDepthEnteredUnit`, `dives.maxDepthMeters` | Preserve feet as entered and store meters canonically. |
-| Air Temperature (F) | `dive_conditions.airTemperatureEnteredValue`, `dive_conditions.airTemperatureEnteredUnit`, `dive_conditions.airTemperatureCelsius` | Preserve Fahrenheit as entered and store Celsius canonically. |
+| Workbook field        | Proposed model target                                                                                                                    | Notes                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Dive Number           | `dives.userDiveNumber`                                                                                                                   | User-scoped sequence, editable.                               |
+| Date                  | `dives.diveDate`                                                                                                                         | Preserve date even when time is unknown.                      |
+| Time In               | `dives.timeInLocal`                                                                                                                      | Optional local time.                                          |
+| Dive Time             | `dives.durationSeconds`                                                                                                                  | Store as seconds.                                             |
+| Time Out              | Derived or `dives.timeOutLocal`                                                                                                          | Can be recomputed when time in and duration are present.      |
+| Running Total Time    | Derived                                                                                                                                  | Do not store as source of truth.                              |
+| Max Depth (ft)        | `dives.maxDepthEnteredValue`, `dives.maxDepthEnteredUnit`, `dives.maxDepthMeters`                                                        | Preserve feet as entered and store meters canonically.        |
+| Air Temperature (F)   | `dive_conditions.airTemperatureEnteredValue`, `dive_conditions.airTemperatureEnteredUnit`, `dive_conditions.airTemperatureCelsius`       | Preserve Fahrenheit as entered and store Celsius canonically. |
 | Water Temperature (F) | `dive_conditions.waterTemperatureEnteredValue`, `dive_conditions.waterTemperatureEnteredUnit`, `dive_conditions.waterTemperatureCelsius` | Preserve Fahrenheit as entered and store Celsius canonically. |
-| Visibility (ft) | `dive_conditions.visibilityEnteredValue`, `dive_conditions.visibilityEnteredUnit`, `dive_conditions.visibilityMeters` | Preserve feet as entered and store meters canonically. |
-| Location | `locations.name` | User-created at first, later canonicalizable. |
-| Dive Site | `dive_sites.name` | Belongs to location when known. |
-| Water Type | `dives.waterType` | Enum candidate: fresh, salt, mixed, unknown. |
-| Dive Type | `dive_type_tags` | Multi-select tags. |
-| Gas | `gas_mixes.type` | Air, nitrox/EAN, trimix, other later. |
-| EAN % | `gas_mixes.oxygenPercent` | Required for nitrox when known. |
-| Equipment | `gear_items`, `dive_gear_usage` | Split and create structured gear records immediately. |
-| Weight (lbs) | `dives.weightCarriedEnteredValue`, `dives.weightCarriedEnteredUnit`, `dives.weightCarriedKilograms` | Preserve pounds as entered and store kilograms canonically. |
-| Notes | `dives.notes` | Free text. |
+| Visibility (ft)       | `dive_conditions.visibilityEnteredValue`, `dive_conditions.visibilityEnteredUnit`, `dive_conditions.visibilityMeters`                    | Preserve feet as entered and store meters canonically.        |
+| Location              | `locations.name`                                                                                                                         | User-created at first, later canonicalizable.                 |
+| Dive Site             | `dive_sites.name`                                                                                                                        | Belongs to location when known.                               |
+| Water Type            | `dives.waterType`                                                                                                                        | Enum candidate: fresh, salt, mixed, unknown.                  |
+| Dive Type             | `dive_type_tags`                                                                                                                         | Multi-select tags.                                            |
+| Gas                   | `gas_mixes.type`                                                                                                                         | Air, nitrox/EAN, trimix, other later.                         |
+| EAN %                 | `gas_mixes.oxygenPercent`                                                                                                                | Required for nitrox when known.                               |
+| Equipment             | `gear_items`, `dive_gear_usage`                                                                                                          | Split and create structured gear records immediately.         |
+| Weight (lbs)          | `dives.weightCarriedEnteredValue`, `dives.weightCarriedEnteredUnit`, `dives.weightCarriedKilograms`                                      | Preserve pounds as entered and store kilograms canonically.   |
+| Notes                 | `dives.notes`                                                                                                                            | Free text.                                                    |
 
 ## Import Considerations
 

@@ -89,14 +89,14 @@ For every measurement that can vary by region or equipment, store:
 
 Recommended canonical units:
 
-| Measurement | Input examples | Canonical unit |
-| --- | --- | --- |
-| Depth | feet, meters | meters |
-| Visibility | feet, meters | meters |
-| Temperature | Fahrenheit, Celsius | Celsius |
-| Weight carried | pounds, kilograms | kilograms |
-| Tank pressure | psi, bar | bar |
-| Tank volume | cubic feet, liters | liters |
+| Measurement    | Input examples      | Canonical unit |
+| -------------- | ------------------- | -------------- |
+| Depth          | feet, meters        | meters         |
+| Visibility     | feet, meters        | meters         |
+| Temperature    | Fahrenheit, Celsius | Celsius        |
+| Weight carried | pounds, kilograms   | kilograms      |
+| Tank pressure  | psi, bar            | bar            |
+| Tank volume    | cubic feet, liters  | liters         |
 
 This preserves user intent while making search, sorting, summaries, and analytics reliable. For example, a user could enter `18 m` on a trip, see it displayed as `18 m` on the dive detail if desired, and still have the log list show `59 ft` when their display preference is imperial.
 

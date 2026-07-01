@@ -10,6 +10,6 @@ import { StaffAuthGuard } from "./staff-auth.guard.js";
   imports: [PrismaModule],
   controllers: [AuthController],
   providers: [AuthService, SessionAuthGuard, StaffAuthGuard],
-  exports: [AuthService, SessionAuthGuard, StaffAuthGuard]
+  exports: [AuthService, SessionAuthGuard, StaffAuthGuard],
 })
 export class AuthModule {}
