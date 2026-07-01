@@ -54,5 +54,8 @@ jobs:
       - name: Check formatting
         run: pnpm format
 
+      - name: Run tests
+        run: pnpm test
+
       - name: Build
         run: pnpm build
