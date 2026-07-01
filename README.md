@@ -81,6 +81,17 @@ curl -i -c /tmp/mydivelog-admin.cookies \
 curl -b /tmp/mydivelog-admin.cookies http://localhost:3000/auth/admin/me
 ```
 
+## Local Admin Development
+
+The admin app runs separately from the API on `localhost:3001`.
+
+```bash
+cp admin/.env.example admin/.env.local
+pnpm --filter @mydivelog/admin dev
+```
+
+Open `http://localhost:3001` and sign in with the default local staff values.
+
 Useful API commands:
 
 ```bash

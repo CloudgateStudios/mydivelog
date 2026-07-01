@@ -10,6 +10,7 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - "esbuild"
   - "prisma"
+  - "sharp"
 
 ignoredBuiltDependencies:
   - "@scarf/scarf"
@@ -20,3 +21,4 @@ allowBuilds:
   "@scarf/scarf": false
   "esbuild": true
   "prisma": true
+  "sharp": true
