@@ -10,7 +10,7 @@ const requiredFiles = [
   "pnpm-workspace.yaml",
   "turbo.json",
   "docs/README.md",
-  "docs/technology-decisions.md"
+  "docs/technology-decisions.md",
 ];
 
 const errors = [];
@@ -22,7 +22,7 @@ for (const file of requiredFiles) {
 }
 
 const trackedFiles = execFileSync("git", ["ls-files"], {
-  encoding: "utf8"
+  encoding: "utf8",
 })
   .split("\n")
   .filter(Boolean);
@@ -41,7 +41,7 @@ for (const file of trackedFiles) {
   }
 
   const content = execFileSync("git", ["show", `:${file}`], {
-    encoding: "utf8"
+    encoding: "utf8",
   });
 
   if (conflictPattern.test(content)) {

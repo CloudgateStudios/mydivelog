@@ -6,17 +6,17 @@ export async function POST(request: Request) {
   const response = await fetch(`${getApiBaseUrl()}/auth/dev-login`, {
     method: "POST",
     headers: {
-      "content-type": "application/json"
+      "content-type": "application/json",
     },
     body: await request.text(),
-    cache: "no-store"
+    cache: "no-store",
   });
   const body = await response.text();
   const nextResponse = new NextResponse(body, {
     status: response.status,
     headers: {
-      "content-type": response.headers.get("content-type") ?? "application/json"
-    }
+      "content-type": response.headers.get("content-type") ?? "application/json",
+    },
   });
   const setCookie = response.headers.get("set-cookie");
 

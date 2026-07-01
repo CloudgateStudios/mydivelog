@@ -8,9 +8,9 @@ export async function POST(request: Request) {
   await fetch(`${getApiBaseUrl()}/auth/logout`, {
     method: "POST",
     headers: {
-      cookie: request.headers.get("cookie") ?? ""
+      cookie: request.headers.get("cookie") ?? "",
     },
-    cache: "no-store"
+    cache: "no-store",
   });
 
   const response = NextResponse.json({ status: "ok" });

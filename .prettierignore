@@ -1,0 +1,17 @@
+# Dependencies and generated outputs
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.turbo/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Generated or tool-owned files
+pnpm-lock.yaml
+*.tsbuildinfo

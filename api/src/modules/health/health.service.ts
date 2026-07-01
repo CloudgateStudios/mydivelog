@@ -10,7 +10,7 @@ export class HealthService {
     return {
       status: "ok",
       service: "api",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -20,7 +20,7 @@ export class HealthService {
     return {
       status: "ok",
       dependency: "database",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

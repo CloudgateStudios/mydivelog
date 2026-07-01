@@ -45,7 +45,7 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   return fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers,
-    cache: "no-store"
+    cache: "no-store",
   });
 }
 
@@ -67,20 +67,20 @@ export async function getHealth(path: "/health" | "/health/db") {
       return {
         ok: false,
         statusCode: response.status,
-        data: null
+        data: null,
       };
     }
 
     return {
       ok: true,
       statusCode: response.status,
-      data: (await response.json()) as HealthResponse
+      data: (await response.json()) as HealthResponse,
     };
   } catch {
     return {
       ok: false,
       statusCode: 0,
-      data: null
+      data: null,
     };
   }
 }

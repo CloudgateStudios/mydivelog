@@ -10,7 +10,7 @@ export function LogoutButton() {
   async function logout() {
     setIsSubmitting(true);
     await fetch("/api/auth/logout", {
-      method: "POST"
+      method: "POST",
     });
     router.replace("/login");
     router.refresh();

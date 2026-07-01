@@ -7,23 +7,9 @@ if (!baseSha || !headSha) {
   process.exit(1);
 }
 
-const allowedTypes = [
-  "build",
-  "chore",
-  "ci",
-  "docs",
-  "feat",
-  "fix",
-  "perf",
-  "refactor",
-  "revert",
-  "style",
-  "test"
-];
+const allowedTypes = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test"];
 
-const conventionalCommitPattern = new RegExp(
-  `^(${allowedTypes.join("|")})(\\([a-z0-9._-]+\\))?!?: .+`
-);
+const conventionalCommitPattern = new RegExp(`^(${allowedTypes.join("|")})(\\([a-z0-9._-]+\\))?!?: .+`);
 
 function isConventionalCommit(subject) {
   if (subject.startsWith("Revert ")) {
@@ -33,12 +19,8 @@ function isConventionalCommit(subject) {
   return conventionalCommitPattern.test(subject);
 }
 
-const subjects = execFileSync("git", [
-  "log",
-  "--format=%s",
-  `${baseSha}..${headSha}`
-], {
-  encoding: "utf8"
+const subjects = execFileSync("git", ["log", "--format=%s", `${baseSha}..${headSha}`], {
+  encoding: "utf8",
 })
   .split("\n")
   .map((subject) => subject.trim())

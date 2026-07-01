@@ -4,7 +4,7 @@ import "./styles.css";
 
 export const metadata: Metadata = {
   title: "MyDiveLog Admin",
-  description: "Staff operations console for MyDiveLog."
+  description: "Staff operations console for MyDiveLog.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -19,14 +19,14 @@ export function LoginForm() {
     const response = await fetch("/api/auth/dev-login", {
       method: "POST",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
       },
       body: JSON.stringify({
         email: formData.get("email"),
         displayName: formData.get("displayName"),
         role: "staff",
-        sessionKind: "admin"
-      })
+        sessionKind: "admin",
+      }),
     });
 
     if (!response.ok) {

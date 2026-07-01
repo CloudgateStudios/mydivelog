@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const [apiHealth, databaseHealth] = await Promise.all([getHealth("/health"), getHealth("/health/db")]);
   const sessionExpiry = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(new Date(auth.session.expiresAt));
 
   return (

@@ -3,7 +3,7 @@ import { SessionKind } from "@prisma/client";
 export const SESSION_COOKIE_NAMES: Record<SessionKind, string> = {
   user: "mdl_session",
   admin: "mdl_admin_session",
-  mobile: "mdl_mobile_session"
+  mobile: "mdl_mobile_session",
 };
 
 export const USER_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;

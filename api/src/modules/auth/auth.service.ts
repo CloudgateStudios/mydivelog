@@ -23,20 +23,20 @@ type CookieOptions = {
 export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(ConfigService) private readonly configService: ConfigService
+    @Inject(ConfigService) private readonly configService: ConfigService,
   ) {}
 
   getProviders() {
     return {
       google: {
-        enabled: Boolean(this.configService.get<string>("GOOGLE_OAUTH_CLIENT_ID"))
+        enabled: Boolean(this.configService.get<string>("GOOGLE_OAUTH_CLIENT_ID")),
       },
       apple: {
-        enabled: Boolean(this.configService.get<string>("APPLE_OAUTH_CLIENT_ID"))
+        enabled: Boolean(this.configService.get<string>("APPLE_OAUTH_CLIENT_ID")),
       },
       dev: {
-        enabled: this.isDevelopment()
-      }
+        enabled: this.isDevelopment(),
+      },
     };
   }
 
@@ -57,20 +57,20 @@ export class AuthService {
       where: { email },
       update: {
         displayName: dto.displayName,
-        role
+        role,
       },
       create: {
         email,
         displayName: dto.displayName,
-        role
-      }
+        role,
+      },
     });
 
     const session = await this.createSession({
       userId: user.id,
       kind: sessionKind,
       userAgent: this.getHeader(request, "user-agent"),
-      ipAddress: request.ip
+      ipAddress: request.ip,
     });
 
     return {
@@ -82,18 +82,16 @@ export class AuthService {
         session: {
           id: session.id,
           kind: session.kind,
-          expiresAt: session.expiresAt
-        }
-      }
+          expiresAt: session.expiresAt,
+        },
+      },
     };
   }
 
   async getAuthContextFromRequest(request: AuthRequest): Promise<AuthContext | null> {
     const cookies = this.parseCookies(this.getHeader(request, "cookie"));
     const rawToken =
-      cookies[SESSION_COOKIE_NAMES.admin] ??
-      cookies[SESSION_COOKIE_NAMES.user] ??
-      cookies[SESSION_COOKIE_NAMES.mobile];
+      cookies[SESSION_COOKIE_NAMES.admin] ?? cookies[SESSION_COOKIE_NAMES.user] ?? cookies[SESSION_COOKIE_NAMES.mobile];
 
     if (!rawToken) {
       return null;
@@ -101,7 +99,7 @@ export class AuthService {
 
     const session = await this.prisma.session.findUnique({
       where: { sessionTokenHash: this.hashToken(rawToken) },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!session || session.revokedAt || session.expiresAt <= new Date()) {
@@ -110,7 +108,7 @@ export class AuthService {
 
     await this.prisma.session.update({
       where: { id: session.id },
-      data: { lastSeenAt: new Date() }
+      data: { lastSeenAt: new Date() },
     });
 
     return {
@@ -118,8 +116,8 @@ export class AuthService {
       session: {
         id: session.id,
         kind: session.kind,
-        expiresAt: session.expiresAt
-      }
+        expiresAt: session.expiresAt,
+      },
     };
   }
 
@@ -132,14 +130,14 @@ export class AuthService {
 
     await this.prisma.session.update({
       where: { id: auth.session.id },
-      data: { revokedAt: new Date() }
+      data: { revokedAt: new Date() },
     });
   }
 
   getClearCookieOptions(): CookieOptions {
     return {
       ...this.getCookieOptions(new Date(0)),
-      maxAge: 0
+      maxAge: 0,
     };
   }
 
@@ -147,12 +145,7 @@ export class AuthService {
     return Object.values(SESSION_COOKIE_NAMES);
   }
 
-  private async createSession(input: {
-    userId: string;
-    kind: SessionKind;
-    userAgent?: string;
-    ipAddress?: string;
-  }) {
+  private async createSession(input: { userId: string; kind: SessionKind; userAgent?: string; ipAddress?: string }) {
     const rawToken = randomBytes(32).toString("base64url");
     const expiresAt = new Date(Date.now() + getSessionTtlMs(input.kind));
 
@@ -163,13 +156,13 @@ export class AuthService {
         sessionTokenHash: this.hashToken(rawToken),
         expiresAt,
         userAgentHash: input.userAgent ? this.hashToken(input.userAgent) : undefined,
-        ipHash: input.ipAddress ? this.hashToken(input.ipAddress) : undefined
-      }
+        ipHash: input.ipAddress ? this.hashToken(input.ipAddress) : undefined,
+      },
     });
 
     return {
       ...session,
-      rawToken
+      rawToken,
     };
   }
 
@@ -183,7 +176,7 @@ export class AuthService {
       sameSite: "lax",
       path: "/",
       expires: expiresAt,
-      domain: cookieDomain || undefined
+      domain: cookieDomain || undefined,
     };
   }
 
@@ -227,7 +220,7 @@ export class AuthService {
       email: user.email,
       displayName: user.displayName,
       role: user.role,
-      homeUnitSystem: user.homeUnitSystem
+      homeUnitSystem: user.homeUnitSystem,
     };
   }
 }

@@ -7,12 +7,14 @@
     "check": "pnpm check:repo && pnpm check:docs && turbo run check",
     "check:repo": "node scripts/check-repo-basics.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",
-    "format": "turbo run format",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "build": "turbo run build"
   },
   "devDependencies": {
+    "prettier": "^3.6.2",
     "turbo": "^2.10.0"
   }
 }
