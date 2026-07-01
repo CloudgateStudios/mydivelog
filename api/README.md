@@ -29,6 +29,11 @@ Auth endpoints:
 - `GET http://localhost:3000/auth/admin/me`
 - `POST http://localhost:3000/auth/logout`
 
+Read-only admin endpoints:
+
+- `GET http://localhost:3000/admin/overview`
+- `GET http://localhost:3000/admin/users?page=1&pageSize=20&search=staff`
+
 Development user session:
 
 ```bash
@@ -49,6 +54,8 @@ curl -i -c /tmp/mydivelog-admin.cookies \
   http://localhost:3000/auth/dev-login
 
 curl -b /tmp/mydivelog-admin.cookies http://localhost:3000/auth/admin/me
+curl -b /tmp/mydivelog-admin.cookies http://localhost:3000/admin/overview
+curl -b /tmp/mydivelog-admin.cookies "http://localhost:3000/admin/users?page=1&pageSize=10"
 ```
 
 `POST /auth/dev-login` only exists when `NODE_ENV=development`.

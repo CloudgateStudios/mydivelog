@@ -22,6 +22,49 @@ export type HealthResponse = {
   timestamp: string;
 };
 
+export type AdminOverview = {
+  counts: {
+    users: number;
+    staffUsers: number;
+    dives: number;
+    importBatches: number;
+    pendingCanonicalSiteReviews: number;
+  };
+  recentUsers: AdminUserSummary[];
+  recentImports: Array<{
+    id: string;
+    sourceType: string;
+    sourceFilename: string | null;
+    status: string;
+    createdAt: string;
+    completedAt: string | null;
+    userEmail: string;
+  }>;
+};
+
+export type AdminUserSummary = {
+  id: string;
+  email: string;
+  displayName: string | null;
+  role: "user" | "staff" | "admin";
+  homeUnitSystem: string;
+  createdAt: string;
+  updatedAt?: string;
+  diveCount: number;
+  importBatchCount: number;
+  sessionCount?: number;
+};
+
+export type AdminUsersResponse = {
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  users: AdminUserSummary[];
+};
+
 export function getApiBaseUrl() {
   return process.env.ADMIN_API_BASE_URL ?? "http://localhost:3000";
 }
@@ -83,4 +126,36 @@ export async function getHealth(path: "/health" | "/health/db") {
       data: null,
     };
   }
+}
+
+export async function getAdminOverview() {
+  const response = await apiFetch("/admin/overview");
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as AdminOverview;
+}
+
+export async function getAdminUsers(searchParams: { page?: string; search?: string }) {
+  const params = new URLSearchParams();
+
+  if (searchParams.page) {
+    params.set("page", searchParams.page);
+  }
+
+  if (searchParams.search) {
+    params.set("search", searchParams.search);
+  }
+
+  params.set("pageSize", "10");
+
+  const response = await apiFetch(`/admin/users?${params.toString()}`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as AdminUsersResponse;
 }

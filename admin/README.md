@@ -34,6 +34,15 @@ Default local credentials:
 
 The admin app creates an `admin` session with the `staff` role. Normal user sessions should be rejected by the admin session check.
 
+## Dashboard Data
+
+The dashboard reads protected API endpoints through the admin app:
+
+- `GET /admin/overview`
+- `GET /admin/users`
+
+Both endpoints require a valid admin session and a staff or admin role.
+
 ## Useful Commands
 
 ```bash
