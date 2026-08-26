@@ -42,7 +42,7 @@ resolves observations onto dives; it does not create rows.
 
 Note also that the two sources disagree slightly on max depth (46 vs 46.26 ft) and that
 gas disagrees outright (EAN 32 vs o2 0.33 → EAN 33). Both are typical: the human rounded,
-and the dive computer recorded what the analyser actually read. Neither is "wrong" and the
+and the dive computer recorded what the analyzer actually read. Neither is "wrong" and the
 merge must record both rather than pick silently.
 
 ## Finding 2 — Real Export Files Contain Bugs You Must Absorb

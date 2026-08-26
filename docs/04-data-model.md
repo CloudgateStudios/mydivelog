@@ -285,7 +285,7 @@ model DiveTank {
   workingPressureBar Float?
   startPressureBar   Float?
   endPressureBar     Float?
-  material        String?             // aluminium | steel
+  material        String?             // aluminum | steel
   // SAC/RMV derived at read time, never stored
 }
 ```

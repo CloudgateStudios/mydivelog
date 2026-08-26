@@ -1,0 +1,17 @@
+{
+  "name": "mydivelog",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Digital dive logbook — https://mydivelog.app",
+  "license": "UNLICENSED",
+  "scripts": {
+    "spellcheck": "cspell lint --no-progress --show-suggestions --relative",
+    "spellcheck:words": "cspell lint --no-progress --relative --words-only --unique"
+  },
+  "devDependencies": {
+    "cspell": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

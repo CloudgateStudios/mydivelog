@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en-US",
+  "files": [
+    "**/*.md"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    ".git/**",
+    "fixtures/**",
+    "**/CHANGELOG.md"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": ".cspell/project-words.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": [
+    "project-words",
+    "softwareTerms",
+    "node",
+    "typescript",
+    "html",
+    "css",
+    "bash"
+  ],
+  "flagWords": [
+    "teh",
+    "hte",
+    "adn",
+    "nad"
+  ],
+  "ignoreRegExpList": [
+    "/\\b[0-9a-f]{7,}\\b/g",
+    "/\\bsite_[A-Za-z0-9]+\\b/g",
+    "/\\bdive_[A-Za-z0-9]+\\b/g",
+    "/\\b(?:https?|mailto):[^\\s)\\]]+/g"
+  ]
+}
