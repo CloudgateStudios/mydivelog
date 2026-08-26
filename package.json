@@ -4,6 +4,7 @@
   "private": true,
   "description": "Digital dive logbook — https://mydivelog.app",
   "license": "UNLICENSED",
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "spellcheck": "cspell lint --no-progress --show-suggestions --relative",
     "spellcheck:words": "cspell lint --no-progress --relative --words-only --unique"

@@ -1,0 +1,7 @@
+# Workspace packages. These directories are created in Phase 0 of the
+# implementation plan; pnpm simply finds nothing until then.
+#
+# apps/mobile is the Flutter app and has no package.json, so pnpm skips it.
+packages:
+  - "apps/*"
+  - "packages/*"
