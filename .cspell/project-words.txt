@@ -55,10 +55,12 @@ autoincrement
 timestamptz
 
 # --- Ordinary technical English that cspell's dictionaries lack -----------
+checkpointing
 checksummed
 cookieless
 dogfooded
 generatable
+hostable       # as in self-hostable
 hostnames
 journaled
 prefs

@@ -1,0 +1,68 @@
+# Local development stack. Brought up by `pnpm dev` (or `pnpm services:up`).
+#
+# Nothing here is production shaped: production uses managed Postgres (Neon)
+# and Cloudflare R2. MinIO stands in for R2 locally because both speak S3.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mydivelog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mydivelog
+      POSTGRES_PASSWORD: mydivelog
+      POSTGRES_DB: mydivelog
+    ports:
+      # Non-default host port: 5432 is routinely occupied by a system Postgres
+      # or another project's stack. Override with POSTGRES_PORT in .env.
+      - '${POSTGRES_PORT:-55432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # `-d` matters: without it pg_isready checks the default database and
+      # reports ready before ours exists.
+      test: ['CMD-SHELL', 'pg_isready -U mydivelog -d mydivelog']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: mydivelog-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mydivelog
+      MINIO_ROOT_PASSWORD: mydivelog-dev-secret
+    ports:
+      # 9000 collides with plenty of things; see the note on Postgres above.
+      - '${MINIO_PORT:-59000}:9000'
+      - '${MINIO_CONSOLE_PORT:-59001}:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Creates the buckets the app expects, then exits. `pnpm services:up` waits
+  # for this to complete, so a fresh clone has working storage immediately.
+  minio-init:
+    image: minio/mc:latest
+    container_name: mydivelog-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 mydivelog mydivelog-dev-secret &&
+      mc mb --ignore-existing local/mydivelog-uploads &&
+      mc mb --ignore-existing local/mydivelog-profiles &&
+      mc mb --ignore-existing local/mydivelog-exports &&
+      echo 'buckets ready'
+      "
+
+volumes:
+  postgres-data:
+  minio-data:

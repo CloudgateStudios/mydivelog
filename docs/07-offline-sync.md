@@ -156,7 +156,9 @@ field-level provenance, source-class precedence, and never-overwrite notes. Off-
 engines give last-write-wins on rows, which is wrong for this data and would have to be
 worked around at every layer.
 
-**Decision:** build, but evaluate PowerSync concretely in a two-day Phase 0 spike before
-committing. If it can express field-level custom conflict resolution, use it. The
-[ADR](./decisions/) records the outcome. Keeping the sync protocol behind a clean interface
-in the Flutter app preserves the option either way.
+**Decision:** the Phase 0 spike overturned this section's premise. PowerSync does *not*
+impose row-level last-write-wins — client mutations are handed to an endpoint we own, so
+conflict resolution stays ours and `packages/domain` merge logic applies verbatim.
+ElectricSQL is read-path only and would leave writes and conflicts to build anyway.
+Adopt PowerSync, provisionally, with a prototype gate in Phase 7. See
+[ADR 011](./decisions/011-sync-engine.md).

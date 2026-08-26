@@ -17,12 +17,12 @@ Consequences → Status.
 | 008 | No passwords — OIDC and magic links only | Accepted | [Security](../10-security-privacy.md#authentication) |
 | 009 | Export is free and full-fidelity, forever | Accepted | [Cost Model](../12-cost-model.md#revenue) |
 | 010 | No dive planning or safety guidance, ever | Accepted | [Security § Liability](../10-security-privacy.md#liability) |
+| 011 | PowerSync for offline sync, not a custom engine | Accepted, provisional | [ADR 011](./011-sync-engine.md) |
 
 ## Pending
 
 | # | Decision | Resolve by |
 |---|---|---|
-| 011 | Custom sync engine vs PowerSync/ElectricSQL | Phase 0 spike |
 | 012 | PostGIS vs `earthdistance` for site clustering | Phase 1 |
 | 013 | Hard uniqueness on `(userId, diveNumber)` | After Phase 3 proves import quality |
 

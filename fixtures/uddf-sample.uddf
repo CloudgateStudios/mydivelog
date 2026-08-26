@@ -1,0 +1,1357 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<uddf version="3.2.1" xmlns="http://www.streit.cc/uddf/3.2/">
+  <generator>
+    <manufacturer><contact><homepage>https://example.invalid/</homepage></contact></manufacturer>
+    <version>0.0.1</version>
+    <datetime>2026-08-26T16:47:42.380Z</datetime>
+  </generator>
+  <divesite>
+<site id="site_69ab7a96dce6e40c7d3abe65">
+            <name>site_69ab7a96dce6e40c7d3abe65</name>
+            <geography>
+                <location>site_69ab7a96dce6e40c7d3abe65</location>
+                <latitude>4.772435</latitude>
+                <longitude>-55.403250</longitude>
+                <altitude>3.0</altitude>
+            </geography>
+        </site>
+<site id="site_69ab22331e3c5f6b780c69ac">
+            <name>site_69ab22331e3c5f6b780c69ac</name>
+            <geography>
+                <location>site_69ab22331e3c5f6b780c69ac</location>
+                <latitude>4.752156</latitude>
+                <longitude>-55.398690</longitude>
+                <altitude>1.1679561</altitude>
+            </geography>
+        </site>
+<site id="site_69ab22341e3c5f6b780c69af">
+            <name>site_69ab22341e3c5f6b780c69af</name>
+            <geography>
+                <location>site_69ab22341e3c5f6b780c69af</location>
+                <latitude>4.879779</latitude>
+                <longitude>-55.437830</longitude>
+                <altitude>4.590246</altitude>
+            </geography>
+        </site>
+<site id="site_69a9fc2dbe199b60d0450a4d">
+            <name>site_69a9fc2dbe199b60d0450a4d</name>
+            <geography>
+                <location>site_69a9fc2dbe199b60d0450a4d</location>
+                <latitude>4.888037</latitude>
+                <longitude>-55.468310</longitude>
+                <altitude>2.0902495</altitude>
+            </geography>
+        </site>
+<site id="site_69a9fc19be199b60d0450a41">
+            <name>site_69a9fc19be199b60d0450a41</name>
+            <geography>
+                <location>site_69a9fc19be199b60d0450a41</location>
+                <latitude>4.857499</latitude>
+                <longitude>-55.413160</longitude>
+                <altitude>-2.969344</altitude>
+            </geography>
+        </site>
+<site id="site_69a9fc2abe199b60d0450a46">
+            <name>site_69a9fc2abe199b60d0450a46</name>
+            <geography>
+                <location>site_69a9fc2abe199b60d0450a46</location>
+                <latitude>4.707790</latitude>
+                <longitude>-55.380860</longitude>
+                <altitude>-196.0</altitude>
+            </geography>
+        </site>
+  </divesite>
+  <gasdefinitions>
+<mix id="air">
+            <name>air</name>
+            <o2>0.21</o2>
+            <n2>0.79</n2>
+        </mix>
+<mix id="nitrox_69ab7a96dce6e40c7d3abe65">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+<mix id="nitrox_69ab22331e3c5f6b780c69ac">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+<mix id="nitrox_69ab22341e3c5f6b780c69af">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+<mix id="nitrox_69a9fc2dbe199b60d0450a4d">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+<mix id="nitrox_69a9fc19be199b60d0450a41">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+<mix id="nitrox_69a9fc2abe199b60d0450a46">
+            <name>nitrox</name>
+            <o2>0.33</o2>
+            <n2>0.66999996</n2>
+        </mix>
+  </gasdefinitions>
+  <profiledata>
+<repetitiongroup>
+<dive id="dive_69ab7a96dce6e40c7d3abe65">
+                <informationbeforedive>
+                    <link ref="site_69ab7a96dce6e40c7d3abe65"/>
+                    <datetime>2026-03-06T19:07:42.000-00:04</datetime>
+                    <altitude>3.0</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69ab7a96dce6e40c7d3abe65"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>2.0941422</depth>
+                        <divetime>75.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.2568634</depth>
+                        <divetime>150.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.7889128</depth>
+                        <divetime>225.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.385155</depth>
+                        <divetime>300.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.2317624</depth>
+                        <divetime>375.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.413976</depth>
+                        <divetime>450.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.183466</depth>
+                        <divetime>525.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.677453</depth>
+                        <divetime>600.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.280726</depth>
+                        <divetime>675.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.562321</depth>
+                        <divetime>750.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.422373</depth>
+                        <divetime>825.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.923813</depth>
+                        <divetime>900.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.254231</depth>
+                        <divetime>975.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.324081</depth>
+                        <divetime>1050.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.046318</depth>
+                        <divetime>1125.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.874978</depth>
+                        <divetime>1200.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.6504526</depth>
+                        <divetime>1275.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.558021</depth>
+                        <divetime>1350.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.6848054</depth>
+                        <divetime>1425.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.099113</depth>
+                        <divetime>1500.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.3980956</depth>
+                        <divetime>1575.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.1953583</depth>
+                        <divetime>1650.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.676276</depth>
+                        <divetime>1725.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.3098626</depth>
+                        <divetime>1800.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.879218</depth>
+                        <divetime>1875.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.275113</depth>
+                        <divetime>1950.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.168659</depth>
+                        <divetime>2025.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.9365077</depth>
+                        <divetime>2100.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.179601</depth>
+                        <divetime>2175.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.470331</depth>
+                        <divetime>2250.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.94822</depth>
+                        <divetime>2325.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.859434</depth>
+                        <divetime>2400.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.7254372</depth>
+                        <divetime>2475.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.0989347</depth>
+                        <divetime>2550.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.6436315</depth>
+                        <divetime>2625.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>1.4454756</depth>
+                        <divetime>2700.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.49773136</depth>
+                        <divetime>2760.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69ab7a96dce6e40c7d3abe65">
+                    <link ref="nitrox_69ab7a96dce6e40c7d3abe65"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.64</lowesttemperature>
+                    <greatestdepth>14.099043</greatestdepth>
+                    <diveduration>2776.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69ab7a96dce6e40c7d3abe65"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+<repetitiongroup>
+<dive id="dive_69ab22331e3c5f6b780c69ac">
+                <informationbeforedive>
+                    <link ref="site_69ab22331e3c5f6b780c69ac"/>
+                    <datetime>2026-03-06T11:16:22.000-00:04</datetime>
+                    <altitude>1.1679561</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69ab22331e3c5f6b780c69ac"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>3.4379363</depth>
+                        <divetime>105.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.6307144</depth>
+                        <divetime>210.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.776092</depth>
+                        <divetime>315.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.595316</depth>
+                        <divetime>420.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.765625</depth>
+                        <divetime>525.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.936964</depth>
+                        <divetime>630.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.332754</depth>
+                        <divetime>735.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.820272</depth>
+                        <divetime>840.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.77592</depth>
+                        <divetime>945.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.476482</depth>
+                        <divetime>1050.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.100262</depth>
+                        <divetime>1155.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.351298</depth>
+                        <divetime>1260.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.317695</depth>
+                        <divetime>1365.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.003216</depth>
+                        <divetime>1470.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.839557</depth>
+                        <divetime>1575.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.994501</depth>
+                        <divetime>1680.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.096805</depth>
+                        <divetime>1785.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.624634</depth>
+                        <divetime>1890.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.438953</depth>
+                        <divetime>1995.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.992538</depth>
+                        <divetime>2100.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.991635</depth>
+                        <divetime>2205.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.884277</depth>
+                        <divetime>2310.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.367665</depth>
+                        <divetime>2415.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.504837</depth>
+                        <divetime>2520.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>14.227646</depth>
+                        <divetime>2625.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.588243</depth>
+                        <divetime>2730.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.8849115</depth>
+                        <divetime>2835.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.802148</depth>
+                        <divetime>2940.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.4583797</depth>
+                        <divetime>3045.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.6667905</depth>
+                        <divetime>3150.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.5736804</depth>
+                        <divetime>3255.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.9099476</depth>
+                        <divetime>3360.0</divetime>
+                        <temperature>299.94</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.3414176</depth>
+                        <divetime>3465.0</divetime>
+                        <temperature>299.94</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.9302846</depth>
+                        <divetime>3570.0</divetime>
+                        <temperature>300.04</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.5482895</depth>
+                        <divetime>3645.0</divetime>
+                        <temperature>300.24</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69ab22331e3c5f6b780c69ac">
+                    <link ref="nitrox_69ab22331e3c5f6b780c69ac"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.64</lowesttemperature>
+                    <greatestdepth>14.318025</greatestdepth>
+                    <diveduration>3656.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69ab22331e3c5f6b780c69ac"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+<repetitiongroup>
+<dive id="dive_69ab22341e3c5f6b780c69af">
+                <informationbeforedive>
+                    <link ref="site_69ab22341e3c5f6b780c69af"/>
+                    <datetime>2026-03-06T09:15:46.000-00:04</datetime>
+                    <altitude>4.590246</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69ab22341e3c5f6b780c69af"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>6.8526764</depth>
+                        <divetime>90.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.331224</depth>
+                        <divetime>180.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.369816</depth>
+                        <divetime>270.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>18.841997</depth>
+                        <divetime>360.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.173704</depth>
+                        <divetime>450.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.832108</depth>
+                        <divetime>540.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.459845</depth>
+                        <divetime>630.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.88445</depth>
+                        <divetime>720.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.136444</depth>
+                        <divetime>810.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.240902</depth>
+                        <divetime>900.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.548815</depth>
+                        <divetime>990.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.228195</depth>
+                        <divetime>1080.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.94103</depth>
+                        <divetime>1170.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.11181</depth>
+                        <divetime>1260.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>15.704257</depth>
+                        <divetime>1350.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.464473</depth>
+                        <divetime>1440.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.011589</depth>
+                        <divetime>1530.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.892171</depth>
+                        <divetime>1620.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.9607735</depth>
+                        <divetime>1710.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.568891</depth>
+                        <divetime>1800.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.153008</depth>
+                        <divetime>1890.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.3864894</depth>
+                        <divetime>1980.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.929713</depth>
+                        <divetime>2070.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.736233</depth>
+                        <divetime>2160.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.7538776</depth>
+                        <divetime>2250.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.281336</depth>
+                        <divetime>2340.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.2860665</depth>
+                        <divetime>2430.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.8176246</depth>
+                        <divetime>2520.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.8785048</depth>
+                        <divetime>2610.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.085131</depth>
+                        <divetime>2700.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.5603662</depth>
+                        <divetime>2790.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.9372761</depth>
+                        <divetime>2880.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.4481514</depth>
+                        <divetime>2970.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.9492536</depth>
+                        <divetime>3060.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>1.805604</depth>
+                        <divetime>3150.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.16590078</depth>
+                        <divetime>3240.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>3315.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69ab22341e3c5f6b780c69af">
+                    <link ref="nitrox_69ab22341e3c5f6b780c69af"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.64</lowesttemperature>
+                    <greatestdepth>23.018057</greatestdepth>
+                    <diveduration>3235.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69ab22341e3c5f6b780c69af"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+<repetitiongroup>
+<dive id="dive_69a9fc2dbe199b60d0450a4d">
+                <informationbeforedive>
+                    <link ref="site_69a9fc2dbe199b60d0450a4d"/>
+                    <datetime>2026-03-05T13:38:21.000-00:04</datetime>
+                    <altitude>2.0902495</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69a9fc2dbe199b60d0450a4d"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>5.898043</depth>
+                        <divetime>90.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.033254</depth>
+                        <divetime>180.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.638054</depth>
+                        <divetime>270.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.500809</depth>
+                        <divetime>360.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.71388</depth>
+                        <divetime>450.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>21.447067</depth>
+                        <divetime>540.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.146145</depth>
+                        <divetime>630.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.704868</depth>
+                        <divetime>720.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.19589</depth>
+                        <divetime>810.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.920538</depth>
+                        <divetime>900.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.859648</depth>
+                        <divetime>990.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.63873</depth>
+                        <divetime>1080.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.038609</depth>
+                        <divetime>1170.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.250914</depth>
+                        <divetime>1260.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.291327</depth>
+                        <divetime>1350.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.455557</depth>
+                        <divetime>1440.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.73002</depth>
+                        <divetime>1530.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.264179</depth>
+                        <divetime>1620.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.728169</depth>
+                        <divetime>1710.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.708483</depth>
+                        <divetime>1800.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.605805</depth>
+                        <divetime>1890.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.7202835</depth>
+                        <divetime>1980.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>11.503038</depth>
+                        <divetime>2070.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.9559355</depth>
+                        <divetime>2160.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.747969</depth>
+                        <divetime>2250.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.9408646</depth>
+                        <divetime>2340.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.645751</depth>
+                        <divetime>2430.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.491417</depth>
+                        <divetime>2520.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.4106607</depth>
+                        <divetime>2610.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.717365</depth>
+                        <divetime>2700.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.3020654</depth>
+                        <divetime>2790.0</divetime>
+                        <temperature>299.94</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.8704914</depth>
+                        <divetime>2880.0</divetime>
+                        <temperature>300.14</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>1.6464794</depth>
+                        <divetime>2970.0</divetime>
+                        <temperature>300.14</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.38804737</depth>
+                        <divetime>3060.0</divetime>
+                        <temperature>300.14</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.4169509</depth>
+                        <divetime>3135.0</divetime>
+                        <temperature>300.24</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69a9fc2dbe199b60d0450a4d">
+                    <link ref="nitrox_69a9fc2dbe199b60d0450a4d"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.74</lowesttemperature>
+                    <greatestdepth>22.034966</greatestdepth>
+                    <diveduration>3052.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69a9fc2dbe199b60d0450a4d"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+<repetitiongroup>
+<dive id="dive_69a9fc19be199b60d0450a41">
+                <informationbeforedive>
+                    <link ref="site_69a9fc19be199b60d0450a41"/>
+                    <datetime>2026-03-05T11:21:06.000-00:04</datetime>
+                    <altitude>-2.969344</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69a9fc19be199b60d0450a41"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>6.203098</depth>
+                        <divetime>90.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.419022</depth>
+                        <divetime>180.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.172274</depth>
+                        <divetime>270.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.032785</depth>
+                        <divetime>360.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.466154</depth>
+                        <divetime>450.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>18.569347</depth>
+                        <divetime>540.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.909466</depth>
+                        <divetime>630.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.927483</depth>
+                        <divetime>720.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.343786</depth>
+                        <divetime>810.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.196785</depth>
+                        <divetime>900.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.65042</depth>
+                        <divetime>990.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.170187</depth>
+                        <divetime>1080.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.37069</depth>
+                        <divetime>1170.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.74554</depth>
+                        <divetime>1260.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>18.874338</depth>
+                        <divetime>1350.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.067486</depth>
+                        <divetime>1440.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.99336</depth>
+                        <divetime>1530.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.453516</depth>
+                        <divetime>1620.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.775278</depth>
+                        <divetime>1710.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.22696</depth>
+                        <divetime>1800.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.406419</depth>
+                        <divetime>1890.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>8.100739</depth>
+                        <divetime>1980.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.312199</depth>
+                        <divetime>2070.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>7.7588034</depth>
+                        <divetime>2160.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.60995</depth>
+                        <divetime>2250.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.6673775</depth>
+                        <divetime>2340.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.696318</depth>
+                        <divetime>2430.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.2207623</depth>
+                        <divetime>2520.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.8865905</depth>
+                        <divetime>2610.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.0477147</depth>
+                        <divetime>2700.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.6011477</depth>
+                        <divetime>2790.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.1083107</depth>
+                        <divetime>2880.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>2.6437595</depth>
+                        <divetime>2970.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.3466801</depth>
+                        <divetime>3060.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>1.1506357</depth>
+                        <divetime>3150.0</divetime>
+                        <temperature>300.04</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.63603973</depth>
+                        <divetime>3195.0</divetime>
+                        <temperature>300.04</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69a9fc19be199b60d0450a41">
+                    <link ref="nitrox_69a9fc19be199b60d0450a41"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.64</lowesttemperature>
+                    <greatestdepth>21.3301</greatestdepth>
+                    <diveduration>3150.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69a9fc19be199b60d0450a41"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+<repetitiongroup>
+<dive id="dive_69a9fc2abe199b60d0450a46">
+                <informationbeforedive>
+                    <link ref="site_69a9fc2abe199b60d0450a46"/>
+                    <datetime>2026-03-05T09:13:07.000-00:04</datetime>
+                    <altitude>-196.0</altitude>
+                </informationbeforedive>
+                <samples>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>0.0</divetime>
+                        <switchmix ref="nitrox_69a9fc2abe199b60d0450a46"/>
+                        <divemode type="opencircuit"/>
+                    </waypoint>
+<waypoint>
+                        <depth>7.9358916</depth>
+                        <divetime>90.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>15.511578</depth>
+                        <divetime>180.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>18.397835</depth>
+                        <divetime>270.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.904428</depth>
+                        <divetime>360.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.84757</depth>
+                        <divetime>450.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>20.08328</depth>
+                        <divetime>540.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>19.72325</depth>
+                        <divetime>630.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>17.895802</depth>
+                        <divetime>720.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.582885</depth>
+                        <divetime>810.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.913811</depth>
+                        <divetime>900.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.66627</depth>
+                        <divetime>990.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.75611</depth>
+                        <divetime>1080.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.879096</depth>
+                        <divetime>1170.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.695219</depth>
+                        <divetime>1260.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.361505</depth>
+                        <divetime>1350.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>14.566241</depth>
+                        <divetime>1440.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>16.066196</depth>
+                        <divetime>1530.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>15.966349</depth>
+                        <divetime>1620.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.493373</depth>
+                        <divetime>1710.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>13.861655</depth>
+                        <divetime>1800.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>14.238016</depth>
+                        <divetime>1890.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.1495905</depth>
+                        <divetime>1980.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>10.041399</depth>
+                        <divetime>2070.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>9.655125</depth>
+                        <divetime>2160.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>12.275727</depth>
+                        <divetime>2250.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>6.630771</depth>
+                        <divetime>2340.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.453698</depth>
+                        <divetime>2430.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>5.54428</depth>
+                        <divetime>2520.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.9678298</depth>
+                        <divetime>2610.0</divetime>
+                        <temperature>299.84</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>4.54079</depth>
+                        <divetime>2700.0</divetime>
+                        <temperature>299.74</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>3.9636972</depth>
+                        <divetime>2790.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>1.5278249</depth>
+                        <divetime>2880.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.3436536</depth>
+                        <divetime>2970.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>3060.0</divetime>
+                        <temperature>299.64</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.0</depth>
+                        <divetime>3150.0</divetime>
+                        <temperature>299.44</temperature>
+                    </waypoint>
+<waypoint>
+                        <depth>0.39685914</depth>
+                        <divetime>3165.0</divetime>
+                        <temperature>299.44</temperature>
+                    </waypoint>
+</samples>
+                <tankdata id="tank_69a9fc2abe199b60d0450a46">
+                    <link ref="nitrox_69a9fc2abe199b60d0450a46"/>
+                </tankdata>
+                <informationafterdive>
+                    <lowesttemperature>299.44</lowesttemperature>
+                    <greatestdepth>20.941677</greatestdepth>
+                    <diveduration>3003.0</diveduration>
+                    <equipmentused>
+                        <leadquantity>0.0</leadquantity>
+                        <link ref="tank_69a9fc2abe199b60d0450a46"/>
+                    </equipmentused>
+                </informationafterdive>
+            </dive>
+</repetitiongroup>
+  </profiledata>
+</uddf>

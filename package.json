@@ -6,13 +6,48 @@
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.28.2",
   "scripts": {
+    "dev": "pnpm services:up && turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "spellcheck": "cspell lint --no-progress --show-suggestions --relative",
-    "spellcheck:words": "cspell lint --no-progress --relative --words-only --unique"
+    "spellcheck:words": "cspell lint --no-progress --relative --words-only --unique",
+    "services:up": "docker compose up -d --wait postgres minio && docker compose up minio-init",
+    "services:down": "docker compose down",
+    "services:reset": "docker compose down -v && pnpm services:up",
+    "verify": "turbo lint typecheck test build && pnpm format:check && pnpm spellcheck",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "cspell": "^9.2.1"
+    "@eslint/js": "^9.34.0",
+    "cspell": "^9.2.1",
+    "eslint": "^9.34.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.41.0"
   },
   "engines": {
     "node": ">=24"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

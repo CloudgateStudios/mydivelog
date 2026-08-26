@@ -3,5 +3,5 @@
 #
 # apps/mobile is the Flutter app and has no package.json, so pnpm skips it.
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
