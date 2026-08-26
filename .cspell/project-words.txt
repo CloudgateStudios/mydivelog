@@ -1,0 +1,79 @@
+# MyDiveLog project dictionary
+#
+# Keep this grouped and alphabetical within groups. Prefer fixing a real typo
+# over adding a word here. One word per line; matching is case-insensitive.
+
+# --- Diving: general vocabulary -------------------------------------------
+divemaster
+drysuit
+freedive
+liveaboard
+liveaboards
+nitrox
+trimix
+
+# --- Diving: certification agencies ---------------------------------------
+BSAC
+CMAS
+NAUI
+PADI
+
+# --- Diving: vendors, apps, and file formats ------------------------------
+Deepblu
+Diviac
+Scubapro
+Shearwater
+Suunto
+TRAK          # Scubapro LogTRAK
+UDDF          # Universal Dive Data Format
+
+# --- UDDF schema identifiers (quoted verbatim from the spec and real files)
+leadquantity
+opencircuit
+
+# --- Place names ----------------------------------------------------------
+Bonaire
+Kralendijk
+Roatan
+
+# --- Standards, protocols, and compliance ---------------------------------
+ASVS          # OWASP Application Security Verification Standard
+CCPA
+HSTS
+PITR          # point-in-time recovery
+WCAG
+
+# --- Platform and library names -------------------------------------------
+DPAPI         # Windows Data Protection API
+MSIX
+Riverpod
+earthdistance # PostgreSQL extension
+zstd
+
+# --- Database and API identifiers -----------------------------------------
+autoincrement
+timestamptz
+
+# --- Ordinary technical English that cspell's dictionaries lack -----------
+checksummed
+cookieless
+dogfooded
+generatable
+hostnames
+journaled
+prefs
+rollups
+signups
+sublinearly
+undoable
+unmetered
+
+# --- Product ---------------------------------------------------------------
+mydivelog
+
+# --- Verbatim quotes from real source data --------------------------------
+# These are MISSPELLED ON PURPOSE. The docs quote a diver's spreadsheet that
+# contains "Dift" (drift) in 39 rows; correcting it here would destroy the
+# example the import engine's fuzzy-matching is specified against.
+# Do not "fix" these.
+Dift
