@@ -45,6 +45,7 @@ WCAG
 
 # --- Platform and library names -------------------------------------------
 DPAPI         # Windows Data Protection API
+flyctl        # Fly.io CLI
 MSIX
 Riverpod
 earthdistance # PostgreSQL extension
@@ -52,6 +53,8 @@ zstd
 
 # --- Database and API identifiers -----------------------------------------
 autoincrement
+pooler        # Neon connection pooler
+sslmode       # Postgres connection parameter
 timestamptz
 
 # --- Ordinary technical English that cspell's dictionaries lack -----------

@@ -15,7 +15,7 @@ Durations assume one focused developer. They are ranges, not commitments.
 - Lint, format, typecheck, test, pre-commit hooks, secret scanning
 - GitHub Actions: PR checks, preview environments
 - `docker compose` local stack: Postgres + MinIO
-- Fly.io apps and Neon project created for staging
+- Fly.io apps and Neon projects created for dev and prod ([runbook](./runbooks/environment-setup.md))
 - Empty `api`, `worker`, `web`, `admin` deployable with a health endpoint
 - Fixture files committed (redacted) to `fixtures/`
 - **Spike: evaluate PowerSync/ElectricSQL vs custom sync** → write [ADR](./decisions/)
@@ -23,7 +23,7 @@ Durations assume one focused developer. They are ranges, not commitments.
 **Acceptance**
 - `pnpm dev` gives a working local stack from a clean clone in <10 minutes
 - A PR produces a live preview URL with its own database branch
-- `/health` returns 200 in staging for all four apps
+- `/health` returns 200 in dev for all four apps, each naming itself
 
 ---
 
@@ -55,7 +55,7 @@ Durations assume one focused developer. They are ranges, not commitments.
 - Integration tests against real Postgres
 
 **Acceptance**
-- Sign in with all three methods on staging
+- Sign in with all three methods on dev
 - Full dive lifecycle via API
 - Cross-user access returns 404 on **every** user-owned endpoint (test-enforced)
 - Replaying any write with the same `Idempotency-Key` is a no-op returning the original response
@@ -234,4 +234,4 @@ Phase 9+ ongoing
 3. **Every importer ships with a real fixture file.** No exceptions, no synthetic-only tests.
 4. **The golden fixture test runs on every PR** and is never skipped or updated without a
    deliberate, reviewed re-verification.
-5. **No phase is done until its acceptance criteria pass in staging**, not on a laptop.
+5. **No phase is done until its acceptance criteria pass in dev**, not on a laptop.

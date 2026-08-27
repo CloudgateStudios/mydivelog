@@ -1,0 +1,30 @@
+# Deploy from the repository root — the Dockerfile needs the whole workspace
+# as build context:
+#
+#   fly deploy . --config infra/fly/admin.prod.toml \
+#     --dockerfile apps/admin/Dockerfile --app mydivelog-admin-prod
+
+app = "mydivelog-admin-prod"
+primary_region = "ord"
+
+[env]
+  APP_ENV = "prod"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    path = "/api/health"
+    method = "GET"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

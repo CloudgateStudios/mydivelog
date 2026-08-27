@@ -1,0 +1,136 @@
+name: Deploy
+
+# dev  — every push to main, automatically.
+# prod — manual only, gated by the `prod` GitHub Environment's required
+#        reviewers. Nothing reaches production without a human approving it.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options: [dev, prod]
+      services:
+        description: Comma-separated services, or "all"
+        required: false
+        default: all
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # One deploy per environment at a time. Never cancel in progress — a killed
+  # deploy can leave machines half-updated.
+  group: deploy-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve targets
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+      services: ${{ steps.pick.outputs.services }}
+    steps:
+      - id: pick
+        env:
+          INPUT_ENV: ${{ inputs.environment }}
+          INPUT_SERVICES: ${{ inputs.services }}
+        run: |
+          set -euo pipefail
+          env_name="${INPUT_ENV:-dev}"
+          requested="${INPUT_SERVICES:-all}"
+          if [ "$requested" = "all" ] || [ -z "$requested" ]; then
+            services='["api","worker","web","admin"]'
+          else
+            services=$(printf '%s' "$requested" | tr ',' '\n' | sed 's/^ *//;s/ *$//' \
+              | grep -v '^$' | jq -R . | jq -sc .)
+          fi
+          echo "environment=$env_name" >> "$GITHUB_OUTPUT"
+          echo "services=$services"   >> "$GITHUB_OUTPUT"
+          echo "Deploying $services to $env_name"
+
+  deploy:
+    name: ${{ matrix.service }} → ${{ needs.resolve.outputs.environment }}
+    needs: resolve
+    runs-on: ubuntu-latest
+    # Secrets resolve from this GitHub Environment, so `dev` and `prod` hold
+    # different FLY_TOKEN_* values under identical names.
+    environment: ${{ needs.resolve.outputs.environment }}
+    strategy:
+      # Sequential: the API applies migrations, and two services racing the
+      # same database is not worth the few seconds saved.
+      max-parallel: 1
+      fail-fast: true
+      matrix:
+        service: ${{ fromJSON(needs.resolve.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy ${{ matrix.service }}
+        env:
+          # Per-app deploy tokens: a compromised token can touch one app in one
+          # environment, not the whole organization.
+          FLY_API_TOKEN: ${{ secrets[format('FLY_TOKEN_{0}', matrix.service)] }}
+          ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "::error::FLY_TOKEN_${SERVICE} is not set in the '${ENVIRONMENT}' environment"
+            exit 1
+          fi
+          # Build context is the repository root: the Dockerfiles need the whole
+          # workspace to resolve pnpm workspace dependencies.
+          flyctl deploy . \
+            --config "infra/fly/${SERVICE}.${ENVIRONMENT}.toml" \
+            --dockerfile "apps/${SERVICE}/Dockerfile" \
+            --app "mydivelog-${SERVICE}-${ENVIRONMENT}" \
+            --strategy rolling \
+            --wait-timeout 5m
+
+  smoke:
+    name: Smoke test
+    needs: [resolve, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public health endpoints
+        env:
+          ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+        run: |
+          set -uo pipefail
+          if [ "$ENVIRONMENT" = "prod" ]; then
+            base_api="https://api.mydivelog.app"
+            base_web="https://mydivelog.app"
+            base_admin="https://admin.mydivelog.app"
+          else
+            base_api="https://api.dev.mydivelog.app"
+            base_web="https://dev.mydivelog.app"
+            base_admin="https://admin.dev.mydivelog.app"
+          fi
+          fail=0
+          check() {
+            body=$(curl -fsS --max-time 20 --retry 5 --retry-delay 5 --retry-all-errors "$2" || true)
+            # Assert the service names itself. A 200 alone proves only that
+            # *something* answered — which has already fooled us once.
+            if printf '%s' "$body" | grep -q "\"service\":\"$3\""; then
+              echo "ok   $1 -> $body"
+            else
+              echo "::error::$1 health check failed at $2 (got: ${body:-no response})"
+              fail=1
+            fi
+          }
+          check api   "$base_api/health"        api
+          check web   "$base_web/api/health"    web
+          check admin "$base_admin/api/health"  admin
+          # The worker is deliberately not public; Fly's own machine check
+          # covers it and a failing check blocks the rolling deploy above.
+          exit $fail

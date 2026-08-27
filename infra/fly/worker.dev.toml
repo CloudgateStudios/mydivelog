@@ -1,0 +1,29 @@
+# Deploy from the repository root:
+#
+#   fly deploy . --config infra/fly/worker.dev.toml \
+#     --dockerfile apps/worker/Dockerfile --app mydivelog-worker-dev
+#
+# The worker has no [http_service] on purpose: it consumes jobs and must not be
+# publicly routable. A top-level [checks] block health-checks the machine
+# without publishing a port to the internet.
+
+app = "mydivelog-worker-dev"
+primary_region = "ord"
+
+[env]
+  APP_ENV = "dev"
+  WORKER_PORT = "8080"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8080
+    path = "/health"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
