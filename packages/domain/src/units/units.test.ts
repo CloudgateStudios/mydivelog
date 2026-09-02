@@ -17,7 +17,7 @@ import {
   poundsToKilograms,
   psiToBar,
   secondsToDayFraction,
-} from './index.js';
+} from './index.ts';
 
 /**
  * The anchor cases below are real values lifted from the two seed files

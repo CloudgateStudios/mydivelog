@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { healthResponse } from './health.js';
+import { healthResponse } from './health.ts';
 
 /**
  * The worker consumes pg-boss jobs (imports, exports, email) — none of which

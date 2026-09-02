@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { healthResponse } from './health.js';
+import { healthResponse } from './health.ts';
 
 describe('healthResponse', () => {
   it('identifies the worker service', () => {
