@@ -56,6 +56,10 @@ for env in dev prod; do
 done
 ```
 
+These apps have no public IP addresses yet. `fly launch` would have assigned
+them; `fly apps create` does not. Step 6b allocates them, which is early enough
+— nothing is reachable until the first deploy anyway.
+
 **Region.** The configs use `ord` (Chicago). To use something else, run
 `fly platform regions` and change `primary_region` in all eight
 `infra/fly/*.toml` files. Pick the region closest to your users, and put the
@@ -236,7 +240,31 @@ Free DDoS protection, WAF, and CDN caching for the marketing pages come along
 with it. The migration takes about fifteen minutes and is reversible by putting
 the old nameservers back, so there is little reason not to.
 
-### 6b. Request certificates
+### 6b. Allocate public IP addresses
+
+`fly launch` assigns addresses automatically; `fly apps create` — used in step 1
+— does not. Without them `fly certs add` succeeds but warns *"Your app has no
+public IP addresses"* and validation never completes.
+
+```bash
+for env in dev prod; do
+  for svc in api web admin; do
+    fly ips allocate-v6 --app "mydivelog-${svc}-${env}"
+    fly ips allocate-v4 --shared --app "mydivelog-${svc}-${env}"
+  done
+done
+```
+
+Both are free. **Shared** IPv4 is the right choice: these are HTTP-only apps
+behind Cloudflare, and Fly routes shared addresses by SNI. A dedicated IPv4
+costs $2/month per app and buys nothing here.
+
+`worker` is deliberately excluded. It has no `[http_service]` and must not be
+reachable from the internet — see `infra/fly/worker.*.toml`.
+
+Confirm with `fly ips list --app mydivelog-web-prod`.
+
+### 6c. Request certificates
 
 ```bash
 fly certs add mydivelog.app           --app mydivelog-web-prod
@@ -251,7 +279,7 @@ fly certs add admin.dev.mydivelog.app --app mydivelog-admin-dev
 
 Each command prints the DNS records it wants.
 
-### 6c. Create the records
+### 6d. Create the records
 
 In Cloudflare → DNS, add a **CNAME** per hostname pointing at
 `<app-name>.fly.dev`, apex included — Cloudflare flattens it automatically:
@@ -274,7 +302,7 @@ Cloudflare proxy intercepts HTTP-01 validation and the certificate never
 issues — the single most common way this step stalls. Confirm with
 `fly certs show <hostname> --app <app>`, then switch to proxied (orange cloud).
 
-### 6d. Lock down admin
+### 6e. Lock down admin
 
 Both admin hostnames go behind Cloudflare Access with an email allowlist —
 Zero Trust → Access → Applications → Self-hosted, covering
@@ -353,6 +381,7 @@ when nobody is using it is the entire reason for scale-to-zero there.
 | Symptom | Cause |
 |---|---|
 | Certificate stuck "awaiting configuration" | Cloudflare proxy is on. Set DNS-only until issued. |
+| `fly certs add` warns "no public IP addresses" | Step 6b was skipped. `fly apps create` allocates none. |
 | Cloudflare zone will not go Active | Registrar still lists its own nameservers. Check at the registrar, not in Cloudflare. |
 | Email stopped after the nameserver change | MX/TXT records were not carried over. Re-add them in Cloudflare. |
 | `Error: app name already taken` | Fly app names are globally unique. Add a suffix and update the toml. |
