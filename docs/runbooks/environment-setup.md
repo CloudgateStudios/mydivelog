@@ -265,6 +265,12 @@ Both are free. **Shared** IPv4 is the right choice: these are HTTP-only apps
 behind Cloudflare, and Fly routes shared addresses by SNI. A dedicated IPv4
 costs $2/month per app and buys nothing here.
 
+Different apps can be issued different shared addresses, so distinct IPv4s
+across the six apps are not by themselves a sign that something is dedicated.
+Verify with `fly ips list --app <app>` and check the `TYPE` column: `shared_v4`
+is what you want, `v4` is billable. To correct one, `fly ips release <address>`
+then reallocate with `--shared`.
+
 `worker` is deliberately excluded. It has no `[http_service]` and must not be
 reachable from the internet — see `infra/fly/worker.*.toml`.
 
@@ -287,34 +293,38 @@ Each command prints the DNS records it wants.
 
 ### 6d. Create the records
 
-In Cloudflare → DNS, add a **CNAME** per hostname pointing at
-`<app-name>.fly.dev`, apex included — Cloudflare flattens it automatically:
+`fly certs add` prints the records it wants — **A and AAAA pointing at the
+app's addresses**. Create exactly those. There is one pair per hostname:
 
-| Name | Target |
-|---|---|
-| `@` | `mydivelog-web-prod.fly.dev` |
-| `www` | `mydivelog-web-prod.fly.dev` |
-| `api` | `mydivelog-api-prod.fly.dev` |
-| `admin` | `mydivelog-admin-prod.fly.dev` |
-| `dev` | `mydivelog-web-dev.fly.dev` |
-| `api.dev` | `mydivelog-api-dev.fly.dev` |
-| `admin.dev` | `mydivelog-admin-dev.fly.dev` |
+| Name | Type | Content |
+|---|---|---|
+| `@` | A + AAAA | the `web-prod` addresses |
+| `www` | A + AAAA | the `web-prod` addresses (same as `@`) |
+| `api` | A + AAAA | the `api-prod` addresses |
+| `admin` | A + AAAA | the `admin-prod` addresses |
+| `dev` | A + AAAA | the `web-dev` addresses |
+| `api.dev` | A + AAAA | the `api-dev` addresses |
+| `admin.dev` | A + AAAA | the `admin-dev` addresses |
 
-Fly may also ask for a `_acme-challenge` CNAME per hostname for validation. Add
-those exactly as printed; they can be removed once the certificate is issued.
+Fourteen records. `fly ips list --app <app>` reprints the addresses at any time.
 
-**Set every record to DNS only (grey cloud) until the certificate issues.** The
-Cloudflare proxy answers the ACME challenge instead of Fly, and the certificate
-sits in "awaiting configuration" indefinitely — the single most common way this
-step stalls. Cloudflare defaults new CNAMEs to Proxied, so this is an active
-change on each record, not something to skip past.
+> **Do not also add CNAMEs.** A CNAME cannot share a name with any other
+> record, so it will be rejected. Pointing at `<app>.fly.dev` by CNAME is a
+> valid alternative — Cloudflare flattens it at the apex, and it tracks address
+> changes on its own — but it is one *or* the other, and A/AAAA is what Fly
+> prints and what these instructions assume.
 
-If Cloudflare refuses a record with *"An A, AAAA, or CNAME record with that host
-already exists"*, a leftover record from the old registrar is still there.
-Delete that one first — see 6a step 3.
+**Set every record to DNS only (grey cloud) until the certificates issue.**
+Cloudflare answers the ACME challenge in Fly's place, and the certificate sits
+in "awaiting configuration" indefinitely — the most common way this step
+stalls. Cloudflare defaults new records to Proxied, so this is an active change
+on each of the fourteen.
 
-Confirm issuance with `fly certs check <hostname> --app <app>`, then switch each
-record to Proxied (orange cloud).
+Confirm with `fly certs check <hostname> --app <app>`. Once every hostname
+reports issued, switch the records to Proxied and set SSL/TLS to
+**Full (strict)** — in that order. Turning on the proxy while the mode is still
+Flexible gives a redirect loop, because Cloudflare talks HTTP to Fly and Fly
+redirects to HTTPS.
 
 ### 6e. Lock down admin
 
@@ -396,7 +406,9 @@ when nobody is using it is the entire reason for scale-to-zero there.
 |---|---|
 | Certificate stuck "awaiting configuration" | Cloudflare proxy is on. Set DNS-only until issued. |
 | `fly certs add` warns "no public IP addresses" | Step 6b was skipped. `fly apps create` allocates none. |
-| "An A, AAAA, or CNAME record with that host already exists" | The old registrar's record survived the zone scan. Delete it; a CNAME cannot share a name. |
+| "An A, AAAA, or CNAME record with that host already exists" | Either the old registrar's record survived the zone scan, or A/AAAA records already exist and a CNAME is being added alongside. A CNAME cannot share a name with anything. |
+| Certificates never issue although DNS looks right | Records are Proxied. Grey-cloud all of them until `fly certs check` reports issued. |
+| Redirect loop once the proxy is enabled | SSL/TLS is Flexible. Set Full (strict). |
 | Cloudflare zone will not go Active | Registrar still lists its own nameservers. Check at the registrar, not in Cloudflare. |
 | Email stopped after the nameserver change | MX/TXT records were not carried over. Re-add them in Cloudflare. |
 | `Error: app name already taken` | Fly app names are globally unique. Add a suffix and update the toml. |
