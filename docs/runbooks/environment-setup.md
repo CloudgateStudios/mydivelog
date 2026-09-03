@@ -218,12 +218,18 @@ the domain is registered elsewhere (Hover, Namecheap, Google Domains), you do
 2. Cloudflare scans existing records; check them against your registrar's zone
    and add anything it missed (especially MX and TXT records — losing those
    breaks email)
-3. Cloudflare shows two nameservers, e.g. `xxx.ns.cloudflare.com`
-4. At your registrar, replace the existing nameservers with those two
+3. **Delete the registrar's leftover A/AAAA records at the apex and `www`.**
+   The scan copies whatever was there, which for a domain that was only parked
+   is the registrar's placeholder page. Step 6d replaces them with CNAMEs, and
+   DNS forbids a CNAME coexisting with any other record of the same name, so
+   they must go first. Leave MX and TXT alone — those coexist with a CNAME
+   perfectly well, and deleting them breaks email and domain verification.
+4. Cloudflare shows two nameservers, e.g. `xxx.ns.cloudflare.com`
+5. At your registrar, replace the existing nameservers with those two
    - **Hover:** domain → *Overview* → *Edit* next to Nameservers
-5. Wait for Cloudflare to report the zone Active — usually minutes, allow a few
+6. Wait for Cloudflare to report the zone Active — usually minutes, allow a few
    hours
-6. Set SSL/TLS mode to **Full (strict)**. Anything less either breaks or leaves
+7. Set SSL/TLS mode to **Full (strict)**. Anything less either breaks or leaves
    the Cloudflare-to-Fly hop unverified.
 
 **Can you skip this and run DNS from the registrar?** Technically yes — Fly
@@ -298,9 +304,17 @@ Fly may also ask for a `_acme-challenge` CNAME per hostname for validation. Add
 those exactly as printed; they can be removed once the certificate is issued.
 
 **Set every record to DNS only (grey cloud) until the certificate issues.** The
-Cloudflare proxy intercepts HTTP-01 validation and the certificate never
-issues — the single most common way this step stalls. Confirm with
-`fly certs show <hostname> --app <app>`, then switch to proxied (orange cloud).
+Cloudflare proxy answers the ACME challenge instead of Fly, and the certificate
+sits in "awaiting configuration" indefinitely — the single most common way this
+step stalls. Cloudflare defaults new CNAMEs to Proxied, so this is an active
+change on each record, not something to skip past.
+
+If Cloudflare refuses a record with *"An A, AAAA, or CNAME record with that host
+already exists"*, a leftover record from the old registrar is still there.
+Delete that one first — see 6a step 3.
+
+Confirm issuance with `fly certs check <hostname> --app <app>`, then switch each
+record to Proxied (orange cloud).
 
 ### 6e. Lock down admin
 
@@ -382,6 +396,7 @@ when nobody is using it is the entire reason for scale-to-zero there.
 |---|---|
 | Certificate stuck "awaiting configuration" | Cloudflare proxy is on. Set DNS-only until issued. |
 | `fly certs add` warns "no public IP addresses" | Step 6b was skipped. `fly apps create` allocates none. |
+| "An A, AAAA, or CNAME record with that host already exists" | The old registrar's record survived the zone scan. Delete it; a CNAME cannot share a name. |
 | Cloudflare zone will not go Active | Registrar still lists its own nameservers. Check at the registrar, not in Cloudflare. |
 | Email stopped after the nameserver change | MX/TXT records were not carried over. Re-add them in Cloudflare. |
 | `Error: app name already taken` | Fly app names are globally unique. Add a suffix and update the toml. |
