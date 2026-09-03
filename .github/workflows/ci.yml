@@ -101,7 +101,7 @@ jobs:
           persist-credentials: false
 
       # The gitleaks CLI rather than the marketplace action: the action requires
-      # a paid licence key for organization-owned repositories, the CLI does not.
+      # a paid license key for organization-owned repositories, the CLI does not.
       - name: Run gitleaks
         env:
           GITLEAKS_VERSION: 8.28.0

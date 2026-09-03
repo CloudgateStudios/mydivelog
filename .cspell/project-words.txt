@@ -43,6 +43,10 @@ HSTS
 PITR          # point-in-time recovery
 WCAG
 
+# --- Vendors and hostnames -------------------------------------------------
+Namecheap
+cloudflarestorage   # part of the R2 endpoint hostname
+
 # --- Platform and library names -------------------------------------------
 DPAPI         # Windows Data Protection API
 flyctl        # Fly.io CLI

@@ -200,7 +200,43 @@ Nothing else is needed. `dev` stays unprotected so pushes deploy automatically.
 
 ## Step 6 — DNS and certificates
 
-With `mydivelog.app` on Cloudflare:
+### 6a. Point the domain at Cloudflare first
+
+The rest of this step assumes `mydivelog.app` resolves through Cloudflare. If
+the domain is registered elsewhere (Hover, Namecheap, Google Domains), you do
+**not** need to transfer the registration — only delegate DNS.
+
+> **Registration and DNS are separate things.** The domain stays registered
+> where it is, renews there, and is billed there. All that changes is which
+> nameservers answer for it.
+
+1. Cloudflare dashboard → Add a site → `mydivelog.app` → **Free** plan
+2. Cloudflare scans existing records; check them against your registrar's zone
+   and add anything it missed (especially MX and TXT records — losing those
+   breaks email)
+3. Cloudflare shows two nameservers, e.g. `xxx.ns.cloudflare.com`
+4. At your registrar, replace the existing nameservers with those two
+   - **Hover:** domain → *Overview* → *Edit* next to Nameservers
+5. Wait for Cloudflare to report the zone Active — usually minutes, allow a few
+   hours
+6. Set SSL/TLS mode to **Full (strict)**. Anything less either breaks or leaves
+   the Cloudflare-to-Fly hop unverified.
+
+**Can you skip this and run DNS from the registrar?** Technically yes — Fly
+issues certificates from any DNS provider, and plain A/AAAA records at the apex
+work fine. You would lose three things:
+
+| Lost without Cloudflare | Why it matters |
+|---|---|
+| **Cloudflare Access on admin** | Access is enforced at Cloudflare's edge and needs the hostname proxied. Without it the admin panel — which reads across every user's account — is on the public internet behind nothing but application auth. |
+| **R2 custom domain** (`cdn.mydivelog.app`) | Needs the zone on Cloudflare. Without it, media is served from the account's `r2.cloudflarestorage.com` hostname or through the API. |
+| **Apex CNAME flattening** | Most registrars, Hover included, cannot put a CNAME at the apex. You would allocate a Fly IPv4 and pin A/AAAA records, then remember to update them if the address ever changes. Cloudflare flattens a CNAME at the apex, so the apex tracks `…fly.dev` on its own. |
+
+Free DDoS protection, WAF, and CDN caching for the marketing pages come along
+with it. The migration takes about fifteen minutes and is reversible by putting
+the old nameservers back, so there is little reason not to.
+
+### 6b. Request certificates
 
 ```bash
 fly certs add mydivelog.app           --app mydivelog-web-prod
@@ -213,17 +249,40 @@ fly certs add api.dev.mydivelog.app   --app mydivelog-api-dev
 fly certs add admin.dev.mydivelog.app --app mydivelog-admin-dev
 ```
 
-Each command prints the DNS records to create. In Cloudflare add them as
-**CNAME to `<app>.fly.dev`**, or A/AAAA to the printed addresses for the apex.
+Each command prints the DNS records it wants.
 
-Set the proxy status to **DNS only (grey cloud)** until `fly certs show` reports
-the certificate as issued. Cloudflare's proxy intercepts the HTTP-01 validation
-and the certificate never issues — this is the single most common way this step
-stalls. Turn the proxy on afterwards.
+### 6c. Create the records
 
-Lock down admin while you are in Cloudflare: put both admin hostnames behind
-Cloudflare Access with an email allowlist. The admin app reads across all users
-by design and should never be reachable from the open internet.
+In Cloudflare → DNS, add a **CNAME** per hostname pointing at
+`<app-name>.fly.dev`, apex included — Cloudflare flattens it automatically:
+
+| Name | Target |
+|---|---|
+| `@` | `mydivelog-web-prod.fly.dev` |
+| `www` | `mydivelog-web-prod.fly.dev` |
+| `api` | `mydivelog-api-prod.fly.dev` |
+| `admin` | `mydivelog-admin-prod.fly.dev` |
+| `dev` | `mydivelog-web-dev.fly.dev` |
+| `api.dev` | `mydivelog-api-dev.fly.dev` |
+| `admin.dev` | `mydivelog-admin-dev.fly.dev` |
+
+Fly may also ask for a `_acme-challenge` CNAME per hostname for validation. Add
+those exactly as printed; they can be removed once the certificate is issued.
+
+**Set every record to DNS only (grey cloud) until the certificate issues.** The
+Cloudflare proxy intercepts HTTP-01 validation and the certificate never
+issues — the single most common way this step stalls. Confirm with
+`fly certs show <hostname> --app <app>`, then switch to proxied (orange cloud).
+
+### 6d. Lock down admin
+
+Both admin hostnames go behind Cloudflare Access with an email allowlist —
+Zero Trust → Access → Applications → Self-hosted, covering
+`admin.mydivelog.app` and `admin.dev.mydivelog.app`.
+
+The admin app reads across all users by design. It should never be reachable
+from the open internet, and application-level auth alone is a thinner defense
+than an identity check at the edge.
 
 ---
 
@@ -294,6 +353,8 @@ when nobody is using it is the entire reason for scale-to-zero there.
 | Symptom | Cause |
 |---|---|
 | Certificate stuck "awaiting configuration" | Cloudflare proxy is on. Set DNS-only until issued. |
+| Cloudflare zone will not go Active | Registrar still lists its own nameservers. Check at the registrar, not in Cloudflare. |
+| Email stopped after the nameserver change | MX/TXT records were not carried over. Re-add them in Cloudflare. |
 | `Error: app name already taken` | Fly app names are globally unique. Add a suffix and update the toml. |
 | Deploy succeeds, machine restart-loops | Missing secret. `fly logs --app <app>`. |
 | `FLY_TOKEN_x is not set` | Secret is on the repo rather than the environment, or the name's case is wrong. |

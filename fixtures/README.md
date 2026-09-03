@@ -17,7 +17,7 @@ home location and travel patterns — see `docs/10-security-privacy.md` — so t
 committed fixtures are reduced and shifted:
 
 - Only the overlapping window is kept, plus a few non-overlapping dives on each
-  side, so merge behaviour is still exercised
+  side, so merge behavior is still exercised
 - Waypoint series are downsampled and truncated
 - Coordinates are offset by a fixed random vector, preserving relative geometry
   (so site clustering still works) while not identifying real locations
