@@ -31,7 +31,7 @@ gravity) and Stripe (billing history) — both chosen as boring, portable, stand
 | `admin.mydivelog.app` | Admin panel (Cloudflare Access, IP-restricted) |
 | `cdn.mydivelog.app` | R2 public bucket for avatars/site photos |
 | `status.mydivelog.app` | Better Stack status page |
-| `dev.mydivelog.app`, `api.dev.…` | Dev |
+| `dev.mydivelog.app`, `api-dev.…`, `admin-dev.…` | Dev — single-level names; Universal SSL covers one wildcard level |
 
 Cloudflare proxied, TLS 1.2+, HSTS with preload once stable.
 

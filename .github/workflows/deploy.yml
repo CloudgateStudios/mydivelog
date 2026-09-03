@@ -112,9 +112,9 @@ jobs:
             base_web="https://mydivelog.app"
             base_admin="https://admin.mydivelog.app"
           else
-            base_api="https://api.dev.mydivelog.app"
+            base_api="https://api-dev.mydivelog.app"
             base_web="https://dev.mydivelog.app"
-            base_admin="https://admin.dev.mydivelog.app"
+            base_admin="https://admin-dev.mydivelog.app"
           fi
           fail=0
           check() {

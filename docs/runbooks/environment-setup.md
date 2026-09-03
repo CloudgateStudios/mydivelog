@@ -31,8 +31,20 @@ Fixed conventions the config files already assume. Deviating means editing
 | Neon project | `mydivelog-dev` | `mydivelog-prod` |
 | R2 buckets | `mydivelog-{uploads,profiles,exports}-dev` | `…-prod` |
 | Web | `dev.mydivelog.app` | `mydivelog.app` |
-| API | `api.dev.mydivelog.app` | `api.mydivelog.app` |
-| Admin | `admin.dev.mydivelog.app` | `admin.mydivelog.app` |
+| API | `api-dev.mydivelog.app` | `api.mydivelog.app` |
+| Admin | `admin-dev.mydivelog.app` | `admin.mydivelog.app` |
+
+> **Dev hostnames use a hyphen, not a second dot.** `api-dev.mydivelog.app`,
+> never `api.dev.mydivelog.app`. Cloudflare's Universal SSL certificate covers
+> `mydivelog.app` and `*.mydivelog.app` — **one wildcard level**. A two-level
+> name like `api.dev.mydivelog.app` is not covered, so Cloudflare has no
+> certificate to present and aborts the TLS handshake with
+> `sslv3 alert handshake failure`, before the request ever reaches Fly. Fly's
+> own certificate is issued and valid; the edge is what fails, which makes this
+> confusing to debug.
+>
+> Covering two-level names needs Cloudflare Advanced Certificate Manager at $10
+> a month. Hyphens are free.
 
 ---
 
@@ -146,7 +158,7 @@ done
 
 for svc in web admin; do
   fly secrets set --app "mydivelog-${svc}-dev" \
-    API_URL="https://api.dev.mydivelog.app"
+    API_URL="https://api-dev.mydivelog.app"
 done
 ```
 
@@ -285,8 +297,8 @@ fly certs add api.mydivelog.app       --app mydivelog-api-prod
 fly certs add admin.mydivelog.app     --app mydivelog-admin-prod
 
 fly certs add dev.mydivelog.app       --app mydivelog-web-dev
-fly certs add api.dev.mydivelog.app   --app mydivelog-api-dev
-fly certs add admin.dev.mydivelog.app --app mydivelog-admin-dev
+fly certs add api-dev.mydivelog.app   --app mydivelog-api-dev
+fly certs add admin-dev.mydivelog.app --app mydivelog-admin-dev
 ```
 
 Each command prints the DNS records it wants.
@@ -330,7 +342,7 @@ redirects to HTTPS.
 
 Both admin hostnames go behind Cloudflare Access with an email allowlist —
 Zero Trust → Access → Applications → Self-hosted, covering
-`admin.mydivelog.app` and `admin.dev.mydivelog.app`.
+`admin.mydivelog.app` and `admin-dev.mydivelog.app`.
 
 The admin app reads across all users by design. It should never be reachable
 from the open internet, and application-level auth alone is a thinner defense
@@ -378,9 +390,9 @@ done
 Confirm:
 
 ```bash
-curl https://api.dev.mydivelog.app/health
+curl https://api-dev.mydivelog.app/health
 curl https://dev.mydivelog.app/api/health
-curl https://admin.dev.mydivelog.app/api/health
+curl https://admin-dev.mydivelog.app/api/health
 # each: {"status":"ok","service":"<name>",...}
 ```
 
@@ -449,6 +461,7 @@ when nobody is using it is the entire reason for scale-to-zero there.
 | "An A, AAAA, or CNAME record with that host already exists" | Either the old registrar's record survived the zone scan, or A/AAAA records already exist and a CNAME is being added alongside. A CNAME cannot share a name with anything. |
 | Certificates never issue although DNS looks right | Records are Proxied. Grey-cloud all of them until `fly certs check` reports issued. |
 | Redirect loop once the proxy is enabled | SSL/TLS is Flexible. Set Full (strict). |
+| `sslv3 alert handshake failure` on a dev hostname | A two-level name such as `api.dev.mydivelog.app`. Universal SSL covers one wildcard level only — use `api-dev.mydivelog.app`. |
 | Cloudflare zone will not go Active | Registrar still lists its own nameservers. Check at the registrar, not in Cloudflare. |
 | Email stopped after the nameserver change | MX/TXT records were not carried over. Re-add them in Cloudflare. |
 | `Error: app name already taken` | Fly app names are globally unique. Add a suffix and update the toml. |
