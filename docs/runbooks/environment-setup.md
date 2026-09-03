@@ -340,31 +340,71 @@ than an identity check at the edge.
 
 ## Step 7 — First deploy
 
-Deploy dev by hand once, so a failure is easier to read than through Actions:
+**Run everything below from the repository root**, on a checkout that contains
+`infra/fly/` and the app Dockerfiles.
+
+The trailing `.` is the Docker build context, and it has to be the workspace
+root: each Dockerfile copies `pnpm-lock.yaml`, `pnpm-workspace.yaml` and
+`packages/domain` to resolve workspace dependencies. Running from inside
+`apps/api/` fails, because Docker cannot reach above its context. That is also
+why `--config` and `--dockerfile` are repo-relative rather than living beside
+each app.
+
+Deploy one service by hand first — a failure is far easier to read here than in
+Actions:
 
 ```bash
-fly deploy . --config infra/fly/api.dev.toml \
-  --dockerfile apps/api/Dockerfile --app mydivelog-api-dev
+fly deploy . \
+  --config infra/fly/api.dev.toml \
+  --dockerfile apps/api/Dockerfile \
+  --app mydivelog-api-dev
 ```
 
-Then the rest, and confirm:
+The first build takes several minutes: Fly provisions a builder machine and
+nothing is cached yet. Later builds reuse both.
+
+Then the other three:
+
+```bash
+for svc in worker web admin; do
+  echo "=== ${svc} ==="
+  fly deploy . \
+    --config "infra/fly/${svc}.dev.toml" \
+    --dockerfile "apps/${svc}/Dockerfile" \
+    --app "mydivelog-${svc}-dev" || break
+done
+```
+
+Confirm:
 
 ```bash
 curl https://api.dev.mydivelog.app/health
-# {"status":"ok","service":"api","version":"0.0.0","uptimeSeconds":3}
+curl https://dev.mydivelog.app/api/health
+curl https://admin.dev.mydivelog.app/api/health
+# each: {"status":"ok","service":"<name>",...}
 ```
 
 **Check the `service` field, not just the status code.** During Phase 0 a health
 check appeared to pass while actually hitting an unrelated service on a shared
 port. Every endpoint names itself so that cannot happen silently.
 
-After that, GitHub Actions takes over:
+The worker is not public by design. Check it with
+`fly status --app mydivelog-worker-dev` and confirm its health check passes, or
+`fly logs --app mydivelog-worker-dev`.
+
+Prod is the same commands with `prod` substituted, but there is no need to run
+them by hand — once dev is proven, use Actions.
+
+### Handing over to CI
 
 - **dev** — automatic on every push to `main`
 - **prod** — Actions → Deploy → Run workflow → choose `prod`, then approve
 
 The `services` input takes a comma-separated list (`api,worker`) to redeploy
-part of the stack.
+part of the stack rather than all four.
+
+Both require the deploy workflow to be on `main`, so merge the branch carrying
+it before expecting pushes to deploy anything.
 
 ---
 
