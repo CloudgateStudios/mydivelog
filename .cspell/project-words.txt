@@ -44,6 +44,7 @@ PITR          # point-in-time recovery
 WCAG
 
 # --- Vendors and hostnames -------------------------------------------------
+Dockerfiles   # cspell knows "Dockerfile" but not the plural
 Namecheap
 cloudflarestorage   # part of the R2 endpoint hostname
 
