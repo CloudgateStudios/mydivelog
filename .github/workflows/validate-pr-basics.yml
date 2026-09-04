@@ -48,7 +48,12 @@ jobs:
       # Must precede setup-node: its pnpm cache resolves the store location by
       # running `pnpm store path`, which needs pnpm already on PATH. The version
       # comes from the `packageManager` field in package.json.
+      # standalone: the runner ships pnpm 11 and packageManager pins 10, so the
+      # default path runs `npm install` to downgrade — which took three minutes.
+      # A standalone binary download does the same job in seconds.
       - uses: pnpm/action-setup@v6
+        with:
+          standalone: true
 
       - uses: actions/setup-node@v7
         with:
