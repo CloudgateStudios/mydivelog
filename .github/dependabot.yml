@@ -115,6 +115,14 @@ updates:
       base-images:
         patterns:
           - '*'
+    ignore:
+      # Held at the LTS major that CI tests against. A bump to node:26 removed
+      # corepack, broke every image, and reached the deploy because CI did not
+      # build containers at the time. Moving Node majors means moving CI, the
+      # engines field and production together — a decision, not an update.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
 
   # --- Local development stack ---------------------------------------------
   # Postgres and MinIO in docker-compose.yml. These never reach production —

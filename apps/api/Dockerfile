@@ -6,9 +6,15 @@
 # The build context is the whole workspace because the API depends on workspace
 # packages that pnpm resolves by path.
 
-FROM node:26-alpine AS base
-RUN corepack enable
+FROM node:24-alpine AS base
 WORKDIR /repo
+# pnpm is installed directly rather than through corepack: corepack is being
+# unbundled from Node and is already absent from node:26, which broke the image
+# build the moment the base tag moved. The version is read from packageManager
+# so it cannot drift from what the workspace expects.
+COPY package.json ./
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")" \
+    && pnpm --version
 
 # --- dependencies ----------------------------------------------------------
 # Manifests are copied before sources so this layer caches across code changes.
@@ -30,7 +36,7 @@ RUN pnpm --filter @mydivelog/api build
 RUN pnpm --filter @mydivelog/api --prod --legacy deploy /out
 
 # --- runtime ---------------------------------------------------------------
-FROM node:26-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 

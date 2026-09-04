@@ -1,9 +1,15 @@
 # syntax=docker/dockerfile:1
 # Built from the repository root: docker build -f apps/worker/Dockerfile .
 
-FROM node:26-alpine AS base
-RUN corepack enable
+FROM node:24-alpine AS base
 WORKDIR /repo
+# pnpm is installed directly rather than through corepack: corepack is being
+# unbundled from Node and is already absent from node:26, which broke the image
+# build the moment the base tag moved. The version is read from packageManager
+# so it cannot drift from what the workspace expects.
+COPY package.json ./
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")" \
+    && pnpm --version
 
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -19,7 +25,7 @@ COPY apps/worker apps/worker
 RUN pnpm --filter @mydivelog/worker build
 RUN pnpm --filter @mydivelog/worker --prod --legacy deploy /out
 
-FROM node:26-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
