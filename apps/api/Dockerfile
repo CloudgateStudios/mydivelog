@@ -37,6 +37,9 @@ COPY apps/api apps/api
 # `...` builds the package's workspace dependencies first. The API imports
 # @mydivelog/db, /contracts and /domain, and tsc resolves them through their
 # built output rather than their source.
+# The Prisma client is generated, not committed, so it has to exist before
+# packages/db compiles. Turbo sequences this outside Docker; here it is explicit.
+RUN pnpm --filter @mydivelog/db generate
 RUN pnpm --filter @mydivelog/api... build
 # Produces a self-contained directory with production dependencies only, with
 # workspace links resolved into real files.
