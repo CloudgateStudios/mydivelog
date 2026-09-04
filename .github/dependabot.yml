@@ -64,6 +64,23 @@ updates:
           - cspell
           - '@cspell/*'
           - '@types/node'
+    ignore:
+      # TypeScript 7 only. typescript-eslint 8.69.0 declares
+      # `typescript: ">=4.8.4 <6.1.0"`, which admits 6.0.x and excludes 7 — so
+      # this blocks 7 and above rather than every major. Adopting 7 today means
+      # dropping typescript-eslint, and with it the rule keeping packages/domain
+      # free of I/O, which is a Phase 1 acceptance criterion. Lift this when
+      # typescript-eslint ships support.
+      - dependency-name: typescript
+        versions:
+          - '>=7'
+      # @types/node must match the runtime: Node 24 in CI, in engines, and in
+      # the base images. Types ahead of the runtime let code compile against
+      # APIs that are not there at execution — a failure that lands in
+      # production rather than in CI.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
       # No dependency-type catch-alls. They partition updates into separate
       # production and development runs, which split @prisma/client (a runtime
       # dependency) from prisma (a dev tool) despite both matching the prisma

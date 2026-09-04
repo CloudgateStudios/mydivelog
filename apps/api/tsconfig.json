@@ -1,19 +1,23 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"],
-    // NestJS dependency injection reads design:paramtypes at runtime, so
-    // decorator metadata must be emitted. This is why the API builds with tsc
-    // via the Nest CLI rather than esbuild, which cannot emit it.
+    "types": [
+      "node"
+    ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "isolatedModules": false,
     "exactOptionalPropertyTypes": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "dist"
+  ]
 }
