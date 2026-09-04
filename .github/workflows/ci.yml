@@ -62,6 +62,68 @@ jobs:
       - run: pnpm build
       - run: pnpm format:check
 
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    # A real Postgres, because these tests exist to check things a fake cannot:
+    # that revert restores a dive from provenance rows that survived in the
+    # database, and that a partial unique index actually rejects a duplicate.
+    # Asserting those against a mock proves only that the mock agrees with me.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mydivelog
+          POSTGRES_PASSWORD: mydivelog
+          POSTGRES_DB: mydivelog
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U mydivelog -d mydivelog"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://mydivelog:mydivelog@127.0.0.1:5432/mydivelog
+      DIRECT_DATABASE_URL: postgresql://mydivelog:mydivelog@127.0.0.1:5432/mydivelog
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare --activate
+          pnpm --version
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Generates the Prisma client and builds @mydivelog/db's workspace
+      # dependencies. Both are prerequisites the first version of this job
+      # left out, because a developer machine always has them already — the
+      # generated client is gitignored and the domain package's dist is a
+      # build artifact, so a clean checkout has neither.
+      - name: Build dependencies and generate the client
+        run: pnpm turbo run build --filter=@mydivelog/db...
+
+      # The same command the Fly release command runs, against a fresh
+      # database. A migration that only works on an already-migrated database
+      # passes locally forever and fails on the first real deploy.
+      - name: Apply migrations
+        run: pnpm --filter @mydivelog/db db:deploy
+
+      - name: Run integration tests
+        run: pnpm --filter @mydivelog/db test:integration
+
   images:
     name: Container images
     runs-on: ubuntu-latest
