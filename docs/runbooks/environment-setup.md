@@ -340,13 +340,43 @@ redirects to HTTPS.
 
 ### 6e. Lock down admin
 
-Both admin hostnames go behind Cloudflare Access with an email allowlist —
-Zero Trust → Access → Applications → Self-hosted, covering
-`admin.mydivelog.app` and `admin-dev.mydivelog.app`.
-
 The admin app reads across all users by design. It should never be reachable
 from the open internet, and application-level auth alone is a thinner defense
 than an identity check at the edge.
+
+Zero Trust → Access → Applications → **Add an application** → *Self-hosted*:
+
+1. **Destinations** — two public hostnames, no path, so the whole app is
+   covered:
+   - `admin` . `mydivelog.app`
+   - `admin-dev` . `mydivelog.app`
+2. **Access policies** — *Create new policy*. **This is required.** Policies are
+   default-deny, so an application with none admits nobody, yourself included.
+   - Action: **Allow**
+   - Include: **Emails** → your address, or **Emails ending in** → your domain
+3. **Authentication** — "Accept all available identity providers" is fine. The
+   identity provider decides *how* someone proves who they are; the policy
+   decides *who* is allowed. Confirm at least one provider exists under
+   Settings → Authentication; One-time PIN is enabled by default and pairs well
+   with an email allowlist.
+4. **Session Duration** — 24 hours is reasonable.
+
+Verify from a browser with no session, or:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' https://admin.mydivelog.app/
+```
+
+A `302` toward `cloudflareaccess.com` means Access is enforcing. A `200` means
+it is not, whatever the dashboard shows.
+
+> **This changes what CI expects.** With Access enabled, `admin/api/health` no
+> longer returns JSON to an anonymous client, so the deploy smoke test asserts
+> the *opposite* for admin: that it answers with an Access challenge rather than
+> its health payload. That check fails loudly if Access is ever removed, which
+> makes it a standing guard rather than a one-off verification. Whether admin is
+> genuinely healthy is covered by Fly's own machine check, which gates the
+> rolling deploy.
 
 ---
 
@@ -429,7 +459,8 @@ it before expecting pushes to deploy anything.
 - [ ] `dev` and `prod` GitHub Environments each hold four `FLY_TOKEN_*` secrets
 - [ ] `prod` requires a reviewer and is restricted to `main`
 - [ ] All seven certificates issued
-- [ ] Both admin hostnames behind Cloudflare Access
+- [ ] Both admin hostnames behind Cloudflare Access, with an Allow policy attached
+- [ ] `curl https://admin.mydivelog.app/` returns an Access challenge, not 200
 - [ ] Pushing to `main` deploys dev automatically
 - [ ] A manual prod run waits for approval before doing anything
 - [ ] All three public health endpoints return their own service name

@@ -46,6 +46,7 @@ WCAG
 # --- Vendors and hostnames -------------------------------------------------
 Dockerfiles   # cspell knows "Dockerfile" but not the plural
 Namecheap
+cloudflareaccess    # part of the Access login hostname
 cloudflarestorage   # part of the R2 endpoint hostname
 
 # --- Platform and library names -------------------------------------------

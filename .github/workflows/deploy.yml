@@ -128,9 +128,28 @@ jobs:
               fail=1
             fi
           }
-          check api   "$base_api/health"        api
-          check web   "$base_web/api/health"    web
-          check admin "$base_admin/api/health"  admin
+          check api "$base_api/health"     api
+          check web "$base_web/api/health" web
+
+          # Admin sits behind Cloudflare Access, so it must NOT answer publicly.
+          # Asserting the challenge is a stronger check than a 200 would be: it
+          # proves both that the hostname routes and that Access is still
+          # enforcing. Whether admin is actually healthy is already gated by
+          # Fly's own check, which blocks the rolling deploy above.
+          admin_url="$base_admin/api/health"
+          admin_out=$(curl -sS -o /tmp/admin.txt -w '%{http_code} %{redirect_url}' \
+            --max-time 20 --retry 3 --retry-delay 5 "$admin_url" 2>/dev/null || echo "000 ")
+          admin_body=$(head -c 400 /tmp/admin.txt 2>/dev/null || true)
+          if printf '%s' "$admin_body" | grep -q '"service":"admin"'; then
+            echo "::error::$admin_url served its health payload publicly — Cloudflare Access is not protecting admin"
+            fail=1
+          elif printf '%s %s' "$admin_out" "$admin_body" | grep -qiE 'cloudflareaccess|/cdn-cgi/access|^(302|401|403) '; then
+            echo "ok   admin -> Access challenge ($admin_out)"
+          else
+            echo "::error::$admin_url gave neither a health payload nor an Access challenge: $admin_out"
+            fail=1
+          fi
+
           # The worker is deliberately not public; Fly's own machine check
           # covers it and a failing check blocks the rolling deploy above.
           exit $fail
