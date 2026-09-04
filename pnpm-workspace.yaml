@@ -1,7 +1,19 @@
-# Workspace packages. These directories are created in Phase 0 of the
-# implementation plan; pnpm simply finds nothing until then.
-#
-# apps/mobile is the Flutter app and has no package.json, so pnpm skips it.
+# Workspace packages. apps/mobile is the Flutter app and has no package.json,
+# so pnpm skips it.
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# pnpm 11 reads these here rather than from package.json's "pnpm" field, and
+# wants an explicit decision per package rather than an allow-list.
+#
+# Each of these fetches or builds a platform binary in its postinstall. Blocking
+# them does not fail the install — it fails later and less clearly, when vitest
+# cannot find esbuild or Prisma cannot find its query engine.
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Digital dive logbook — https://mydivelog.app",
   "license": "UNLICENSED",
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "dev": "pnpm services:up && turbo dev",
     "build": "turbo build",
@@ -47,13 +47,6 @@
     ],
     "*.{ts,tsx}": [
       "eslint --fix"
-    ]
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
     ]
   }
 }

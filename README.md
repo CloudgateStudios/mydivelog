@@ -8,7 +8,7 @@ computer apps, vendor clouds — into one history they can trust and take with t
 
 ## Quick start
 
-Requires [Node 24+](https://nodejs.org), [pnpm 10+](https://pnpm.io), and Docker.
+Requires [Node 24+](https://nodejs.org), [pnpm 11+](https://pnpm.io), and Docker.
 
 ```bash
 pnpm install
