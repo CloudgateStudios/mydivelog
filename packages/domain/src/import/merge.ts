@@ -207,6 +207,13 @@ export function resolveField<T>(
     return appendNotes(fieldPath, present as readonly Contribution<string>[]) as FieldResolution<T>;
   }
 
+  if (UNION_FIELDS.has(fieldPath)) {
+    return unionValues(
+      fieldPath,
+      present as readonly Contribution<unknown[]>[],
+    ) as FieldResolution<T>;
+  }
+
   const sorted = [...present].sort((a, b) => {
     const byRank = rank(fieldPath, a) - rank(fieldPath, b);
     if (byRank !== 0) return byRank;
@@ -231,6 +238,60 @@ export function resolveField<T>(
       sourceId: c.sourceId,
       value: c.value,
       isSelected: c.sourceId === winner.sourceId,
+      confidence: 1,
+    })),
+  };
+}
+
+/**
+ * Fields where two sources are adding to each other rather than disagreeing.
+ *
+ * A tag is not a measurement. If the spreadsheet says a dive was from shore
+ * and the computer says it was at night, both are true and the dive is both —
+ * resolving them by precedence discards whichever source the rules happen to
+ * rank lower, which for a `Night` tag is simply losing it.
+ */
+const UNION_FIELDS = new Set(['tags', 'buddies']);
+
+/**
+ * Combines list fields across sources, first-seen order, de-duplicated.
+ *
+ * Every contributing source is marked selected, because every one of them is
+ * part of what the dive shows — the same reasoning as notes.
+ */
+function unionValues(
+  fieldPath: string,
+  contributions: readonly Contribution<unknown[]>[],
+): FieldResolution<unknown[]> {
+  const ordered = [...contributions].sort(
+    (a, b) => a.recordedAt.getTime() - b.recordedAt.getTime(),
+  );
+
+  const seen = new Set<string>();
+  const values: unknown[] = [];
+  for (const c of ordered) {
+    if (!Array.isArray(c.value)) continue;
+    for (const item of c.value) {
+      // Case and punctuation are not meaningful here: `Shore` and `shore` are
+      // one tag, and the taxonomy resolves them to the same row anyway.
+      const key = typeof item === 'string' ? item.trim().toLowerCase() : JSON.stringify(item);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      values.push(item);
+    }
+  }
+
+  const first = ordered[0];
+  return {
+    fieldPath,
+    value: values,
+    ...(first === undefined ? {} : { sourceId: first.sourceId }),
+    contested: false,
+    provenance: ordered.map((c) => ({
+      fieldPath,
+      sourceId: c.sourceId,
+      value: c.value,
+      isSelected: true,
       confidence: 1,
     })),
   };

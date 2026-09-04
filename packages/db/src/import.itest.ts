@@ -215,6 +215,203 @@ describe('commit is idempotent', () => {
   });
 });
 
+describe('sites and tags', () => {
+  const withSite = (over: Record<string, unknown> = {}): CommitRow =>
+    sheetRow({
+      fields: {
+        ...sheetRow().fields,
+        'site.name': 'Angel City',
+        tags: ['Shore', 'Night'],
+        ...over,
+      },
+    });
+
+  it('creates a site from the name and attaches the dive to it', async () => {
+    const b = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, b, [withSite()]);
+    const dive = await diveOf(created[0] as string);
+    expect(dive.siteId).not.toBeNull();
+    const site = await prisma.site.findUniqueOrThrow({ where: { id: dive.siteId as string } });
+    expect(site.name).toBe('Angel City');
+    expect(site.isPublic).toBe(false);
+    expect(site.latitude).toBeNull();
+  });
+
+  it('gives a named site the coordinates a later source brings', async () => {
+    // The point of the whole phase, at the site level: the spreadsheet named
+    // it and the watch knows where it is.
+    const sheet = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, sheet, [withSite()]);
+    const diveId = created[0] as string;
+
+    const watch = await batch('uddf');
+    await repo.commit(scope, watch, [
+      watchRow(diveId, {
+        fields: { ...watchRow(diveId).fields, 'site.lat': 12.1, 'site.lon': -68.29 },
+      }),
+    ]);
+
+    const dive = await diveOf(diveId);
+    const site = await prisma.site.findUniqueOrThrow({ where: { id: dive.siteId as string } });
+    expect(site.name).toBe('Angel City');
+    expect(site.latitude).toBeCloseTo(12.1, 6);
+    expect(site.longitude).toBeCloseTo(-68.29, 6);
+  });
+
+  it('reuses one site across dives rather than creating one per dive', async () => {
+    // The seed UDDF creates a fresh site record for every dive; without
+    // clustering, one reef becomes 96 sites.
+    const b = await batch('uddf');
+    const { created } = await repo.commit(scope, b, [
+      withSite({ 'site.lat': 12.1, 'site.lon': -68.29 }),
+      sheetRow({
+        rowIndex: 1,
+        fields: {
+          ...sheetRow().fields,
+          'site.name': 'Angel City',
+          'site.lat': 12.10018,
+          'site.lon': -68.29,
+        },
+      }),
+    ]);
+    const dives = await Promise.all(created.map(diveOf));
+    expect(new Set(dives.map((d) => d.siteId)).size).toBe(1);
+    expect(await prisma.site.count({ where: { ownerUserId: userId } })).toBe(1);
+  });
+
+  it('records a new spelling as an alias', async () => {
+    const first = await batch('spreadsheet');
+    await repo.commit(scope, first, [withSite({ 'site.name': '1,000 Steps' })]);
+    const second = await batch('spreadsheet');
+    await repo.commit(scope, second, [
+      sheetRow({
+        fields: {
+          ...sheetRow().fields,
+          'site.name': '1000 Steps',
+          startTimeUtc: new Date('2026-03-07T10:00:00Z'),
+        },
+      }),
+    ]);
+
+    expect(await prisma.site.count({ where: { ownerUserId: userId } })).toBe(1);
+    const aliases = await prisma.siteAlias.findMany();
+    expect(aliases.map((a) => a.name)).toContain('1000 Steps');
+  });
+
+  it('does not merge two genuinely different sites', async () => {
+    const b = await batch('spreadsheet');
+    await repo.commit(scope, b, [
+      withSite({ 'site.name': 'Angel City' }),
+      sheetRow({
+        rowIndex: 1,
+        fields: {
+          ...sheetRow().fields,
+          'site.name': 'Salt Pier',
+          startTimeUtc: new Date('2026-03-07T10:00:00Z'),
+        },
+      }),
+    ]);
+    expect(await prisma.site.count({ where: { ownerUserId: userId } })).toBe(2);
+  });
+
+  it('names a coordinates-only site something a human can rename', async () => {
+    // A watch's site id is not a name. `site_69ab7a96dce6e40c7d3abe65` in the
+    // logbook is worse than an honest placeholder.
+    const b = await batch('uddf');
+    const { created } = await repo.commit(scope, b, [
+      sheetRow({ fields: { ...sheetRow().fields, 'site.lat': 12.1, 'site.lon': -68.29 } }),
+    ]);
+    const dive = await diveOf(created[0] as string);
+    const site = await prisma.site.findUniqueOrThrow({ where: { id: dive.siteId as string } });
+    expect(site.name).toBe('Unnamed site');
+    expect(site.name).not.toMatch(/^site_/);
+  });
+
+  it('attaches the seeded taxonomy rather than duplicating it per user', async () => {
+    // `shore` and `night` are system tags. Creating a private copy for every
+    // diver is how a shared vocabulary stops being shared.
+    const b = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, b, [withSite()]);
+    const tags = await prisma.diveTag.findMany({
+      where: { diveId: created[0] },
+      include: { tag: true },
+    });
+    expect(tags.map((t) => t.tag.slug).sort()).toEqual(['night', 'shore']);
+    expect(tags.every((t) => t.tag.isSystem)).toBe(true);
+    expect(await prisma.tag.count({ where: { userId, slug: 'shore' } })).toBe(0);
+  });
+
+  it('creates a user tag for a word the taxonomy does not have', async () => {
+    const b = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, b, [withSite({ tags: ['Ostracod hunt'] })]);
+    const tags = await prisma.diveTag.findMany({
+      where: { diveId: created[0] },
+      include: { tag: true },
+    });
+    expect(tags[0]?.tag.slug).toBe('ostracod-hunt');
+    expect(tags[0]?.tag.userId).toBe(userId);
+    expect(tags[0]?.tag.isSystem).toBe(false);
+  });
+
+  it('reuses a user tag rather than creating one per dive', async () => {
+    const b = await batch('spreadsheet');
+    await repo.commit(scope, b, [
+      withSite({ tags: ['Ostracod hunt'] }),
+      sheetRow({
+        rowIndex: 1,
+        fields: {
+          ...sheetRow().fields,
+          tags: ['Ostracod hunt'],
+          startTimeUtc: new Date('2026-03-07T10:00:00Z'),
+        },
+      }),
+    ]);
+    expect(await prisma.tag.count({ where: { userId, slug: 'ostracod-hunt' } })).toBe(1);
+  });
+
+  it('unions tags across sources, then removes what a revert takes back', async () => {
+    // Tags are additive: the spreadsheet saying shore and the computer saying
+    // night are both true. Resolving them by precedence loses one.
+    const sheet = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, sheet, [withSite({ tags: ['Shore'] })]);
+    const diveId = created[0] as string;
+
+    const watch = await batch('uddf');
+    await repo.commit(scope, watch, [
+      watchRow(diveId, { fields: { ...watchRow(diveId).fields, tags: ['Night'] } }),
+    ]);
+    expect(await prisma.diveTag.count({ where: { diveId } })).toBe(2);
+
+    await repo.revert(scope, watch);
+    const after = await prisma.diveTag.findMany({ where: { diveId }, include: { tag: true } });
+    expect(after.map((t) => t.tag.slug)).toEqual(['shore']);
+  });
+
+  it('unlinks but does not delete a shared site on revert', async () => {
+    // Sites are shared entities. Deleting one because a batch is reverted
+    // would orphan every other dive that had resolved onto it.
+    const sheet = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, sheet, [withSite()]);
+    const keeper = created[0] as string;
+    const siteId = (await diveOf(keeper)).siteId;
+
+    const second = await batch('spreadsheet');
+    await repo.commit(scope, second, [
+      sheetRow({
+        fields: {
+          ...sheetRow().fields,
+          'site.name': 'Angel City',
+          startTimeUtc: new Date('2026-03-07T10:00:00Z'),
+        },
+      }),
+    ]);
+    await repo.revert(scope, second);
+
+    expect(await prisma.site.findUnique({ where: { id: siteId as string } })).not.toBeNull();
+    expect((await diveOf(keeper)).siteId).toBe(siteId);
+  });
+});
+
 describe('revert', () => {
   it('restores a pre-existing dive to its exact prior state', async () => {
     // The acceptance criterion for the phase. Not "close to" — identical.

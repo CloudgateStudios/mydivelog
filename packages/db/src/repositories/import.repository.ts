@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { mergeDive, selectedValues, type MergedDive } from '@mydivelog/domain';
+import {
+  matchSite,
+  mergeDive,
+  selectedValues,
+  siteCoordinateUpdate,
+  slugify,
+  type ExistingSite,
+  type MergedDive,
+} from '@mydivelog/domain';
 import type { PrismaClient } from '../client.ts';
 import type { UserScope } from '../scope.ts';
 
@@ -173,7 +181,7 @@ export function createImportRepository(prisma: PrismaClient) {
 
           await writeProvenance(tx, diveId, sourceId, row.fields);
           if (row.profile) await writeProfile(tx, diveId, row.profile);
-          await resolve(tx, diveId);
+          await resolve(tx, scope, diveId);
         }
 
         await tx.importBatch.update({
@@ -224,7 +232,7 @@ export function createImportRepository(prisma: PrismaClient) {
             deleted.push(diveId);
             continue;
           }
-          await resolve(tx, diveId);
+          await resolve(tx, scope, diveId);
           restored.push(diveId);
         }
 
@@ -304,7 +312,7 @@ async function writeProfile(tx: Tx, diveId: string, profile: ProfileToStore): Pr
  * wrong: after a revert the dive keeps whatever the removed source had
  * contributed alone, so the record still claims a duration nothing measured.
  */
-async function resolve(tx: Tx, diveId: string): Promise<void> {
+async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> {
   const sources = await tx.diveSource.findMany({
     where: { diveId },
     include: { provenance: true },
@@ -337,7 +345,12 @@ async function resolve(tx: Tx, diveId: string): Promise<void> {
     }
     data[column] = INT_COLUMNS.has(column) ? Math.round(Number(value)) : value;
   }
+  // Sites and tags are shared, deduplicated entities rather than columns, so
+  // they resolve here too — inside the same recomputation, which is what makes
+  // revert undo them as exactly as it undoes a scalar.
+  data['siteId'] = await resolveSite(tx, scope, values);
   await tx.dive.update({ where: { id: diveId }, data: data as never });
+  await resolveTags(tx, scope, diveId, values['tags']);
 
   // Mark which assertion each field is currently showing, so the UI can say
   // where a value came from without recomputing the merge.
@@ -388,4 +401,144 @@ function deserialize(_fieldPath: string, value: unknown): unknown {
     );
   }
   return value;
+}
+
+/**
+ * Finds or creates the site a dive belongs to.
+ *
+ * Only the diver's own sites are considered. The shared site database is
+ * seeded by promoting well-attested private sites, not by letting one
+ * person's import silently attach to a stranger's record — a name like
+ * `Blue Hole` would otherwise merge four continents into one place.
+ */
+async function resolveSite(
+  tx: Tx,
+  scope: UserScope,
+  values: Record<string, unknown>,
+): Promise<string | null> {
+  const name = typeof values['site.name'] === 'string' ? values['site.name'] : undefined;
+  const lat = typeof values['site.lat'] === 'number' ? values['site.lat'] : undefined;
+  const lon = typeof values['site.lon'] === 'number' ? values['site.lon'] : undefined;
+  if (name === undefined && lat === undefined) return null;
+
+  const owned = await tx.site.findMany({
+    where: { ownerUserId: scope.userId, deletedAt: null },
+    include: { aliases: true },
+  });
+  const candidates: ExistingSite[] = owned.map((site) => ({
+    id: site.id,
+    name: site.name,
+    ...(site.latitude === null ? {} : { lat: site.latitude }),
+    ...(site.longitude === null ? {} : { lon: site.longitude }),
+    ...(site.regionId === null ? {} : { regionId: site.regionId }),
+    aliases: site.aliases.map((a) => a.name),
+  }));
+
+  const match = matchSite(
+    {
+      ...(name === undefined ? {} : { name }),
+      ...(lat === undefined ? {} : { lat }),
+      ...(lon === undefined ? {} : { lon }),
+    },
+    candidates,
+  );
+
+  if (match) {
+    const existing = owned.find((s) => s.id === match.siteId);
+    if (existing) {
+      // A site the spreadsheet named gains the watch's coordinates here. This
+      // is the moment a site becomes both named and located.
+      const coords = siteCoordinateUpdate(
+        {
+          ...(existing.latitude === null ? {} : { lat: existing.latitude }),
+          ...(existing.longitude === null ? {} : { lon: existing.longitude }),
+        },
+        { ...(lat === undefined ? {} : { lat }), ...(lon === undefined ? {} : { lon }) },
+      );
+      if (coords) {
+        await tx.site.update({
+          where: { id: existing.id },
+          data: { latitude: coords.lat, longitude: coords.lon },
+        });
+      }
+      // Every spelling seen becomes an alias, which is how `1,000 Steps`,
+      // `Thousand Steps` and `1000 Steps` converge instead of being guessed
+      // at again on every import.
+      if (name !== undefined && slugify(name) !== slugify(existing.name)) {
+        await tx.siteAlias.upsert({
+          where: { siteId_name: { siteId: existing.id, name } },
+          create: { id: randomUUID(), siteId: existing.id, name, source: 'import' },
+          update: {},
+        });
+      }
+    }
+    return match.siteId;
+  }
+
+  const id = randomUUID();
+  await tx.site.create({
+    data: {
+      id,
+      // A dive computer's site has coordinates and no name worth keeping, so
+      // it gets a placeholder a human can rename rather than an opaque id.
+      name: name ?? 'Unnamed site',
+      ownerUserId: scope.userId,
+      isPublic: false,
+      latitude: lat ?? null,
+      longitude: lon ?? null,
+    },
+  });
+  return id;
+}
+
+/**
+ * Attaches the dive's tags, creating user tags for anything the seeded
+ * taxonomy does not cover.
+ *
+ * Replaces rather than adds: like every other field, a dive's tags are a
+ * function of its surviving sources, so a revert removes the ones that batch
+ * contributed without touching the rest.
+ */
+async function resolveTags(
+  tx: Tx,
+  scope: UserScope,
+  diveId: string,
+  value: unknown,
+): Promise<void> {
+  const names = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+
+  const tagIds: string[] = [];
+  for (const name of names) {
+    const slug = slugify(name);
+    if (slug === '') continue;
+
+    const system = await tx.tag.findFirst({ where: { slug, isSystem: true } });
+    if (system) {
+      tagIds.push(system.id);
+      continue;
+    }
+    const own = await tx.tag.findUnique({ where: { userId_slug: { userId: scope.userId, slug } } });
+    if (own) {
+      tagIds.push(own.id);
+      continue;
+    }
+    const created = await tx.tag.create({
+      data: {
+        id: randomUUID(),
+        slug,
+        label: name.trim(),
+        category: 'activity',
+        isSystem: false,
+        userId: scope.userId,
+      },
+    });
+    tagIds.push(created.id);
+  }
+
+  await tx.diveTag.deleteMany({ where: { diveId } });
+  if (tagIds.length > 0) {
+    await tx.diveTag.createMany({
+      data: [...new Set(tagIds)].map((tagId) => ({ diveId, tagId })),
+    });
+  }
 }
