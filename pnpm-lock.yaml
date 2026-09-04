@@ -186,6 +186,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@mydivelog/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@prisma/adapter-pg':
         specifier: ^7.10.0
         version: 7.10.0
@@ -199,9 +202,6 @@ importers:
         specifier: ^7.10.0
         version: 7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
     devDependencies:
-      '@mydivelog/domain':
-        specifier: workspace:*
-        version: link:../domain
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
