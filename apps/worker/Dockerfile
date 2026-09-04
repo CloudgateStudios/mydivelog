@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Built from the repository root: docker build -f apps/worker/Dockerfile .
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable
 WORKDIR /repo
 
@@ -19,7 +19,7 @@ COPY apps/worker apps/worker
 RUN pnpm --filter @mydivelog/worker build
 RUN pnpm --filter @mydivelog/worker --prod --legacy deploy /out
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules

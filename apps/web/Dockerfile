@@ -4,7 +4,7 @@
 # Relies on Next.js `output: 'standalone'`, which traces the files actually
 # used and emits a server that needs no node_modules install at runtime.
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable
 WORKDIR /repo
 
@@ -19,7 +19,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY apps/web apps/web
 RUN pnpm --filter @mydivelog/web build
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
