@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HealthController } from './health.controller';
+import { HealthController } from './health.controller.ts';
 
 describe('HealthController', () => {
   it('reports ok with the service identity', () => {
