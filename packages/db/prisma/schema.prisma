@@ -17,10 +17,11 @@ generator client {
   runtime      = "nodejs"
 }
 
+// Prisma 7 no longer accepts `url` or `directUrl` here. The CLI reads the
+// connection string from prisma.config.ts; the client is constructed with a
+// driver adapter. See packages/db/src/client.ts.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+  provider = "postgresql"
 }
 
 // ---------------------------------------------------------------------------

@@ -9,9 +9,9 @@
  *   pnpm db:demo
  */
 import { randomUUID } from 'node:crypto';
-import { PrismaClient } from '../src/generated/client.ts';
+import { createPrismaClient } from '../src/client.ts';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const DEMO_EMAIL = 'demo@mydivelog.invalid';
 
 // Spreadsheet row 195 and UDDF dive_69ab7a96… are the same dive. Each source

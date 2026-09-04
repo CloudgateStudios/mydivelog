@@ -64,10 +64,13 @@ updates:
           - cspell
           - '@cspell/*'
           - '@types/node'
-      production-dependencies:
-        dependency-type: production
-      development-dependencies:
-        dependency-type: development
+      # No dependency-type catch-alls. They partition updates into separate
+      # production and development runs, which split @prisma/client (a runtime
+      # dependency) from prisma (a dev tool) despite both matching the prisma
+      # group above. That combination does not work: a v7 generator emits a
+      # client that loads the v6 runtime, and every query fails on an undefined
+      # NullTypes. Anything not matched above gets its own pull request, which
+      # is noisier but cannot produce a half-upgraded pair.
 
   # --- GitHub Actions -------------------------------------------------------
   - package-ecosystem: github-actions

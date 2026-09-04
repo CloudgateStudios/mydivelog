@@ -7,9 +7,9 @@
  * described in docs/04-data-model.md; system rows want determinism instead.
  */
 import { createHash } from 'node:crypto';
-import { PrismaClient } from '../src/generated/client.ts';
+import { createPrismaClient } from '../src/client.ts';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 const NAMESPACE = 'mydivelog.app/seed';
 
