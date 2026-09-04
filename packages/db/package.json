@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude \"**/*.itest.ts\"",
     "lint": "eslint src",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -23,7 +23,8 @@
     "db:seed": "node --env-file-if-exists=../../.env --experimental-strip-types prisma/seed.ts",
     "db:studio": "prisma studio",
     "generate": "prisma generate",
-    "db:demo": "node --env-file-if-exists=../../.env --experimental-strip-types prisma/demo.ts"
+    "db:demo": "node --env-file-if-exists=../../.env --experimental-strip-types prisma/demo.ts",
+    "test:integration": "vitest run src/dive-number.itest.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3"
@@ -32,6 +33,7 @@
     "@types/node": "^24.13.3",
     "prisma": "^6.16.1",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@mydivelog/domain": "workspace:*"
   }
 }

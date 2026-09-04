@@ -174,9 +174,19 @@ describe('the schema keeps the promises the data model makes', () => {
     }
   });
 
-  it('does not constrain diveNumber to be unique', () => {
+  it('enforces dive number uniqueness with a partial index, not a constraint', () => {
+    // A plain @@unique would let a soft-deleted dive squat its number forever
+    // and make renumbering collide with tombstones, so the index lives in SQL
+    // and is deliberately absent from the Prisma model.
     const model = schema.match(/\nmodel Dive \{([\s\S]*?)\n\}/)![1] as string;
     expect(model).not.toMatch(/@@unique\(\[userId, diveNumber\]/);
+    expect(model).toMatch(/diveNumber Int(?!\?)/); // required
+
+    const migrations = read(
+      'packages/db/prisma/migrations/20260904013418_dive_number_required/migration.sql',
+    );
+    expect(migrations).toMatch(/CREATE UNIQUE INDEX "dives_userId_diveNumber_live_key"/);
+    expect(migrations).toMatch(/WHERE "deletedAt" IS NULL/);
   });
 
   it('gives every user-owned table a tombstone', () => {

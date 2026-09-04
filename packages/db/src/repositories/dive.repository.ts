@@ -59,8 +59,59 @@ export function createDiveRepository(prisma: PrismaClient) {
       return prisma.dive.findFirst({ where: { ...owned(scope), id } });
     },
 
-    async create(scope: UserScope, data: Omit<Prisma.DiveUncheckedCreateInput, 'userId'>) {
-      return prisma.dive.create({ data: { ...data, userId: scope.userId } });
+    /**
+     * `diveNumber` is required, and most sources do not supply one — the sample
+     * UDDF carries none across 96 dives — so it defaults to the next free
+     * number for this diver.
+     */
+    async create(
+      scope: UserScope,
+      data: Omit<Prisma.DiveUncheckedCreateInput, 'userId' | 'diveNumber'> & {
+        diveNumber?: number;
+      },
+    ) {
+      const diveNumber = data.diveNumber ?? (await this.nextDiveNumber(scope));
+      return prisma.dive.create({ data: { ...data, diveNumber, userId: scope.userId } });
+    },
+
+    /** One past the highest live number, or 1 for a diver's first dive. */
+    async nextDiveNumber(scope: UserScope): Promise<number> {
+      const max = await this.maxDiveNumber(scope);
+      return (max ?? 0) + 1;
+    },
+
+    /**
+     * Applies a renumbering produced by `renumberDives` from @mydivelog/domain.
+     *
+     * Two passes, in one transaction. The uniqueness index is partial — it
+     * excludes soft-deleted rows so a tombstone does not squat its number — and
+     * Postgres cannot defer a partial index, so a single shift collides with
+     * itself row by row. Parking in the negatives first avoids that; live
+     * numbers are always positive.
+     */
+    async applyRenumbering(
+      scope: UserScope,
+      plan: {
+        park: readonly { id: string; diveNumber: number }[];
+        land: readonly { id: string; diveNumber: number }[];
+      },
+    ): Promise<number> {
+      if (plan.land.length === 0) return 0;
+
+      return prisma.$transaction(async (tx) => {
+        for (const { id, diveNumber } of plan.park) {
+          await tx.dive.updateMany({ where: { ...owned(scope), id }, data: { diveNumber } });
+        }
+        let updated = 0;
+        for (const { id, diveNumber } of plan.land) {
+          const r = await tx.dive.updateMany({
+            where: { userId: scope.userId, id },
+            data: { diveNumber, version: { increment: 1 } },
+          });
+          updated += r.count;
+        }
+        return updated;
+      });
     },
 
     async update(
@@ -98,7 +149,7 @@ export function createDiveRepository(prisma: PrismaClient) {
       return prisma.dive.count({ where: owned(scope) });
     },
 
-    /** Highest dive number in use, for suggesting the next one. */
+    /** Highest live dive number in use. */
     async maxDiveNumber(scope: UserScope): Promise<number | null> {
       const row = await prisma.dive.aggregate({
         where: owned(scope),

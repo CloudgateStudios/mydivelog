@@ -6,12 +6,12 @@
 export type NumberableDive = {
   id: string;
   startTimeUtc: Date;
-  diveNumber: number | null;
+  diveNumber: number;
 };
 
 export type Renumbering = {
   id: string;
-  from: number | null;
+  from: number;
   to: number;
 };
 
@@ -19,12 +19,13 @@ export type Renumbering = {
  * Assigns sequential numbers in chronological order.
  *
  * Dive number is a display ordinal, not an identifier (docs/04-data-model.md).
- * The sample workbook contains two rows numbered "x" and 196 distinct values
- * across 197 rows, so any function here has to cope with gaps, duplicates and
- * nulls rather than assume they cannot happen.
+ * It is required and unique per diver among live dives, so sources that carry
+ * no number — the sample UDDF has none across 96 dives — get one assigned here.
  *
- * Returns only the dives whose number actually changes, so a caller can write
- * the minimum number of rows.
+ * Returns only the dives whose number actually changes, so a caller writes the
+ * minimum number of rows. Apply the result with `renumberPlan`, not directly:
+ * the uniqueness index is partial and therefore cannot be deferred, so a naive
+ * shift collides with itself mid-statement.
  */
 export function renumberDives(dives: readonly NumberableDive[], startAt = 1): Renumbering[] {
   if (!Number.isInteger(startAt) || startAt < 0) {
@@ -48,11 +49,32 @@ export function renumberDives(dives: readonly NumberableDive[], startAt = 1): Re
   return changes;
 }
 
+/**
+ * Turns a set of renumberings into the two passes needed to apply them safely.
+ *
+ * The unique index on (userId, diveNumber) is partial — `WHERE deletedAt IS
+ * NULL`, so a soft-deleted dive does not squat its number — and Postgres cannot
+ * defer a partial index. A single `SET diveNumber = diveNumber + 1` therefore
+ * fails partway through, because uniqueness is checked row by row.
+ *
+ * Parking every affected row in the negatives first sidesteps that: live
+ * numbers are positive, so no negative can collide with anything, and the
+ * second pass lands them all on their final values.
+ */
+export function renumberPlan(changes: readonly Renumbering[]): {
+  park: { id: string; diveNumber: number }[];
+  land: { id: string; diveNumber: number }[];
+} {
+  return {
+    park: changes.map((c) => ({ id: c.id, diveNumber: -c.to })),
+    land: changes.map((c) => ({ id: c.id, diveNumber: c.to })),
+  };
+}
+
 /** Numbers that appear more than once. Import surfaces these for review. */
 export function findDuplicateDiveNumbers(dives: readonly NumberableDive[]): number[] {
   const seen = new Map<number, number>();
   for (const d of dives) {
-    if (d.diveNumber === null) continue;
     seen.set(d.diveNumber, (seen.get(d.diveNumber) ?? 0) + 1);
   }
   return [...seen.entries()]

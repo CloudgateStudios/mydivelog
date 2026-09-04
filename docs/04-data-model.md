@@ -160,11 +160,21 @@ model Dive {
 }
 ```
 
-**On `diveNumber`:** a partial unique index `(userId, diveNumber) WHERE deletedAt IS NULL
-AND diveNumber IS NOT NULL` is tempting and should be **avoided at first**. Real imports
-contain duplicate and missing numbers; a hard constraint turns a messy import into a failed
-import. Instead, detect collisions and offer a transactional renumber operation. Revisit
-once import quality is proven.
+**On `diveNumber`:** required, and unique per diver among live dives, enforced by a
+**partial** unique index — `(userId, diveNumber) WHERE deletedAt IS NULL`.
+
+Partial is not a detail. A plain unique constraint lets a soft-deleted dive hold its number
+forever: delete #5, and renumbering #6 down to #5 then fails against the tombstone. Verified
+against Postgres.
+
+Two consequences follow. Prisma cannot express a partial index, so it lives in the migration
+and is deliberately absent from the model — confirmed that Prisma does not then treat it as
+drift. And Postgres cannot defer a partial index, so renumbering cannot rely on
+`SET diveNumber = diveNumber + 1`, which fails row by row; `renumberPlan` parks the affected
+rows in the negatives and lands them in a second pass, inside one transaction.
+
+Because most sources carry no number at all — the sample UDDF has none across 96 dives — the
+importer assigns them chronologically rather than reading them.
 
 **On soft deletes:** every user-owned table needs `deletedAt` tombstones because offline
 clients must learn about deletions. A purge job hard-deletes after the retention window.

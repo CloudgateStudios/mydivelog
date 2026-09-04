@@ -404,11 +404,18 @@ model Dive {
   id     String @id @db.Uuid
   userId String @db.Uuid
 
-  // A user-assigned display ordinal, not an identifier. Real logs contain "x",
-  // duplicates and gaps, and inserting a forgotten dive renumbers everything
-  // after it. Deliberately nullable, and deliberately not uniquely constrained
-  // until import quality is proven — see docs/decisions/README.md (013).
-  diveNumber Int?
+  // A user-assigned display ordinal, not an identifier: inserting a forgotten
+  // dive renumbers everything after it, so nothing may key on this.
+  //
+  // Required and unique per user, enforced by a PARTIAL unique index created in
+  // migration 20260904_dive_number_required — `WHERE deleted_at IS NULL`, which
+  // Prisma cannot express. Partial matters: a plain constraint would let a
+  // soft-deleted dive squat its number forever and make renumbering collide
+  // with tombstones.
+  //
+  // Sources frequently do not carry a number — the sample UDDF has none at all
+  // across 96 dives — so the importer assigns them. See docs/decisions/013.
+  diveNumber Int
 
   // Three time fields, always. Deriving local time from UTC plus a guessed zone
   // loses data, and a source offset can itself be wrong — the sample UDDF

@@ -64,6 +64,7 @@ docs/        The implementation plan
 | `pnpm db:demo`                       | Insert the worked merge example and print it |
 | `pnpm db:studio`                     | Browse the database in a UI |
 | `pnpm db:reset`                      | Drop, re-migrate, re-seed |
+| `pnpm --filter @mydivelog/db test:integration` | Database-backed tests (needs `services:up`) |
 
 ## Seeing the data model work
 

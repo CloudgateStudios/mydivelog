@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeIntervals,
+  renumberPlan,
   findDuplicateDiveNumbers,
   renumberDives,
   summarizeLog,
@@ -20,33 +21,35 @@ describe('renumberDives', () => {
   });
 
   it('renumbers everything after a forgotten dive is inserted', () => {
-    // The reason dive number cannot be an identifier.
+    // The reason dive number cannot be an identifier. The new dive arrives with
+    // a provisional number; everything after it shifts.
     const changes = renumberDives([
       { id: 'a', startTimeUtc: at('2012-06-02T09:00:00Z'), diveNumber: 1 },
-      { id: 'new', startTimeUtc: at('2012-06-03T09:00:00Z'), diveNumber: null },
+      { id: 'new', startTimeUtc: at('2012-06-03T09:00:00Z'), diveNumber: 4 },
       { id: 'b', startTimeUtc: at('2012-06-04T09:00:00Z'), diveNumber: 2 },
       { id: 'c', startTimeUtc: at('2012-06-05T09:00:00Z'), diveNumber: 3 },
     ]);
     expect(changes).toEqual([
-      { id: 'new', from: null, to: 2 },
+      { id: 'new', from: 4, to: 2 },
       { id: 'b', from: 2, to: 3 },
       { id: 'c', from: 3, to: 4 },
     ]);
   });
 
-  it('copes with the unnumbered rows the real workbook contains', () => {
-    // Two rows in the sample spreadsheet are numbered "x", which parses to null.
+  it('assigns numbers for sources that carry none', () => {
+    // The sample UDDF has no dive numbers at all across 96 dives, and two
+    // spreadsheet rows are numbered "x". The importer assigns from 0.
     const changes = renumberDives([
-      { id: 'x1', startTimeUtc: at('2021-09-01T09:00:00Z'), diveNumber: null },
-      { id: 'x2', startTimeUtc: at('2021-09-02T09:00:00Z'), diveNumber: null },
+      { id: 'u1', startTimeUtc: at('2021-09-01T09:00:00Z'), diveNumber: 0 },
+      { id: 'u2', startTimeUtc: at('2021-09-02T09:00:00Z'), diveNumber: 0 },
     ]);
     expect(changes.map((c) => c.to)).toEqual([1, 2]);
   });
 
   it('is deterministic when two dives share a timestamp', () => {
     const dives = [
-      { id: 'bbb', startTimeUtc: at('2012-06-02T09:00:00Z'), diveNumber: null },
-      { id: 'aaa', startTimeUtc: at('2012-06-02T09:00:00Z'), diveNumber: null },
+      { id: 'bbb', startTimeUtc: at('2012-06-02T09:00:00Z'), diveNumber: 7 },
+      { id: 'aaa', startTimeUtc: at('2012-06-02T09:00:00Z'), diveNumber: 8 },
     ];
     expect(renumberDives(dives)).toEqual(renumberDives([...dives].reverse()));
   });
@@ -56,13 +59,37 @@ describe('renumberDives', () => {
   });
 });
 
+describe('renumberPlan', () => {
+  it('parks in the negatives before landing, so a shift cannot collide', () => {
+    // The uniqueness index is partial and so cannot be deferred; a naive
+    // `diveNumber + 1` fails row by row. Verified against Postgres.
+    const changes = renumberDives(
+      [
+        { id: 'a', startTimeUtc: at('2020-01-01T00:00:00Z'), diveNumber: 1 },
+        { id: 'b', startTimeUtc: at('2020-01-02T00:00:00Z'), diveNumber: 2 },
+      ],
+      2,
+    );
+    const plan = renumberPlan(changes);
+
+    expect(plan.park.every((p) => p.diveNumber < 0)).toBe(true);
+    expect(plan.land.map((p) => p.diveNumber)).toEqual([2, 3]);
+    // Same rows in both passes, so nothing is stranded in the negatives.
+    expect(plan.park.map((p) => p.id)).toEqual(plan.land.map((p) => p.id));
+  });
+
+  it('is empty when nothing changes', () => {
+    expect(renumberPlan([])).toEqual({ park: [], land: [] });
+  });
+});
+
 describe('findDuplicateDiveNumbers', () => {
-  it('finds collisions and ignores nulls', () => {
+  it('finds collisions', () => {
     expect(
       findDuplicateDiveNumbers([
         { id: 'a', startTimeUtc: at('2020-01-01T00:00:00Z'), diveNumber: 5 },
         { id: 'b', startTimeUtc: at('2020-01-02T00:00:00Z'), diveNumber: 5 },
-        { id: 'c', startTimeUtc: at('2020-01-03T00:00:00Z'), diveNumber: null },
+        { id: 'c', startTimeUtc: at('2020-01-03T00:00:00Z'), diveNumber: 9 },
       ]),
     ).toEqual([5]);
   });
