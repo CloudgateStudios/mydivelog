@@ -26,15 +26,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # The full Conventional Commits set. build, perf and style were
+          # missing, and build is already in use — "build: upgrade to pnpm 11" —
+          # so a single-commit PR using it would have failed this check, as
+          # would Dependabot's base-image updates.
           types: |
-            fix
-            feat
-            docs
-            refactor
-            test
-            ci
+            build
             chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
             revert
+            style
+            test
           requireScope: false
 
   spellcheck:
