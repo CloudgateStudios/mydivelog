@@ -90,3 +90,8 @@ mydivelog
 # example the import engine's fuzzy-matching is specified against.
 # Do not "fix" these.
 Dift
+
+# --- Import engine ---------------------------------------------------------
+# cspell prefers "unparsable"; this spelling is the more common one and is
+# also an issue code the API returns (unparseable_xml), so it stays.
+unparseable

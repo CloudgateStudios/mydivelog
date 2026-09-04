@@ -344,7 +344,7 @@ function readSiteAndTags(obs: DiveObservation, row: Row, mapping: ColumnMapping)
         issue(
           'info',
           'unknown_water_type',
-          `Water type "${water}" was not recognised.`,
+          `Water type "${water}" was not recognized.`,
           'waterType',
         ),
       );
