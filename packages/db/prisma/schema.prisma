@@ -61,6 +61,8 @@ model User {
   mappingProfiles MappingProfile[]
   subscription   Subscription?
   entitlement    Entitlement?
+  refreshTokens  RefreshToken[]
+  idempotencyKeys IdempotencyKey[]
 
   @@index([deletedAt])
   @@map("users")
@@ -694,4 +696,93 @@ model Entitlement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("entitlements")
+}
+
+// ---------------------------------------------------------------------------
+// Sessions and request safety
+// ---------------------------------------------------------------------------
+
+/**
+ * Refresh tokens rotate. Each use issues a new token in the same family and
+ * revokes the one presented; presenting a revoked token means it leaked, so the
+ * whole family is revoked and the person has to sign in again.
+ *
+ * Only a hash is stored — a database read must not yield a usable credential.
+ */
+model RefreshToken {
+  id         String    @id @db.Uuid
+  userId     String    @db.Uuid
+  familyId   String    @db.Uuid
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  usedAt     DateTime?
+  revokedAt  DateTime?
+  // Why it was revoked: rotated | reuse_detected | logout | user_deleted
+  revokedReason String?
+  deviceId   String?
+  userAgent  String?
+  ip         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+/** Single-use, short-lived, hashed. Requesting one always answers 204. */
+model MagicLinkToken {
+  id        String    @id @db.Uuid
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime  @default(now())
+  ip        String?
+
+  @@index([email, createdAt])
+  @@map("magic_link_tokens")
+}
+
+/** Transient state for an in-flight OAuth authorization. */
+model OAuthState {
+  id          String   @id @db.Uuid
+  provider    String
+  stateHash   String   @unique
+  redirectUri String?
+  codeVerifier String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("oauth_states")
+}
+
+/**
+ * Idempotency records. An offline client retries blindly on reconnect, so a
+ * replayed write has to return the original response rather than act again.
+ *
+ * The request fingerprint is stored alongside: the same key with a different
+ * body is a client bug, and answering it with the first response would hide it.
+ */
+model IdempotencyKey {
+  id           String   @id @db.Uuid
+  userId       String   @db.Uuid
+  key          String
+  method       String
+  path         String
+  requestHash  String
+  statusCode   Int?
+  responseBody Json?
+  // in_progress | completed — a concurrent replay of an unfinished request
+  // must not be allowed to run twice.
+  state        String   @default("in_progress")
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key, method, path])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
 }
