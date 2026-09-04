@@ -8,7 +8,7 @@ Test data for the import and merge engine.
 | ------------------------ | ----------------------------------------------- | ---------------------------------------------- |
 | `spreadsheet-sample.csv` | Redacted from a real 197-row dive log           | Generic tabular importer, column mapping       |
 | `uddf-sample.uddf`       | Redacted from a real Oceanic+ UDDF 3.2.1 export | UDDF importer, profile decoding                |
-| `expected/`              | Hand-verified                                   | Golden snapshot of the merged result (Phase 3) |
+| `expected/merged.json`   | Hand-verified, then generated                   | Golden snapshot of the merged result           |
 
 ## Redaction
 
@@ -40,7 +40,31 @@ fixtures — they are the reason the fixtures exist:
 
 Do not "clean up" these files. A fixture that parses easily tests nothing.
 
-## Regenerating
+## The golden snapshot
+
+`expected/merged.json` is both files merged: 24 dives from 24 spreadsheet rows
+and 6 computer dives, six of them carrying both sources. It was read line by
+line once and is asserted against on every change to the import engine after
+that.
+
+```bash
+node fixtures/scripts/snapshot.mjs
+```
+
+**Regenerating is not a way to make a failing test pass.** A diff here means
+the engine now merges someone's dive history differently. Read it, understand
+why, and only then commit it.
+
+Note what the snapshot does *not* prove. Every UDDF dive in the fixture also
+exists in the spreadsheet, so removing the `leadquantity` sentinel leaves the
+merged result unchanged — weight is a `configured` field where the diver's
+record already outranks the watch, and precedence covers it. The case that
+depends on the sentinel is a dive the computer alone knows about, and
+`golden.test.ts` asserts that separately by importing the UDDF into an empty
+logbook. A perturbation test that only exercises the merged path would have
+reported the sentinel as covered when it was not.
+
+## Regenerating the fixtures
 
 The full originals are gitignored. To regenerate from them:
 

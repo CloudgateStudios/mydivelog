@@ -2,7 +2,7 @@
   "name": "mydivelog",
   "version": "0.0.0",
   "private": true,
-  "description": "Digital dive logbook — https://mydivelog.app",
+  "description": "Digital dive logbook \u2014 https://mydivelog.app",
   "license": "UNLICENSED",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@mydivelog/importers": "workspace:*",
     "cspell": "^10.1.1",
     "eslint": "^10.9.1",
     "husky": "^9.1.7",

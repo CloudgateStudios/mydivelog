@@ -1,0 +1,769 @@
+{
+  "summary": {
+    "dives": 24,
+    "created": 24,
+    "mergedInto": 6,
+    "needsReview": 0,
+    "withTwoSources": 6,
+    "withProfile": 6,
+    "contested": 0
+  },
+  "dives": [
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 23.888888889,
+        "diveNumber": 1,
+        "durationS": 1860,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Boots (5mil Rental)",
+        "maxDepthM": 5.1816,
+        "notes": "Open Water Dive 1",
+        "site.regionHint": "Haigh Quarry",
+        "startTimeLocal": "2012-06-02T09:53:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 6.096,
+        "waterTempMinC": 18.333333333,
+        "waterType": "fresh",
+        "weightKg": 10.88621688
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 23.888888889,
+        "diveNumber": 2,
+        "durationS": 1800,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Boots (5mil Rental)",
+        "maxDepthM": 6.4008,
+        "notes": "Open Water Dive 2",
+        "site.regionHint": "Haigh Quarry",
+        "startTimeLocal": "2012-06-02T11:09:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 6.096,
+        "waterTempMinC": 18.333333333,
+        "waterType": "fresh",
+        "weightKg": 10.88621688
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 22.777777778,
+        "diveNumber": 3,
+        "durationS": 600,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Boots (5mil Rental)",
+        "maxDepthM": 6.096,
+        "notes": "Open Water Dive 3",
+        "site.regionHint": "Haigh Quarry",
+        "startTimeLocal": "2012-06-03T09:30:00.000Z",
+        "tags": [
+          "Dock",
+          "Shore"
+        ],
+        "visibilityM": 6.096,
+        "waterTempMinC": 18.333333333,
+        "waterType": "fresh",
+        "weightKg": 10.88621688
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 24.444444444,
+        "diveNumber": 10,
+        "durationS": 2940,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Dive Boots (2mil)",
+        "maxDepthM": 12.192,
+        "notes": "Manta Rays in Kona",
+        "site.name": "Manta Heaven",
+        "site.regionHint": "Hawaii - Big Island",
+        "startTimeLocal": "2013-04-11T00:00:00.000Z",
+        "tags": [
+          "Boat",
+          "Night"
+        ],
+        "visibilityM": 18.288,
+        "waterTempMinC": 24.444444444,
+        "waterType": "salt",
+        "weightKg": 7.25747792
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 13,
+        "durationS": 2460,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Dive Boots (2mil)",
+        "maxDepthM": 30.48,
+        "notes": "ProDiver Maui",
+        "site.name": "Molokini Back Wall",
+        "site.regionHint": "Hawaii - Maui",
+        "startTimeLocal": "2013-04-16T00:00:00.000Z",
+        "tags": [
+          "Boat",
+          "Dift"
+        ],
+        "visibilityM": 30.48,
+        "waterTempMinC": 24.444444444,
+        "waterType": "salt",
+        "weightKg": 9.97903214
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 15,
+        "durationS": 2160,
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (5mil Rental), Dive Boots (2mil)",
+        "maxDepthM": 27.1272,
+        "notes": "Not as good as the first time",
+        "site.name": "Molokini Back Wall",
+        "site.regionHint": "Hawaii - Maui",
+        "startTimeLocal": "2013-04-17T00:00:00.000Z",
+        "tags": [
+          "Boat",
+          "Dift"
+        ],
+        "visibilityM": 24.384,
+        "waterTempMinC": 24.444444444,
+        "waterType": "salt",
+        "weightKg": 9.97903214
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (3mil Rental), BioLite BC",
+        "notes": "Rescue Dive Training Day 1 - Self Rescue & Exercise 1-5. First time using personal BC",
+        "site.regionHint": "Haigh Quarry",
+        "startTimeLocal": "2021-09-25T08:00:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "waterType": "fresh",
+        "weightKg": 8.16466266
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "gases": [
+          {
+            "o2Fraction": 0.21,
+            "label": "Air"
+          }
+        ],
+        "gear": "Full Wet Suit (3mil Rental), BioLite BC",
+        "notes": "Rescue Dive Training Day 2 - Exercise 6-10 & Scenario 1 and 2",
+        "site.regionHint": "Haigh Quarry",
+        "startTimeLocal": "2021-09-26T07:00:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "waterType": "fresh",
+        "weightKg": 8.16466266
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 28.888888889,
+        "diveNumber": 96,
+        "durationS": 3540,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Pullover), Pockets",
+        "maxDepthM": 15.24,
+        "notes": "Site H",
+        "site.name": "Monte's Divi Tree, Klein",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2022-03-30T10:31:00.000Z",
+        "tags": [
+          "Boat"
+        ],
+        "visibilityM": 22.86,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "airTempC": 28.888888889,
+        "diveNumber": 97,
+        "durationS": 3000,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Pullover), Pockets",
+        "maxDepthM": 26.2128,
+        "notes": "Site 16",
+        "site.name": "1,000 Steps",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2022-03-30T13:15:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 30.48,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 182,
+        "durationS": 2796,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 30.7848,
+        "site.name": "Alice in Wonderland",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-02T09:29:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 15.24,
+        "waterTempMinC": 26.111111111,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 183,
+        "durationS": 2910,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 25.2984,
+        "site.name": "Windsock",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-02T11:11:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 184,
+        "durationS": 2754,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 23.1648,
+        "site.name": "Oil Slick",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-02T14:04:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 185,
+        "durationS": 2951,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 28.956,
+        "site.name": "Buddy's Reef",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-03T09:07:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 15.24,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 186,
+        "durationS": 3041,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 18.288,
+        "site.name": "Bachelors Beach",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-03T11:03:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 15.24,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 187,
+        "durationS": 3037,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 21.9456,
+        "site.name": "Aquaris",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-04T09:09:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.111111111,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 188,
+        "durationS": 2702,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 23.4696,
+        "site.name": "Lighthouse Point",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-04T11:00:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 15.24,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 189,
+        "durationS": 3061,
+        "gases": [
+          {
+            "o2Fraction": 0.32,
+            "label": "EAN"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 21.0312,
+        "site.name": "1,000 Steps",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-04T13:28:00.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.666666667,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 190,
+        "durationS": 3003,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 20.941677,
+        "profile": {
+          "samples": 37,
+          "firstTimeS": 0,
+          "lastTimeS": 3165,
+          "maxDepthM": 20.08328,
+          "hasTemperature": true
+        },
+        "site.lat": 4.70779,
+        "site.lon": -55.38086,
+        "site.name": "Vista Blue",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-05T09:13:07.000Z",
+        "startTimeUtc": "2026-03-05T13:13:07.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 12.192,
+        "waterTempMinC": 26.29,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 191,
+        "durationS": 3150,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 21.3301,
+        "profile": {
+          "samples": 37,
+          "firstTimeS": 0,
+          "lastTimeS": 3195,
+          "maxDepthM": 20.927483,
+          "hasTemperature": true
+        },
+        "site.altitudeM": -2.969344,
+        "site.lat": 4.857499,
+        "site.lon": -55.41316,
+        "site.name": "Andrea I",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-05T11:21:06.000Z",
+        "startTimeUtc": "2026-03-05T15:21:06.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.49,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 192,
+        "durationS": 3052,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 22.034966,
+        "profile": {
+          "samples": 36,
+          "firstTimeS": 0,
+          "lastTimeS": 3135,
+          "maxDepthM": 21.447067,
+          "hasTemperature": true
+        },
+        "site.altitudeM": 2.0902495,
+        "site.lat": 4.888037,
+        "site.lon": -55.46831,
+        "site.name": "Karpata",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-05T13:38:21.000Z",
+        "startTimeUtc": "2026-03-05T17:38:21.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.59,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 193,
+        "durationS": 3235,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 23.018057,
+        "profile": {
+          "samples": 38,
+          "firstTimeS": 0,
+          "lastTimeS": 3315,
+          "maxDepthM": 20.369816,
+          "hasTemperature": true
+        },
+        "site.altitudeM": 4.590246,
+        "site.lat": 4.879779,
+        "site.lon": -55.43783,
+        "site.name": "1,000 Steps",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-06T09:15:46.000Z",
+        "startTimeUtc": "2026-03-06T13:15:46.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.49,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 194,
+        "durationS": 3656,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 14.318025,
+        "profile": {
+          "samples": 36,
+          "firstTimeS": 0,
+          "lastTimeS": 3645,
+          "maxDepthM": 14.227646,
+          "hasTemperature": true
+        },
+        "site.altitudeM": 1.1679561,
+        "site.lat": 4.752156,
+        "site.lon": -55.39869,
+        "site.name": "Salt Pier",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-06T11:16:22.000Z",
+        "startTimeUtc": "2026-03-06T15:16:22.000Z",
+        "tags": [
+          "Shore"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 21.336,
+        "waterTempMinC": 26.49,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    },
+    {
+      "sources": [
+        "spreadsheet",
+        "uddf"
+      ],
+      "contested": [],
+      "values": {
+        "diveNumber": 195,
+        "durationS": 2776,
+        "gases": [
+          {
+            "o2Fraction": 0.33,
+            "label": "nitrox"
+          }
+        ],
+        "gear": "BioLite BC, Bare Jacket (Zip up), Pockets",
+        "maxDepthM": 14.099043,
+        "notes": "Ostrocods",
+        "profile": {
+          "samples": 38,
+          "firstTimeS": 0,
+          "lastTimeS": 2760,
+          "maxDepthM": 13.562321,
+          "hasTemperature": true
+        },
+        "site.altitudeM": 3,
+        "site.lat": 4.772435,
+        "site.lon": -55.40325,
+        "site.name": "Angel City",
+        "site.regionHint": "Bonaire",
+        "startTimeLocal": "2026-03-06T19:07:42.000Z",
+        "startTimeUtc": "2026-03-06T23:07:42.000Z",
+        "tags": [
+          "Shore",
+          "Night"
+        ],
+        "tzOffsetMinutes": -240,
+        "visibilityM": 15.24,
+        "waterTempMinC": 26.49,
+        "waterType": "salt",
+        "weightKg": 6.35029318
+      }
+    }
+  ]
+}
