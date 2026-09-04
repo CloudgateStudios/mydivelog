@@ -51,12 +51,15 @@ describe('detectDerivedColumns', () => {
 });
 
 describe('detectDerivedColumns, edge cases', () => {
-  it('flags a column that never changes', () => {
+  it('does not flag a column that never changes', () => {
+    // A constant is not a function of anything. The seed workbook's EAN % is
+    // 33 on every row that has one, and calling that derived would throw away
+    // the gas the diver actually breathed.
     const found = detectDerivedColumns({
       Depth: [17, 21, 46, 33],
       'Tank Size': [11.1, 11.1, 11.1, 11.1],
     });
-    expect(found.find((f) => f.column === 'Tank Size')?.kind).toBe('constant');
+    expect(found).toEqual([]);
   });
 
   it('does not judge a column from too few rows', () => {
