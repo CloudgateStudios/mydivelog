@@ -12,7 +12,7 @@
     "generate": "echo 'nothing to generate'"
   },
   "dependencies": {
-    "next": "^15.5.2",
+    "next": "^16.3.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
