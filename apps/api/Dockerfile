@@ -6,7 +6,7 @@
 # The build context is the whole workspace because the API depends on workspace
 # packages that pnpm resolves by path.
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable
 WORKDIR /repo
 
@@ -30,7 +30,7 @@ RUN pnpm --filter @mydivelog/api build
 RUN pnpm --filter @mydivelog/api --prod --legacy deploy /out
 
 # --- runtime ---------------------------------------------------------------
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
