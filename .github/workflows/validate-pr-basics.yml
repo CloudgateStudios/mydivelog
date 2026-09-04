@@ -45,15 +45,29 @@ jobs:
         with:
           persist-credentials: false
 
-      # The runner image already ships pnpm 11, so it is used as-is. Installing
-      # a pinned version cost 2-3 minutes: pnpm/action-setup shells out to
-      # `npm install`, which is very slow on the runner, and it does so whenever
-      # the pinned and preinstalled versions differ at all — with or without
-      # `standalone: true`.
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: 'pnpm'
+
+      # corepack ships with Node and activates the version pinned in
+      # packageManager. pnpm/action-setup was doing this via `npm install`,
+      # which costs 2-3 minutes on the runner — two minutes for five packages —
+      # and does so whenever the pinned and installed versions differ at all.
+      # `standalone: true` did not help: it changes which package npm installs,
+      # not that npm installs it.
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare --activate
+          pnpm --version
+
+      # Cache the pnpm store by hand: setup-node's built-in pnpm cache has to
+      # run before this step, when pnpm is not yet on PATH.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
