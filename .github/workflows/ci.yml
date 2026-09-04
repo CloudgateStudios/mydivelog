@@ -74,13 +74,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # The deploy builds these; until this job existed, nothing before it did.
       # A base-image bump to node:26 removed corepack and broke every image,
       # and CI was green the whole way to production.
       - name: Build ${{ matrix.service }}
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/${{ matrix.service }}/Dockerfile
