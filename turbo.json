@@ -6,6 +6,10 @@
   "tasks": {
     "generate": {
       "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
+      "outputs": []
+    },
+    "@mydivelog/db#generate": {
+      "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
       "outputs": ["src/generated/**"]
     },
     "build": {

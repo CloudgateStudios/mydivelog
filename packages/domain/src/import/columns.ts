@@ -16,7 +16,7 @@
  * theirs.
  */
 
-export const DERIVATION_KINDS = ['cumulative', 'sum', 'difference', 'constant'] as const;
+export const DERIVATION_KINDS = ['cumulative', 'sum', 'difference'] as const;
 export type DerivationKind = (typeof DERIVATION_KINDS)[number];
 
 export type DerivedColumn = {
@@ -68,16 +68,6 @@ export function detectDerivedColumns(columns: NumericColumns): DerivedColumn[] {
     const populated = values.filter((v): v is number => v !== undefined);
     // Two rows can satisfy almost any relationship by coincidence.
     if (populated.length < 3) continue;
-
-    if (populated.every((v) => close(v, populated[0] as number))) {
-      found.push({
-        column: name,
-        kind: 'constant',
-        explanation: `Every row holds ${populated[0]}, so this column records nothing about individual dives.`,
-      });
-      derived.add(name);
-      continue;
-    }
 
     const others = names.filter((n) => n !== name);
 
