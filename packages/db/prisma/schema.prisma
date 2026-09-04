@@ -1,0 +1,696 @@
+// MyDiveLog schema. See docs/04-data-model.md for the reasoning behind these
+// shapes; this file is the implementation, not the argument.
+//
+// Three rules run through everything here:
+//   1. Measurements are stored in SI. Column suffixes name the unit.
+//   2. Dive identity is time, never diveNumber, which is a display ordinal.
+//   3. Every user-owned row carries deletedAt, because offline clients have to
+//      learn about deletions.
+
+// The newer `prisma-client` generator emits ESM. The older `prisma-client-js`
+// emits CommonJS, whose named exports are not importable from this workspace's
+// ESM packages.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated"
+  moduleFormat = "esm"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users and identity
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  active
+  suspended
+  deleted
+}
+
+model User {
+  id              String     @id @db.Uuid
+  email           String     @unique
+  emailVerifiedAt DateTime?
+  displayName     String?
+  status          UserStatus @default(active)
+  isStaff         Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  identities     Identity[]
+  preferences    UserPreferences?
+  profile        DiverProfile?
+  certifications Certification[]
+  dives          Dive[]
+  sites          Site[]
+  trips          Trip[]
+  tags           Tag[]
+  gasMixes       GasMix[]
+  gearItems      GearItem[]
+  gearSets       GearSet[]
+  buddies        Buddy[]          @relation("BuddyOwner")
+  importBatches  ImportBatch[]
+  mappingProfiles MappingProfile[]
+  subscription   Subscription?
+  entitlement    Entitlement?
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Identity {
+  id        String   @id @db.Uuid
+  userId    String   @db.Uuid
+  provider  String // google | apple | email
+  subject   String // the provider's stable identifier for this person
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+  @@map("identities")
+}
+
+model UserPreferences {
+  userId          String  @id @db.Uuid
+  unitSystem      String  @default("metric") // metric | imperial
+  depthUnit       String? // per-quantity overrides; plenty of divers think in feet but Celsius
+  temperatureUnit String?
+  pressureUnit    String?
+  weightUnit      String?
+  dateFormat      String?
+  timezone        String? // IANA, for display defaults
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model DiverProfile {
+  userId       String  @id @db.Uuid
+  bio          String?
+  homeLocation String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("diver_profiles")
+}
+
+model Agency {
+  id        String          @id @db.Uuid
+  code      String          @unique // PADI, SSI, NAUI, GUE, TDI, BSAC, CMAS, RAID
+  name      String
+  createdAt DateTime        @default(now())
+
+  certifications Certification[]
+
+  @@map("agencies")
+}
+
+model Certification {
+  id          String    @id @db.Uuid
+  userId      String    @db.Uuid
+  agencyId    String?   @db.Uuid
+  agencyOther String? // for agencies not in the seeded list
+  name        String // "Advanced Open Water"
+  level       Int? // for ordering a progression in the UI
+  number      String?
+  issuedOn    DateTime?
+  instructor  String?
+  documentKey String? // object storage key for a scanned card
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency Agency? @relation(fields: [agencyId], references: [id])
+
+  @@index([userId, deletedAt])
+  @@map("certifications")
+}
+
+// ---------------------------------------------------------------------------
+// Places
+// ---------------------------------------------------------------------------
+
+model Region {
+  id          String  @id @db.Uuid
+  parentId    String? @db.Uuid
+  name        String
+  kind        String // country | state | area
+  countryCode String? @db.Char(2)
+
+  parent   Region?  @relation("RegionTree", fields: [parentId], references: [id])
+  children Region[] @relation("RegionTree")
+  sites    Site[]
+  trips    Trip[]
+
+  @@index([parentId])
+  @@map("regions")
+}
+
+model Site {
+  id           String    @id @db.Uuid
+  name         String
+  regionId     String?   @db.Uuid
+  latitude     Float?
+  longitude    Float?
+  altitudeM    Float? // sanity-bounded on import: the sample data has -196 m at sea level
+  maxDepthM    Float?
+  typicalEntry String? // shore | boat | dock
+  description  String?
+
+  // Sites imported from one diver's file start private. A moderation path
+  // promotes well-attested ones, so the shared database is not polluted with
+  // names like "site_69ab7a96dce6e40c7d3abe65".
+  isPublic    Boolean   @default(false)
+  ownerUserId String?   @db.Uuid
+  verifiedAt  DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  owner   User?       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  region  Region?     @relation(fields: [regionId], references: [id])
+  aliases SiteAlias[]
+  dives   Dive[]
+
+  @@index([ownerUserId, deletedAt])
+  @@index([regionId])
+  @@index([latitude, longitude])
+  @@map("sites")
+}
+
+model SiteAlias {
+  id     String @id @db.Uuid
+  siteId String @db.Uuid
+  name   String // "1,000 Steps", "Thousand Steps", "1000 Steps"
+  source String // import | user | staff
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, name])
+  @@index([name])
+  @@map("site_aliases")
+}
+
+model Trip {
+  id        String    @id @db.Uuid
+  userId    String    @db.Uuid
+  name      String // "Bonaire 2026"
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+  regionId  String?   @db.Uuid
+  operator  String? // dive shop or liveaboard
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  region Region? @relation(fields: [regionId], references: [id])
+  dives  Dive[]
+
+  @@index([userId, deletedAt])
+  @@map("trips")
+}
+
+// ---------------------------------------------------------------------------
+// Taxonomy, gas, gear, buddies
+// ---------------------------------------------------------------------------
+
+model Tag {
+  id       String  @id @db.Uuid
+  slug     String // shore, boat, drift, night, wreck, wall, sunset, dock
+  label    String
+  category String // entry | condition | environment | activity
+  isSystem Boolean @default(false)
+  userId   String? @db.Uuid // null for the seeded taxonomy
+
+  user User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dives DiveTag[]
+
+  @@unique([userId, slug])
+  @@map("tags")
+}
+
+model DiveTag {
+  diveId String @db.Uuid
+  tagId  String @db.Uuid
+
+  dive Dive @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, tagId])
+  @@index([tagId])
+  @@map("dive_tags")
+}
+
+model GasMix {
+  id         String  @id @db.Uuid
+  userId     String? @db.Uuid // null for system standards (air, EAN32, ...)
+  name       String
+  o2Fraction Float // 0.21 for air
+  heFraction Float   @default(0)
+  // n2 is derived as 1 - o2 - he and never stored. The sample UDDF reports
+  // n2 as 0.66999996, which is float noise rather than information.
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tanks DiveTank[]
+
+  @@unique([userId, name])
+  @@map("gas_mixes")
+}
+
+model DiveTank {
+  id                 String  @id @db.Uuid
+  diveId             String  @db.Uuid
+  gasMixId           String? @db.Uuid
+  sequence           Int     @default(0) // multi-tank and stage bottles
+  volumeL            Float?
+  workingPressureBar Float?
+  startPressureBar   Float?
+  endPressureBar     Float?
+  material           String? // aluminum | steel
+
+  dive   Dive    @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  gasMix GasMix? @relation(fields: [gasMixId], references: [id])
+
+  @@unique([diveId, sequence])
+  @@index([gasMixId])
+  @@map("dive_tanks")
+}
+
+model GearItem {
+  id           String    @id @db.Uuid
+  userId       String    @db.Uuid
+  kind         String // wetsuit | drysuit | bcd | regulator | computer | fins | boots | hood | gloves | light | camera | other
+  name         String
+  brand        String?
+  model        String?
+  thicknessMm  Float?
+  isRental     Boolean   @default(false)
+  serialNumber String?
+  purchasedOn  DateTime? @db.Date
+  retiredAt    DateTime?
+  serviceDueOn DateTime? @db.Date // regulators need annual service
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dives DiveGear[]
+  sets  GearSetItem[]
+
+  @@index([userId, deletedAt])
+  @@map("gear_items")
+}
+
+model DiveGear {
+  diveId     String @db.Uuid
+  gearItemId String @db.Uuid
+
+  dive Dive     @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  item GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, gearItemId])
+  @@index([gearItemId])
+  @@map("dive_gear")
+}
+
+model GearSet {
+  id        String   @id @db.Uuid
+  userId    String   @db.Uuid
+  name      String // "Warm water kit"
+  createdAt DateTime @default(now())
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items GearSetItem[]
+
+  @@unique([userId, name])
+  @@map("gear_sets")
+}
+
+model GearSetItem {
+  gearSetId  String @db.Uuid
+  gearItemId String @db.Uuid
+
+  set  GearSet  @relation(fields: [gearSetId], references: [id], onDelete: Cascade)
+  item GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+
+  @@id([gearSetId, gearItemId])
+  @@index([gearItemId])
+  @@map("gear_set_items")
+}
+
+model Buddy {
+  id           String    @id @db.Uuid
+  ownerUserId  String    @db.Uuid
+  displayName  String
+  linkedUserId String?   @db.Uuid // set only with consent in both directions
+  email        String?
+  role         String? // buddy | instructor | divemaster | guide
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  owner User        @relation("BuddyOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  dives DiveBuddy[]
+
+  @@index([ownerUserId, deletedAt])
+  @@map("buddies")
+}
+
+model DiveBuddy {
+  diveId  String @db.Uuid
+  buddyId String @db.Uuid
+
+  dive  Dive  @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  buddy Buddy @relation(fields: [buddyId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, buddyId])
+  @@index([buddyId])
+  @@map("dive_buddies")
+}
+
+// ---------------------------------------------------------------------------
+// Dive — the canonical record
+// ---------------------------------------------------------------------------
+
+enum WaterType {
+  fresh
+  salt
+  brackish
+}
+
+enum DiveMode {
+  opencircuit
+  ccr
+  scr
+  freedive
+  snorkel
+}
+
+model Dive {
+  id     String @id @db.Uuid
+  userId String @db.Uuid
+
+  // A user-assigned display ordinal, not an identifier: inserting a forgotten
+  // dive renumbers everything after it, so nothing may key on this.
+  //
+  // Required and unique per user, enforced by a PARTIAL unique index created in
+  // migration 20260904_dive_number_required — `WHERE deleted_at IS NULL`, which
+  // Prisma cannot express. Partial matters: a plain constraint would let a
+  // soft-deleted dive squat its number forever and make renumbering collide
+  // with tombstones.
+  //
+  // Sources frequently do not carry a number — the sample UDDF has none at all
+  // across 96 dives — so the importer assigns them. See docs/decisions/013.
+  diveNumber Int
+
+  // Three time fields, always. Deriving local time from UTC plus a guessed zone
+  // loses data, and a source offset can itself be wrong — the sample UDDF
+  // writes "-00:04" meaning -04:00. Keeping all three means that can be
+  // corrected later without destroying what the diver originally recorded.
+  startTimeUtc    DateTime @db.Timestamptz(3)
+  startTimeLocal  DateTime
+  tzOffsetMinutes Int
+  tzName          String?
+
+  durationS        Int?
+  maxDepthM        Float?
+  avgDepthM        Float?
+  surfaceIntervalS Int? // derived from the preceding dive
+  repetitionIndex  Int? // nth dive of that day
+
+  waterTempMinC Float?
+  waterTempMaxC Float?
+  airTempC      Float?
+  visibilityM   Float?
+  weightKg      Float?
+
+  waterType WaterType?
+  diveMode  DiveMode?
+  altitudeM Float?
+
+  siteId String? @db.Uuid
+  tripId String? @db.Uuid
+
+  rating       Int? // 1-5
+  notes        String?
+  privateNotes String? // never included in shares or exports by default
+
+  hasProfile          Boolean @default(false)
+  hasContestedFields  Boolean @default(false) // sources disagreed; surfaced in the UI
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  version   Int       @default(1) // optimistic concurrency for sync
+
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site       Site?                 @relation(fields: [siteId], references: [id])
+  trip       Trip?                 @relation(fields: [tripId], references: [id])
+  profile    DiveProfile?
+  tanks      DiveTank[]
+  tags       DiveTag[]
+  gear       DiveGear[]
+  buddies    DiveBuddy[]
+  sources    DiveSource[]
+  provenance DiveFieldProvenance[]
+
+  @@index([userId, startTimeUtc(sort: Desc)])
+  @@index([userId, deletedAt])
+  @@index([userId, siteId])
+  @@index([userId, tripId])
+  @@map("dives")
+}
+
+// Time series live outside Postgres. 20,014 waypoints for 96 dives in the
+// sample export; one row per sample does not scale. The blob is written once,
+// read whole, and never queried per-sample, so only the summary belongs here.
+model DiveProfile {
+  id     String @id @db.Uuid
+  diveId String @db.Uuid @unique
+
+  storageKey  String // object storage key
+  format      String @default("mdl-profile-v1")
+  sampleCount Int
+  intervalS   Float? // nominal sample interval
+  byteSize    Int
+  checksum    String
+  channels    String[] // ["depth","temp","pressure","ndl","cns"]
+
+  // Derived from the profile and denormalized, because this is what queries,
+  // sorting and statistics actually need.
+  maxDepthM            Float
+  avgDepthM            Float
+  durationS            Int
+  minTempC             Float?
+  maxTempC             Float?
+  maxAscentRateMPerMin Float?
+  hasDecoStops         Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  dive Dive @relation(fields: [diveId], references: [id], onDelete: Cascade)
+
+  @@map("dive_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// Provenance — what makes merging safe, and what cannot be retrofitted
+// ---------------------------------------------------------------------------
+
+model DiveSource {
+  id            String  @id @db.Uuid
+  diveId        String  @db.Uuid
+  importBatchId String? @db.Uuid
+
+  sourceKind    String // uddf | subsurface | spreadsheet | manual | api:garmin
+  sourceRef     String? // the source's own id, e.g. "dive_69ab7a96dce6e40c7d3abe65"
+  sourceFileKey String? // object storage key of the original upload
+  rawPayload    Json? // the source's own representation, never discarded
+  recordedAt    DateTime // when the source captured it
+  createdAt     DateTime @default(now())
+
+  dive        Dive                  @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  importBatch ImportBatch?          @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  provenance  DiveFieldProvenance[]
+
+  // Makes re-importing the same file idempotent.
+  @@unique([importBatchId, sourceRef])
+  @@index([diveId])
+  @@map("dive_sources")
+}
+
+model DiveFieldProvenance {
+  diveId     String  @db.Uuid
+  fieldPath  String // "maxDepthM", "site.name", "tanks[0].gasMixId"
+  sourceId   String  @db.Uuid
+  value      Json // the value this source asserted
+  isSelected Boolean @default(false) // is this what the dive currently shows?
+  confidence Float   @default(1)
+
+  dive   Dive       @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  source DiveSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([diveId, fieldPath, sourceId])
+  @@index([sourceId])
+  @@map("dive_field_provenance")
+}
+
+// ---------------------------------------------------------------------------
+// Import bookkeeping
+// ---------------------------------------------------------------------------
+
+model ImportBatch {
+  id     String @id @db.Uuid
+  userId String @db.Uuid
+
+  sourceKind       String
+  originalFileKey  String
+  originalFileName String
+  fileSize         Int
+  checksum         String // short-circuits an identical re-upload
+  status           String @default("uploaded") // uploaded | parsing | review | committing | committed | failed | reverted
+  detectedFormat   String?
+  mappingProfileId String? @db.Uuid
+  stats            Json? // {parsed, matched, new, conflicts, skipped, normalized}
+  error            String?
+
+  createdAt   DateTime  @default(now())
+  committedAt DateTime?
+  revertedAt  DateTime?
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mappingProfile MappingProfile? @relation(fields: [mappingProfileId], references: [id])
+  rows           ImportRow[]
+  sources        DiveSource[]
+
+  @@index([userId, status])
+  @@map("import_batches")
+}
+
+model ImportRow {
+  id       String @id @db.Uuid
+  batchId  String @db.Uuid
+  rowIndex Int
+
+  raw            Json // exactly as parsed
+  observation    Json // the normalized DiveObservation
+  normalizations Json? // [{field, from, to, reason}] — the -00:04 repair lands here
+  issues         Json? // [{severity, code, message, field}]
+
+  matchDiveId  String? @db.Uuid
+  matchScore   Float?
+  matchReasons Json?
+
+  decision     String  @default("pending") // pending | create | merge | skip
+  decidedBy    String? // auto | user
+  resultDiveId String? @db.Uuid
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, rowIndex])
+  @@index([batchId, decision])
+  @@map("import_rows")
+}
+
+// Reusable CSV/XLSX column mappings. The long tail of "my weird spreadsheet"
+// is infinite; a good mapper with shareable templates covers it without an
+// importer per diver.
+model MappingProfile {
+  id       String  @id @db.Uuid
+  userId   String? @db.Uuid // null for system templates
+  name     String
+  mapping  Json // column -> field path plus transforms
+  isPublic Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batches ImportBatch[]
+
+  @@unique([userId, name])
+  @@map("mapping_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// Sync and audit — similar shapes, different jobs, deliberately not merged.
+// ChangeLog is a sync mechanism and is prunable. AuditEvent is an
+// accountability record, retained and never edited.
+// ---------------------------------------------------------------------------
+
+model ChangeLog {
+  seq        BigInt   @id @default(autoincrement())
+  userId     String   @db.Uuid
+  entityType String
+  entityId   String   @db.Uuid
+  operation  String // upsert | delete
+  version    Int
+  changedAt  DateTime @default(now())
+  deviceId   String? // suppresses echoing a change back to its originator
+
+  @@index([userId, seq])
+  @@map("change_log")
+}
+
+model AuditEvent {
+  id         String   @id @db.Uuid
+  actorId    String?  @db.Uuid
+  actorKind  String // user | staff | system
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
+}
+
+// ---------------------------------------------------------------------------
+// Billing. Code checks Entitlement, never plan == "pro", so grandfathering,
+// comps and staff accounts cost nothing.
+// ---------------------------------------------------------------------------
+
+model Subscription {
+  id                   String    @id @db.Uuid
+  userId               String    @unique @db.Uuid
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String?   @unique
+  plan                 String    @default("free") // free | pro
+  status               String    @default("active") // active | past_due | canceled | trialing
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Entitlement {
+  userId       String   @id @db.Uuid
+  maxDives     Int? // null means unlimited
+  maxStorageMb Int?
+  features     String[] @default([])
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("entitlements")
+}

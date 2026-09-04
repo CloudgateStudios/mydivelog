@@ -1,0 +1,139 @@
+version: 2
+
+updates:
+  # --- JavaScript / pnpm workspace -----------------------------------------
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 5
+
+    # PR titles must satisfy the Conventional Commits check in
+    # validate-pr-basics.yml. Dependabot's default title is "Bump x from a to b",
+    # which fails; this produces "chore(deps): bump x from a to b".
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+
+    # pnpm 11 rejects any lockfile entry published within minimumReleaseAge,
+    # 24 hours by default. Without a cooldown, Dependabot would periodically
+    # open a PR whose lockfile CI then refuses to install. Two days clears the
+    # window with room to spare; majors wait longer because they are the ones
+    # worth letting others find problems in first.
+    cooldown:
+      default-days: 2
+      semver-major-days: 7
+
+    # Grouped so a quiet week is one PR rather than fifteen. Packages that must
+    # move together get their own group; everything else lands in the catch-alls.
+    groups:
+      prisma:
+        patterns:
+          - prisma
+          - '@prisma/*'
+      next:
+        patterns:
+          - next
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+      nest:
+        patterns:
+          - '@nestjs/*'
+      linting:
+        patterns:
+          - eslint
+          - '@eslint/*'
+          - typescript-eslint
+          - prettier
+          - lint-staged
+          - husky
+      testing:
+        patterns:
+          - vitest
+          - '@vitest/*'
+      tooling:
+        patterns:
+          - turbo
+          - typescript
+          - cspell
+          - '@cspell/*'
+          - '@types/node'
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+
+  # --- GitHub Actions -------------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
+    cooldown:
+      default-days: 2
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # --- Container base images ------------------------------------------------
+  # All four apps build FROM node:24-alpine, so they are grouped: a bump that
+  # applies to one applies to all, and four identical PRs help nobody.
+  - package-ecosystem: docker
+    directories:
+      - /apps/api
+      - /apps/worker
+      - /apps/web
+      - /apps/admin
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: build
+      include: scope
+    cooldown:
+      default-days: 2
+    groups:
+      base-images:
+        patterns:
+          - '*'
+
+  # --- Local development stack ---------------------------------------------
+  # Postgres and MinIO in docker-compose.yml. These never reach production —
+  # production uses Neon and Cloudflare R2 — but a stale local Postgres that
+  # drifts from the deployed major version is its own kind of bug.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: build
+      include: scope
+    cooldown:
+      default-days: 2
+    groups:
+      local-stack:
+        patterns:
+          - '*'
+    ignore:
+      # Pinned to the major that production runs on Neon. A jump to 17 is a
+      # deliberate decision, not a dependency update.
+      - dependency-name: postgres
+        update-types:
+          - version-update:semver-major

@@ -8,7 +8,8 @@
     "start": "next start --port ${ADMIN_PORT:-53002}",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint app"
+    "lint": "eslint app",
+    "generate": "echo 'nothing to generate'"
   },
   "dependencies": {
     "next": "^15.5.2",

@@ -11,3 +11,5 @@ fixtures/**/*.xlsx
 docs/**/*.md
 fixtures/README.md
 README.md
+
+packages/db/src/generated/

@@ -123,7 +123,14 @@ becomes a different product with a different legal and testing burden.
 
 ## Application Security Practice
 
-- Dependencies: Dependabot + `pnpm audit` in CI; a blocking severity threshold
+- Dependencies: Dependabot across npm, GitHub Actions and container base images,
+  with a cooldown that satisfies pnpm's `minimumReleaseAge` policy
+- **Third-party GitHub Actions are pinned to a commit**, never a tag or branch.
+  A workflow action runs with whatever secrets the job holds — the Fly deploy
+  token, in one case — and `@master` means whatever was pushed to that branch
+  most recently. GitHub-owned `actions/*` stay on major tags so security patches
+  arrive without a pull request; Dependabot keeps both current.
+- `pnpm audit` in CI with a blocking severity threshold
 - SAST via CodeQL; secret scanning on every push
 - CSP, `X-Content-Type-Options`, `Referrer-Policy`, frame-ancestors denial on web and admin
 - CORS: explicit origin allowlist, credentials only for known origins

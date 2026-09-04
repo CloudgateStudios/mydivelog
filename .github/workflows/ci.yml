@@ -22,26 +22,40 @@ jobs:
         with:
           persist-credentials: false
 
-      # Must precede setup-node: the pnpm cache resolves its store by running
-      # `pnpm store path`, which needs pnpm already on PATH.
-      - uses: pnpm/action-setup@v6
-
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: 'pnpm'
+
+      # corepack ships with Node and activates the version pinned in
+      # packageManager. pnpm/action-setup was doing this via `npm install`,
+      # which costs 2-3 minutes on the runner — two minutes for five packages —
+      # and does so whenever the pinned and installed versions differ at all.
+      # `standalone: true` did not help: it changes which package npm installs,
+      # not that npm installs it.
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare --activate
+          pnpm --version
+
+      # Cache the pnpm store by hand: setup-node's built-in pnpm cache has to
+      # run before this step, when pnpm is not yet on PATH.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Turbo's local cache, keyed on the lockfile and source. Restores partial
-      # results across runs so unchanged packages are not rebuilt.
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
-
+      # No turbo cache on purpose. Its key was the commit SHA, so every run
+      # wrote a new ~114 MB entry, and post-job upload took 5-9 minutes against
+      # a full cold build of well under a minute. The cache cost far more than
+      # it saved. Dependency caching above is the one that pays, and it hits.
+      #
+      # If build times ever justify it, use Turbo remote caching rather than
+      # shipping .turbo through actions/cache.
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
