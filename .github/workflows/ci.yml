@@ -107,6 +107,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Generates the Prisma client and builds @mydivelog/db's workspace
+      # dependencies. Both are prerequisites the first version of this job
+      # left out, because a developer machine always has them already — the
+      # generated client is gitignored and the domain package's dist is a
+      # build artifact, so a clean checkout has neither.
+      - name: Build dependencies and generate the client
+        run: pnpm turbo run build --filter=@mydivelog/db...
+
       # The same command the Fly release command runs, against a fresh
       # database. A migration that only works on an already-migrated database
       # passes locally forever and fails on the first real deploy.
