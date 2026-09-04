@@ -13,3 +13,8 @@ fixtures/README.md
 README.md
 
 packages/db/src/generated/
+
+# Next.js rewrites these on every build, in its own formatting. Letting
+# Prettier reformat them means format:check fails after any build.
+apps/*/tsconfig.json
+apps/*/next-env.d.ts
