@@ -58,6 +58,31 @@ docs/        The implementation plan
 | `pnpm verify`                        | Everything CI runs                |
 | `pnpm services:up` / `services:down` | Docker stack only                 |
 | `pnpm services:reset`                | Destroy volumes and recreate      |
+| `pnpm db:migrate`                    | Create and apply a migration from schema changes |
+| `pnpm db:deploy`                     | Apply existing migrations (what deployed environments run) |
+| `pnpm db:seed`                       | Reference data: agencies, tags, gas mixes, regions. Idempotent. |
+| `pnpm db:demo`                       | Insert the worked merge example and print it |
+| `pnpm db:studio`                     | Browse the database in a UI |
+| `pnpm db:reset`                      | Drop, re-migrate, re-seed |
+
+## Seeing the data model work
+
+There is no API or UI yet. To look at what Phase 1 built:
+
+```bash
+pnpm services:up      # Postgres and MinIO
+pnpm db:deploy        # 31 tables
+pnpm db:seed          # reference data
+pnpm db:demo          # one dive, recorded twice, merged
+pnpm db:studio        # browse it
+```
+
+`pnpm db:demo` inserts the worked example from
+[the source data analysis](./docs/02-source-data-analysis.md): one real dive
+that appears in both seed files, where each source holds fields the other lacks
+and the two disagree about depth and gas. It prints the merged record and leaves
+it in the database, so the provenance rows can be inspected in `pnpm db:studio`
+— the part of the model hardest to judge from the schema alone.
 
 ## Conventions
 
