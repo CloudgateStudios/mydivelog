@@ -10,6 +10,22 @@ primary_region = "ord"
 [env]
   API_PORT = "8080"
   APP_ENV = "prod"
+  # Public URL, not a secret. Sign-in links and the OAuth callback redirect are
+  # built from it; without it they point at localhost.
+  WEB_URL = "https://mydivelog.app"
+
+# Migrations run here, once, before any machine serves the new image. A failure
+# aborts the deploy rather than leaving new code against an old schema — which
+# is exactly what happened when this was only a comment in the CI workflow.
+#
+# It belongs in the Fly config rather than in CI so that a manual `fly deploy`
+# from a laptop cannot skip it, and so the database URL never needs to exist as
+# a GitHub secret.
+#
+# The path is where `pnpm deploy --prod` lands the db package inside the image;
+# the Prisma CLI is a runtime dependency of that package for this reason.
+[deploy]
+  release_command = "sh -c 'cd node_modules/@mydivelog/db && node_modules/.bin/prisma migrate deploy'"
 
 [http_service]
   internal_port = 8080

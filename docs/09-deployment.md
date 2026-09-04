@@ -89,12 +89,34 @@ merge to main
 
 manual prod deploy  (Actions → Deploy → prod)
   ├─ await required-reviewer approval on the `prod` environment
-  ├─ migrate production   (expand/contract, backward-compatible)
-  ├─ deploy api, worker, web, admin  (rolling, health-gated, sequential)
+  ├─ deploy api    ├─ release command: prisma migrate deploy  (aborts on failure)
+  │                └─ rolling machine replacement, health-gated
+  ├─ deploy worker, web, admin  (rolling, health-gated, sequential)
   └─ post-deploy smoke tests asserting each service names itself
 ```
 
-### Migrations
+### How migrations run
+
+`prisma migrate deploy` is the API's Fly **release command**: Fly runs it once,
+on a temporary machine using the new image, before any machine serves traffic. A
+non-zero exit aborts the deploy, so new code never reaches an old schema.
+
+It lives in `infra/fly/api.*.toml` rather than in the CI workflow for two
+reasons. A workflow step is skipped by a manual `fly deploy` from a laptop — and
+a manual deploy is exactly when a forgotten migration does the most damage. It
+would also require the production database URL to exist as a GitHub secret,
+where today it exists only as a Fly secret.
+
+The Prisma CLI is therefore a runtime dependency of `@mydivelog/db`, not a dev
+dependency, so `pnpm deploy --prod` keeps it in the image alongside the
+migration SQL. Migrations connect with `DIRECT_DATABASE_URL`: Prisma Migrate
+takes an advisory lock and runs DDL, and neither survives Neon's pooler.
+
+> This was originally only a comment in the deploy workflow claiming the API
+> applied migrations. Nothing did. Phase 2 shipped to dev against a Phase 1
+> schema and every auth endpoint returned 500 until this was fixed.
+
+### Writing migrations
 
 **Expand/contract, always.** Deploys are rolling, so old and new code run simultaneously.
 

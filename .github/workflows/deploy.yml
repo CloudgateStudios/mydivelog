@@ -62,8 +62,11 @@ jobs:
     # different FLY_TOKEN_* values under identical names.
     environment: ${{ needs.resolve.outputs.environment }}
     strategy:
-      # Sequential: the API applies migrations, and two services racing the
-      # same database is not worth the few seconds saved.
+      # Sequential. The API's Fly release_command applies migrations before its
+      # machines cut over, and two services racing the same database is not
+      # worth the few seconds saved. Nothing here runs migrations directly: a
+      # CI-only step would be skipped by a manual `fly deploy`, and would need
+      # the production database URL as a GitHub secret.
       max-parallel: 1
       fail-fast: true
       matrix:

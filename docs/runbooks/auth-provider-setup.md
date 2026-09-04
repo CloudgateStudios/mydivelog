@@ -22,6 +22,22 @@ done
 Use a **different** value per environment. A shared secret means a dev token is
 valid in production.
 
+`DIRECT_DATABASE_URL` must also be set on both API apps. Every deploy runs
+`prisma migrate deploy` as a Fly release command, and Prisma Migrate takes an
+advisory lock and runs DDL — neither survives Neon's connection pooler. Use the
+**direct** (non-pooled) Neon string here; `DATABASE_URL` stays pooled for the
+application itself.
+
+```bash
+fly secrets set --app mydivelog-api-dev  DIRECT_DATABASE_URL="postgresql://...neon.tech/mydivelog?sslmode=require"
+fly secrets set --app mydivelog-api-prod DIRECT_DATABASE_URL="postgresql://...neon.tech/mydivelog?sslmode=require"
+```
+
+If it is missing, migrations fall back to the pooled URL and the release command
+is likely to fail — which aborts the deploy rather than starting new code
+against an old schema. That is the intended failure, but it is a slow way to
+discover a missing secret.
+
 ---
 
 ## Step 1 — Google OAuth client
@@ -86,8 +102,16 @@ for env in dev prod; do
 done
 ```
 
-Until this is set, magic links are written to the API log rather than emailed —
-which is what makes the flow exercisable locally without a mail provider at all.
+`MAIL_FROM` must be an address on the verified domain. Resend rejects anything
+else, and the rejection is only visible in the API log — `/v1/auth/email/request`
+answers 204 whatever happens, because a response that varied would tell an
+attacker which addresses have accounts.
+
+Both values are required. With only one set the API logs a warning at startup of
+the first request and delivers nothing.
+
+Locally, `AUTH_DEV_LOGIN_ENABLED=true` writes the link to the API log instead of
+sending it, so the flow is exercisable without a mail provider at all.
 
 Send yourself one before trusting it. A domain that verifies still lands in spam
 if DMARC is missing, and the first person to notice should be you.
@@ -131,21 +155,82 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 
 ## Verifying
 
+There is no sign-in UI yet — the web portal is Phase 5 — but both flows are
+fully exercisable with curl and a browser address bar. Nothing below needs a
+page to exist.
+
+### The stub login is off
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  https://api-dev.mydivelog.app/v1/auth/dev/login \
+  -H 'content-type: application/json' -d '{"email":"probe@example.invalid"}'
+# 400 — anything else means the stub login is live in a deployed environment
+```
+
+> This is the one auth endpoint that answers before touching the database, so a
+> 400 says nothing about whether the schema is current. Check that separately,
+> below.
+
+### The schema is current
+
+```bash
+curl -s -X POST https://api-dev.mydivelog.app/v1/auth/oauth/google/start \
+  -H 'content-type: application/json' -d '{}'
+```
+
+A JSON body with `authorizationUrl` means the migration ran. A 500 means it did
+not: the release command failed, or was never configured. `fly logs -a
+mydivelog-api-dev` names the missing table.
+
+### Google sign-in, end to end
+
+1. Take the `authorizationUrl` from the call above and open it in a browser
+2. Approve. Google redirects to the API's GET callback, which forwards you to
+   `https://dev.mydivelog.app/auth/callback?code=...&state=...`
+3. That page does not exist yet, which is fine — `code` and `state` are in the
+   address bar. Copy them:
+
+```bash
+curl -s -X POST https://api-dev.mydivelog.app/v1/auth/oauth/google/callback \
+  -H 'content-type: application/json' \
+  -d '{"code":"PASTE_CODE","state":"PASTE_STATE"}'
+```
+
+An `accessToken`, a `refreshToken` and your user object come back. Repeating the
+same call must fail — the state is consumed on first use.
+
+### A magic link arrives and works once
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  https://api-dev.mydivelog.app/v1/auth/email/request \
+  -H 'content-type: application/json' -d '{"email":"you@example.com"}'
+# 204, always — including for addresses that do not exist
+```
+
+The email arrives with a link to `https://dev.mydivelog.app/auth/verify?token=...`.
+That page is also Phase 5; take the token from the URL:
+
+```bash
+curl -s -X POST https://api-dev.mydivelog.app/v1/auth/email/verify \
+  -H 'content-type: application/json' -d '{"token":"PASTE_TOKEN"}'
+```
+
+Run it twice. The second attempt must fail with *already been used*.
+
+If no email arrives, the 204 told you nothing by design — check
+`fly logs -a mydivelog-api-dev` for `could not deliver a sign-in link`.
+
+### Checklist
+
 - [ ] `AUTH_ACCESS_SECRET` set, and different per environment
+- [ ] `DIRECT_DATABASE_URL` set on both API apps
 - [ ] Both API apps boot — `curl https://api-dev.mydivelog.app/health`
+- [ ] `/v1/auth/oauth/google/start` returns an `authorizationUrl`, not a 500
 - [ ] Google sign-in completes end to end on dev
+- [ ] Replaying the same `state` fails
 - [ ] A magic link arrives by email and signs you in
-- [ ] The link is single-use: following it twice fails the second time
+- [ ] The link is single-use: the second attempt fails
 - [ ] `/v1/auth/dev/login` returns 400 on dev and prod
 - [ ] The web app can call the API from a browser without CORS errors
-
-## Troubleshooting
-
-| Symptom | Cause |
-|---|---|
-| `redirect_uri_mismatch` | The URI in Google's console differs from `GOOGLE_REDIRECT_URI`, exactly — scheme, host, path, no trailing slash |
-| `provider_not_configured` | One of the three Google secrets is missing; the API needs all three |
-| Google sign-in works for you, nobody else | The consent screen is still in Testing. Publish it. |
-| Magic links never arrive | Domain unverified, or the DNS records are proxied. Grey-cloud them. |
-| `401` right after a successful sign-in | `AUTH_ACCESS_SECRET` differs between the machine that issued the token and the one verifying it |
-| Browser blocks API calls | `CORS_ORIGINS` does not list the exact origin, scheme included |
