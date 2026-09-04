@@ -4,9 +4,15 @@
 # Relies on Next.js `output: 'standalone'`, which traces the files actually
 # used and emits a server that needs no node_modules install at runtime.
 
-FROM node:26-alpine AS base
-RUN corepack enable
+FROM node:24-alpine AS base
 WORKDIR /repo
+# pnpm is installed directly rather than through corepack: corepack is being
+# unbundled from Node and is already absent from node:26, which broke the image
+# build the moment the base tag moved. The version is read from packageManager
+# so it cannot drift from what the workspace expects.
+COPY package.json ./
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")" \
+    && pnpm --version
 
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -19,7 +25,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY apps/web apps/web
 RUN pnpm --filter @mydivelog/web build
 
-FROM node:26-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
