@@ -375,3 +375,55 @@ describe('mergeDive with genuinely conflicting sources', () => {
     expect(merged.fields['durationS']).toBeDefined();
   });
 });
+
+describe('list fields union rather than compete', () => {
+  it('keeps tags from both sources', () => {
+    // The spreadsheet says shore, the computer says night. Both are true, and
+    // resolving by precedence would simply lose one of them.
+    const r = resolveField('tags', [
+      from('spreadsheet', ['Shore']),
+      from('uddf', ['Night'], { recordedAt: LATER }),
+    ]);
+    expect(r.value).toEqual(['Shore', 'Night']);
+  });
+
+  it('does not duplicate a tag both sources wrote', () => {
+    const r = resolveField('tags', [
+      from('spreadsheet', ['Shore', 'Night']),
+      from('uddf', ['shore'], { recordedAt: LATER }),
+    ]);
+    expect(r.value).toEqual(['Shore', 'Night']);
+  });
+
+  it('unions buddies too', () => {
+    const r = resolveField('buddies', [
+      from('spreadsheet', ['Sam']),
+      from('manual', ['Alex'], { recordedAt: LATER }),
+    ]);
+    expect(r.value).toEqual(['Sam', 'Alex']);
+  });
+
+  it('is never contested', () => {
+    const r = resolveField('tags', [
+      from('uddf', ['A'], { sourceId: 'a' }),
+      from('uddf', ['B'], { sourceId: 'b' }),
+    ]);
+    expect(r.contested).toBe(false);
+  });
+
+  it('marks every contributing source as selected', () => {
+    const r = resolveField('tags', [
+      from('spreadsheet', ['Shore']),
+      from('uddf', ['Night'], { recordedAt: LATER }),
+    ]);
+    expect(r.provenance.every((p) => p.isSelected)).toBe(true);
+  });
+
+  it('orders by when each source recorded', () => {
+    const r = resolveField('tags', [
+      from('uddf', ['Night'], { recordedAt: LATER }),
+      from('spreadsheet', ['Shore']),
+    ]);
+    expect(r.value).toEqual(['Shore', 'Night']);
+  });
+});
