@@ -37,7 +37,9 @@ Kralendijk
 Roatan
 
 # --- Standards, protocols, and compliance ---------------------------------
-ASVS          # OWASP Application Security Verification Standard
+ASVS
+DKIM
+DMARC          # OWASP Application Security Verification Standard
 CCPA
 HSTS
 PITR          # point-in-time recovery

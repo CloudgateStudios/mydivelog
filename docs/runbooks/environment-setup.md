@@ -450,6 +450,11 @@ it before expecting pushes to deploy anything.
 
 ---
 
+## Next
+
+Sign-in providers are a separate, later step:
+[Google sign-in and transactional email](./auth-provider-setup.md).
+
 ## Verifying the whole thing
 
 - [ ] `fly apps list` shows eight apps
