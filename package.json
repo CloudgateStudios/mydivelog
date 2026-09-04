@@ -22,6 +22,8 @@
     "db:deploy": "pnpm --filter @mydivelog/db db:deploy",
     "db:seed": "pnpm --filter @mydivelog/db db:seed",
     "db:demo": "pnpm --filter @mydivelog/db db:demo",
+    "openapi": "pnpm --filter @mydivelog/contracts openapi",
+    "test:integration": "pnpm --filter @mydivelog/db test:integration && pnpm --filter @mydivelog/api test:integration",
     "db:reset": "pnpm --filter @mydivelog/db db:reset",
     "db:studio": "pnpm --filter @mydivelog/db db:studio",
     "verify": "turbo lint typecheck test build && pnpm format:check && pnpm spellcheck",
