@@ -22,6 +22,7 @@ export class DivesController {
 
   // Declared before ':id' so "renumber" is not parsed as a dive id.
   @Post('renumber')
+  @HttpCode(200)
   renumber(@Scope() scope: UserScope, @Body(zodBody(RenumberDives)) body: { startAt: number }) {
     return this.dives.renumber(scope, body.startAt);
   }
@@ -47,6 +48,7 @@ export class DivesController {
   }
 
   @Post(':id/restore')
+  @HttpCode(200)
   restore(@Scope() scope: UserScope, @Param('id') id: string) {
     return this.dives.restore(scope, id);
   }

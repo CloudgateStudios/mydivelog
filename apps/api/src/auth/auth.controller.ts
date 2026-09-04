@@ -26,6 +26,7 @@ export class AuthController {
 
   @Public()
   @Post('oauth/:provider/start')
+  @HttpCode(200)
   @Throttle(20, 60_000)
   start(@Param('provider') provider: string, @Body(zodBody(StartOAuth)) body: StartOAuth) {
     if (provider !== 'google') {
@@ -37,6 +38,7 @@ export class AuthController {
 
   @Public()
   @Post('oauth/:provider/callback')
+  @HttpCode(200)
   @Throttle(20, 60_000)
   callback(@Param('provider') provider: string, @Body(zodBody(OAuthCallback)) body: OAuthCallback) {
     if (provider !== 'google')
@@ -87,6 +89,7 @@ export class AuthController {
 
   @Public()
   @Post('email/verify')
+  @HttpCode(200)
   @Throttle(10, 60_000)
   verifyLink(@Body(zodBody(VerifyMagicLink)) body: VerifyMagicLink) {
     return this.auth.verifyMagicLink(body.token);
@@ -94,6 +97,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @HttpCode(200)
   @Throttle(60, 60_000)
   refresh(@Body(zodBody(RefreshRequest)) body: RefreshRequest) {
     return this.auth.refresh(body.refreshToken);
@@ -108,6 +112,7 @@ export class AuthController {
   /** Local development only; refused unless AUTH_DEV_LOGIN_ENABLED is set. */
   @Public()
   @Post('dev/login')
+  @HttpCode(200)
   @Throttle(30, 60_000)
   devLogin(@Body(zodBody(DevLogin)) body: DevLogin) {
     return this.auth.devLogin(body.email, body.displayName);
