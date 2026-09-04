@@ -43,7 +43,10 @@ RUN pnpm --filter @mydivelog/db generate
 RUN pnpm --filter @mydivelog/api... build
 # Produces a self-contained directory with production dependencies only, with
 # workspace links resolved into real files.
-RUN pnpm --filter @mydivelog/api --prod --legacy deploy /out
+# The store is mounted here too: `deploy` resolves a fresh graph, and without it
+# every production dependency is downloaded again on every build.
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm --filter @mydivelog/api --prod --legacy deploy /out
 
 # --- runtime ---------------------------------------------------------------
 FROM node:24-alpine AS runtime

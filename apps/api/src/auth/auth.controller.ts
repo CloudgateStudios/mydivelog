@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import {
   DevLogin,
   OAuthCallback,
@@ -42,6 +42,38 @@ export class AuthController {
     if (provider !== 'google')
       throw badRequest(`Unsupported provider: ${provider}`, 'unsupported_provider');
     return this.auth.completeGoogle(body.code, body.state);
+  }
+
+  /**
+   * Where Google actually sends the browser. The registered redirect URI has to
+   * answer a GET on a fixed origin, so the API owns it and hands the parameters
+   * to whichever client started the flow.
+   *
+   * The code is not exchanged here. Doing so would leave the resulting tokens
+   * with nowhere to go but a query string or a fragment; instead the client
+   * POSTs to the endpoint above. Forwarding the code costs nothing: it is
+   * single-use, PKCE-bound, and Google already put it in this URL.
+   */
+  @Public()
+  @Get('oauth/:provider/callback')
+  @Throttle(20, 60_000)
+  callbackRedirect(
+    @Param('provider') provider: string,
+    @Query() query: Record<string, string | undefined>,
+    @Res() res: Response,
+  ): void {
+    if (provider !== 'google')
+      throw badRequest(`Unsupported provider: ${provider}`, 'unsupported_provider');
+
+    const target = new URL('/auth/callback', this.auth.webUrl);
+    // Google returns `error` instead of `code` when the person declines. Passing
+    // it through lets the client say so rather than wait for a code that is
+    // never coming.
+    for (const key of ['code', 'state', 'error'] as const) {
+      const value = query[key];
+      if (value) target.searchParams.set(key, value);
+    }
+    res.redirect(303, target.toString());
   }
 
   /** Always 204: any other answer would reveal whether the address is known. */

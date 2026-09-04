@@ -126,6 +126,29 @@ export function buildOpenApiDocument(version = '0.0.0') {
           requestBody: body(auth.OAuthCallback),
           responses: { '200': ok(auth.TokenPair), '400': problem, '401': problem },
         },
+        // The URL registered with the provider. A browser lands here; it is
+        // documented so the redirect target is not a surprise, but no client
+        // calls it directly.
+        get: {
+          operationId: 'oauthCallbackRedirect',
+          tags: ['auth'],
+          security: [],
+          description:
+            'Where the provider sends the browser. Forwards code, state and error to ' +
+            'WEB_URL/auth/callback, which exchanges the code through the POST above.',
+          parameters: [
+            {
+              name: 'provider',
+              in: 'path',
+              required: true,
+              schema: { type: 'string', enum: ['google', 'apple'] },
+            },
+            { name: 'code', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'state', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'error', in: 'query', required: false, schema: { type: 'string' } },
+          ],
+          responses: { '303': { description: 'Redirect to the web application' }, '400': problem },
+        },
       },
       '/auth/email/request': {
         post: {

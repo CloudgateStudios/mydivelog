@@ -1,10 +1,12 @@
 import { Global, Module } from '@nestjs/common';
+import { MailModule } from '../mail/mail.module.ts';
 import { AuthConfig } from './auth.config.ts';
 import { AuthController } from './auth.controller.ts';
 import { AuthService } from './auth.service.ts';
 
 @Global()
 @Module({
+  imports: [MailModule],
   controllers: [AuthController],
   providers: [
     // A factory, because the constructor takes an env object that Nest would

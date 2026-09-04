@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { getPrismaClient } from '@mydivelog/db';
 import { badRequest, unauthorized } from '../common/problem-details.ts';
+import { MailService } from '../mail/mail.service.ts';
 import { AuthConfig } from './auth.config.ts';
 import { generateOpaqueToken, hashToken, signAccessToken } from './tokens.ts';
 
@@ -23,7 +24,16 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly prisma = getPrismaClient();
 
-  constructor(private readonly config: AuthConfig) {}
+  constructor(
+    private readonly config: AuthConfig,
+    private readonly mail: MailService,
+  ) {}
+
+  /** Where browser flows are sent back to. Read from config, exposed for the
+   * OAuth redirect so the controller does not need the config injected too. */
+  get webUrl(): string {
+    return this.config.appUrl;
+  }
 
   // --- sessions -----------------------------------------------------------
 
@@ -177,8 +187,21 @@ export class AuthService {
       return { devLink: link };
     }
 
-    // TODO(phase-2): send through Resend once the domain is verified.
-    this.logger.log(`magic link issued for ${email}`);
+    if (!this.mail.configured) {
+      this.mail.logUnconfigured(email);
+      return {};
+    }
+
+    try {
+      // Awaited, not fired and forgotten: an unawaited rejection would be an
+      // unhandled promise, and the work is identical whether or not the address
+      // belongs to an account, so waiting leaks no timing signal.
+      await this.mail.sendMagicLink(email, link, this.config.magicLinkTtlMinutes);
+    } catch (err) {
+      // Swallowed on purpose. The endpoint answers 204 for every address, and a
+      // provider outage must not turn into an oracle for which ones exist.
+      this.logger.error(`could not deliver a sign-in link: ${String(err)}`);
+    }
     return {};
   }
 
