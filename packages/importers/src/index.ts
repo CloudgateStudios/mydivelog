@@ -4,3 +4,4 @@ export * from './tabular/index.ts';
 export * from './tabular/csv.ts';
 export * from './tabular/mapping.ts';
 export * from './pipeline.ts';
+export * from './snapshot.ts';

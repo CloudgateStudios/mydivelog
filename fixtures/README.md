@@ -48,8 +48,13 @@ line once and is asserted against on every change to the import engine after
 that.
 
 ```bash
-node fixtures/scripts/snapshot.mjs
+pnpm --filter "@mydivelog/*" build && node fixtures/scripts/snapshot.mjs
 ```
+
+The build is required: the script is a thin CLI over
+`packages/importers/src/snapshot.ts` and loads it from that package's `dist`.
+The golden test imports the same function from source instead, so the
+package's tests never depend on its own build output.
 
 **Regenerating is not a way to make a failing test pass.** A diff here means
 the engine now merges someone's dive history differently. Read it, understand

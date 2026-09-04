@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildSnapshot } from '../../../../fixtures/scripts/snapshot.mjs';
+import { buildSnapshot } from '../snapshot.ts';
 import { parseUddf } from '../uddf/index.ts';
 import { runPipeline } from '../pipeline.ts';
 
@@ -18,22 +18,19 @@ import { runPipeline } from '../pipeline.ts';
  * wrong* if it did.
  */
 
-const expected = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL('../../../../fixtures/expected/merged.json', import.meta.url)),
-    'utf8',
-  ),
-) as ReturnType<typeof buildSnapshot>;
+const fixture = (name: string): string =>
+  readFileSync(fileURLToPath(new URL(`../../../../fixtures/${name}`, import.meta.url)), 'utf8');
 
-const actual = buildSnapshot();
+const expected = JSON.parse(fixture('expected/merged.json')) as ReturnType<typeof buildSnapshot>;
 
-const uddfObservations = parseUddf(
-  readFileSync(
-    fileURLToPath(new URL('../../../../fixtures/uddf-sample.uddf', import.meta.url)),
-    'utf8',
-  ),
-  { resolveTz: () => -240 },
-).observations;
+const actual = buildSnapshot({
+  uddf: fixture('uddf-sample.uddf'),
+  spreadsheet: fixture('spreadsheet-sample.csv'),
+});
+
+const uddfObservations = parseUddf(fixture('uddf-sample.uddf'), {
+  resolveTz: () => -240,
+}).observations;
 
 describe('the golden merge', () => {
   it('matches the hand-verified snapshot exactly', () => {
