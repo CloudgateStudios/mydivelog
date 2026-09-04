@@ -3,3 +3,6 @@ export * from './timezone.ts';
 export * from './sentinels.ts';
 export * from './taxonomy.ts';
 export * from './columns.ts';
+export * from './geo.ts';
+export * from './similarity.ts';
+export * from './matching.ts';
