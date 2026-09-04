@@ -34,14 +34,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Turbo's local cache, keyed on the lockfile and source. Restores partial
-      # results across runs so unchanged packages are not rebuilt.
-      - uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
-
+      # No turbo cache on purpose. Its key was the commit SHA, so every run
+      # wrote a new ~114 MB entry, and post-job upload took 5-9 minutes against
+      # a full cold build of well under a minute. The cache cost far more than
+      # it saved. Dependency caching above is the one that pays, and it hits.
+      #
+      # If build times ever justify it, use Turbo remote caching rather than
+      # shipping .turbo through actions/cache.
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
