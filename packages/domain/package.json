@@ -19,7 +19,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "generate": "echo 'nothing to generate'"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

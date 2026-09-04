@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Generated code
+packages/db/src/generated/
+
 # Build output
 dist/
 build/
