@@ -73,7 +73,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Pinned to a commit, not @master. This action runs with a Fly deploy
+      # token, and a branch reference means whatever was pushed to it last.
+      # ed8efb3 is the tip of both master and tag 1.6 at time of pinning.
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
 
       - name: Deploy ${{ matrix.service }}
         env:
