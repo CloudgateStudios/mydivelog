@@ -31,7 +31,7 @@ gravity) and Stripe (billing history) — both chosen as boring, portable, stand
 | `admin.mydivelog.app` | Admin panel (Cloudflare Access, IP-restricted) |
 | `cdn.mydivelog.app` | R2 public bucket for avatars/site photos |
 | `status.mydivelog.app` | Better Stack status page |
-| `staging.mydivelog.app`, `api.staging.…` | Staging |
+| `dev.mydivelog.app`, `api-dev.…`, `admin-dev.…` | Dev — single-level names; Universal SSL covers one wildcard level |
 
 Cloudflare proxied, TLS 1.2+, HSTS with preload once stable.
 
@@ -40,16 +40,31 @@ lockable at the edge.
 
 ## Environments
 
-| Env | Compute | Database | Purpose |
-|---|---|---|---|
-| **local** | docker compose | Postgres + MinIO in Docker | Everything runs offline, seeded |
-| **preview** | Fly per-PR app | **Neon branch from staging** | Every PR gets a real URL and a real database |
-| **staging** | Fly, 1 machine each | Neon, anonymized prod-shaped data | Pre-release verification |
-| **production** | Fly, ≥2 API machines | Neon with PITR | |
+| Env | Compute | Database | Deploys | Purpose |
+|---|---|---|---|---|
+| **local** | docker compose | Postgres + MinIO in Docker | — | Everything runs offline, seeded |
+| **preview** | Fly per-PR app | Neon branch from **dev** | Per PR | Every PR gets a real URL and a real database |
+| **dev** | Fly, scales to zero | Neon project `mydivelog-dev` | Automatic on push to `main` | Integration testing, demos |
+| **prod** | Fly, ≥2 API machines | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
 
-Neon branching is the reason to choose it: a preview DB is a copy-on-write branch created in
-seconds and destroyed with the PR. Preview environments that share one database are worse
-than no preview environments.
+Two deployed environments, not three. A separate staging tier only earns its keep once
+there are enough people that a shared dev environment becomes contended; until then it is
+another thing to configure, pay for, and forget to keep in sync.
+
+**dev and prod are separate Neon projects, not two branches of one.** Branching is Neon's
+best feature and the obvious tool to reach for here, and it is the wrong one for this
+boundary: a dev branch cut from prod is a full copy of real divers' logs — sites,
+timestamps, notes — in an environment with weaker access control. Separate projects make
+that mistake impossible rather than merely discouraged. Branching still earns its place
+*inside* the dev project, where per-PR preview databases branch from data that is entirely
+synthetic.
+
+**dev scales to zero.** Idle cost is roughly nothing, which is what makes a permanent dev
+environment worth having at this stage. Prod never scales to zero — a cold start on a real
+request is not acceptable.
+
+Setup is documented step by step in
+[the environment setup runbook](./runbooks/environment-setup.md).
 
 **Local must be a single command.** `pnpm dev` brings up Postgres, MinIO, API, worker, web,
 admin, migrated and seeded — including the fixture dive data. A contributor who can't run
@@ -69,15 +84,14 @@ PR opened
 
 merge to main
   ├─ full suite
-  ├─ deploy staging
-  ├─ smoke tests against staging
-  └─ await manual approval
+  ├─ deploy dev          (automatic, no gate)
+  └─ smoke tests against dev
 
-release (tag)
+manual prod deploy  (Actions → Deploy → prod)
+  ├─ await required-reviewer approval on the `prod` environment
   ├─ migrate production   (expand/contract, backward-compatible)
-  ├─ deploy api + worker  (rolling, health-gated)
-  ├─ deploy web + admin
-  └─ post-deploy smoke tests; auto-rollback on failure
+  ├─ deploy api, worker, web, admin  (rolling, health-gated, sequential)
+  └─ post-deploy smoke tests asserting each service names itself
 ```
 
 ### Migrations
@@ -90,7 +104,7 @@ release (tag)
 4. *Contract* — add constraints, drop the old column. A **separate later release.**
 
 A migration that would lock `dives` is rejected in review. Index creation is `CONCURRENTLY`.
-Every migration is tested against a staging database restored from a production snapshot
+Every migration is tested against a dev database restored from a production snapshot
 before it reaches production.
 
 ### Flutter releases
@@ -183,7 +197,7 @@ None of these require an architecture change, which is the point of the choices 
 ## Launch Checklist
 
 - [ ] Domains, TLS, HSTS, redirects verified
-- [ ] Staging mirrors production configuration exactly
+- [ ] dev mirrors prod configuration exactly, apart from machine counts and scale-to-zero
 - [ ] Migrations verified against a production-shaped restore
 - [ ] **Backup restore drill completed and timed**
 - [ ] Alerts firing to a real destination, tested by deliberately breaking something

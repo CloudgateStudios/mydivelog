@@ -1,0 +1,13 @@
+pnpm-lock.yaml
+dist/
+.next/
+.turbo/
+coverage/
+fixtures/**/*.uddf
+fixtures/**/*.xlsx
+
+# Hand-authored prose. Prettier pads markdown tables, which produces large
+# diffs that bury substantive edits and re-churn on every table change.
+docs/**/*.md
+fixtures/README.md
+README.md

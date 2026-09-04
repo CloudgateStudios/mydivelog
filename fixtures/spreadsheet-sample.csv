@@ -1,0 +1,25 @@
+Dive Number,Date,Time In,Dive Time,Time Out,Running Total Time,Max Depth (ft),Air Temperature (F),Water Temperature (F),Visibility (ft),Location,Dive Site,Water Type,Dive Type,Gas,EAN %,Equipment,Weight (lbs),Notes
+1.0,41062.0,0.41180555555555554,0.021527777777777778,0.4333333333,0.02152777778,17.0,75.0,65.0,20.0,Haigh Quarry,N/A,Fresh,Shore,Air,,"Full Wet Suit (5mil Rental), Boots (5mil Rental)",24.0,Open Water Dive 1
+2.0,41062.0,0.46458333333333335,0.020833333333333332,0.4854166667,0.04236111111,21.0,75.0,65.0,20.0,Haigh Quarry,N/A,Fresh,Shore,Air,,"Full Wet Suit (5mil Rental), Boots (5mil Rental)",24.0,Open Water Dive 2
+3.0,41063.0,0.3958333333333333,0.006944444444444444,0.4027777778,0.04930555556,20.0,73.0,65.0,20.0,Haigh Quarry,N/A,Fresh,"Dock, Shore",Air,,"Full Wet Suit (5mil Rental), Boots (5mil Rental)",24.0,Open Water Dive 3
+10.0,41375.0,,0.034027777777777775,,0.2458333333,40.0,76.0,76.0,60.0,Hawaii - Big Island,Manta Heaven,Salt,"Boat, Night",Air,,"Full Wet Suit (5mil Rental), Dive Boots (2mil)",16.0,Manta Rays in Kona
+13.0,41380.0,,0.02847222222222222,,0.3465277778,100.0,,76.0,100.0,Hawaii - Maui,Molokini Back Wall,Salt,"Boat, Dift",Air,,"Full Wet Suit (5mil Rental), Dive Boots (2mil)",22.0,ProDiver Maui
+15.0,41381.0,,0.025,,0.4069444444,89.0,,76.0,80.0,Hawaii - Maui,Molokini Back Wall,Salt,"Boat, Dift",Air,,"Full Wet Suit (5mil Rental), Dive Boots (2mil)",22.0,Not as good as the first time
+x,44464.0,0.3333333333333333,,0.625,2.582638889,,,,,Haigh Quarry,N/A,Fresh,Shore,Air,,"Full Wet Suit (3mil Rental), BioLite BC",18.0,Rescue Dive Training Day 1 - Self Rescue & Exercise 1-5. First time using personal BC
+x,44465.0,0.2916666666666667,,0.6041666666666666,2.582638889,,,,,Haigh Quarry,N/A,Fresh,Shore,Air,,"Full Wet Suit (3mil Rental), BioLite BC",18.0,Rescue Dive Training Day 2 - Exercise 6-10 & Scenario 1 and 2
+96.0,44650.0,0.43819444444444444,0.04097222222222222,0.4791666667,3.172222222,50.0,84.0,80.0,75.0,Bonaire,"Monte's Divi Tree, Klein",Salt,Boat,EAN,32.0,"BioLite BC, Bare Jacket (Pullover), Pockets",14.0,Site H
+97.0,44650.0,0.5520833333333334,0.034722222222222224,0.5868055556,3.206944444,86.0,84.0,80.0,100.0,Bonaire,"1,000 Steps",Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Pullover), Pockets",14.0,Site 16
+182.0,46083.0,0.3951388888888889,0.03236111111111111,0.4275,6.374444444,101.0,,79.0,50.0,Bonaire,Alice in Wonderland,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+183.0,46083.0,0.46597222222222223,0.033680555555555554,0.4996527778,6.408125,83.0,,80.0,70.0,Bonaire,Windsock,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+184.0,46083.0,0.5861111111111111,0.031875,0.6179861111,6.44,76.0,,80.0,70.0,Bonaire,Oil Slick,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+185.0,46084.0,0.3798611111111111,0.03415509259259259,0.4140162037,6.474155093,95.0,,80.0,50.0,Bonaire,Buddy's Reef,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+186.0,46084.0,0.46041666666666664,0.03519675925925926,0.4956134259,6.509351852,60.0,,80.0,50.0,Bonaire,Bachelors Beach,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+187.0,46085.0,0.38125,0.03515046296296296,0.416400463,6.544502315,72.0,,79.0,70.0,Bonaire,Aquaris,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+188.0,46085.0,0.4583333333333333,0.03127314814814815,0.4896064815,6.575775463,77.0,,80.0,50.0,Bonaire,Lighthouse Point,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+189.0,46085.0,0.5611111111111111,0.03542824074074074,0.5965393519,6.611203704,69.0,,80.0,70.0,Bonaire,"1,000 Steps",Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+190.0,46086.0,0.3840277777777778,0.034756944444444444,0.4187847222,6.645960648,69.0,,79.0,40.0,Bonaire,Vista Blue,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+191.0,46086.0,0.47291666666666665,0.036458333333333336,0.509375,6.682418981,70.0,,80.0,70.0,Bonaire,Andrea I,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+192.0,46086.0,0.5680555555555555,0.03532407407407408,0.6033796296,6.717743056,72.0,,80.0,70.0,Bonaire,Karpata,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+193.0,46087.0,0.3854166666666667,0.03744212962962963,0.4228587963,6.755185185,76.0,,80.0,70.0,Bonaire,"1,000 Steps",Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+194.0,46087.0,0.46944444444444444,0.04231481481481481,0.5117592593,6.7975,47.0,,80.0,70.0,Bonaire,Salt Pier,Salt,Shore,EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0
+195.0,46087.0,0.7965277777777777,0.03212962962962963,,,46.0,,80.0,50.0,Bonaire,Angel City,Salt,"Shore, Night",EAN,32.0,"BioLite BC, Bare Jacket (Zip up), Pockets",14.0,Ostrocods

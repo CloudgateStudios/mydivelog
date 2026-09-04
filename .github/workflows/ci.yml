@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Must precede setup-node: the pnpm cache resolves its store by running
+      # `pnpm store path`, which needs pnpm already on PATH.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Turbo's local cache, keyed on the lockfile and source. Restores partial
+      # results across runs so unchanged packages are not rebuilt.
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm format:check
+
+  fixtures:
+    name: Fixture integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # The fixtures exist to carry real-world data hazards. Someone "tidying
+      # up" a fixture would silently disarm the import engine's tests, and the
+      # loss would not show up until Phase 3 regressions slipped through.
+      - name: Assert data hazards are still present
+        run: |
+          set -euo pipefail
+          fail=0
+          check() {
+            if grep -qE "$2" "$3"; then
+              echo "ok   $1"
+            else
+              echo "::error file=$3::Fixture hazard removed: $1"
+              fail=1
+            fi
+          }
+          check "spreadsheet: non-numeric dive number" '^x,'              fixtures/spreadsheet-sample.csv
+          check "spreadsheet: N/A used as a null"      ',N/A,'            fixtures/spreadsheet-sample.csv
+          check "spreadsheet: typo 'Dift' for drift"   'Dift'             fixtures/spreadsheet-sample.csv
+          check "spreadsheet: comma inside a value"    '"1,000 Steps"'    fixtures/spreadsheet-sample.csv
+          check "uddf: malformed UTC offset"           '\-00:0[456]'      fixtures/uddf-sample.uddf
+          check "uddf: leadquantity sentinel"          'leadquantity>0.0' fixtures/uddf-sample.uddf
+          check "uddf: site name equal to opaque id"   '<name>site_'      fixtures/uddf-sample.uddf
+          exit $fail
+
+      - name: Assert the two fixtures still overlap
+        run: |
+          set -euo pipefail
+          # Without shared dates there is no merge case, which is the entire
+          # reason both files are committed.
+          if ! grep -q "2026-03" fixtures/uddf-sample.uddf; then
+            echo "::error::UDDF fixture no longer covers the overlap window"
+            exit 1
+          fi
+          echo "ok   fixtures share the 2026-03 window"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The gitleaks CLI rather than the marketplace action: the action requires
+      # a paid license key for organization-owned repositories, the CLI does not.
+      - name: Run gitleaks
+        env:
+          GITLEAKS_VERSION: 8.28.0
+        run: |
+          set -euo pipefail
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --verbose --no-banner

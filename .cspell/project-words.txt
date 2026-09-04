@@ -43,8 +43,15 @@ HSTS
 PITR          # point-in-time recovery
 WCAG
 
+# --- Vendors and hostnames -------------------------------------------------
+Dockerfiles   # cspell knows "Dockerfile" but not the plural
+Namecheap
+cloudflareaccess    # part of the Access login hostname
+cloudflarestorage   # part of the R2 endpoint hostname
+
 # --- Platform and library names -------------------------------------------
 DPAPI         # Windows Data Protection API
+flyctl        # Fly.io CLI
 MSIX
 Riverpod
 earthdistance # PostgreSQL extension
@@ -52,13 +59,17 @@ zstd
 
 # --- Database and API identifiers -----------------------------------------
 autoincrement
+pooler        # Neon connection pooler
+sslmode       # Postgres connection parameter
 timestamptz
 
 # --- Ordinary technical English that cspell's dictionaries lack -----------
+checkpointing
 checksummed
 cookieless
 dogfooded
 generatable
+hostable       # as in self-hostable
 hostnames
 journaled
 prefs
