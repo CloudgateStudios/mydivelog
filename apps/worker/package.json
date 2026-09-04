@@ -13,8 +13,8 @@
     "generate": "echo 'nothing to generate'"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
-    "typescript": "^5.9.2",
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2",
     "vitest": "^3.2.4"
   }
 }
