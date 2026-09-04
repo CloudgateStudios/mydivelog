@@ -328,8 +328,22 @@ describe('sites and tags', () => {
   });
 
   it('attaches the seeded taxonomy rather than duplicating it per user', async () => {
-    // `shore` and `night` are system tags. Creating a private copy for every
-    // diver is how a shared vocabulary stops being shared.
+    // Creating a private copy of `shore` for every diver is how a shared
+    // vocabulary stops being shared.
+    //
+    // The system tags are created here rather than assumed. The first version
+    // of this test relied on a seeded database and passed only on a machine
+    // that had run `db:seed` — CI, which migrates a fresh database and does
+    // not seed, saw user tags and failed. Asserting the behaviour instead of
+    // the environment is what makes it a test of this code.
+    await prisma.tag.createMany({
+      data: [
+        { id: randomUUID(), slug: 'shore', label: 'Shore', category: 'entry', isSystem: true },
+        { id: randomUUID(), slug: 'night', label: 'Night', category: 'condition', isSystem: true },
+      ],
+      skipDuplicates: true,
+    });
+
     const b = await batch('spreadsheet');
     const { created } = await repo.commit(scope, b, [withSite()]);
     const tags = await prisma.diveTag.findMany({
