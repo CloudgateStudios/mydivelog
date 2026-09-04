@@ -69,12 +69,16 @@ describe('repairOffset', () => {
     const r = repairOffset(-4, undefined, new Date('2026-03-06T19:07:42'), atlantic);
     expect(r.offsetMinutes).toBe(-4);
     expect(r.suspect).toBe(true);
-    expect(r.normalizations[0]?.reason).toContain('no site coordinates');
+    expect(r.normalizations[0]?.reason).toContain('records no coordinates');
   });
 
-  it('refuses to correct with no resolver wired in', () => {
+  it('refuses to correct with no resolver wired in, and does not blame the file', () => {
+    // The message shown for this case claimed the file had no coordinates for
+    // a file that had them. What was missing was a resolver on our side.
     const r = repairOffset(-4, BONAIRE, new Date('2026-03-06T19:07:42'));
     expect(r.suspect).toBe(true);
+    expect(r.normalizations[0]?.reason).toContain('could not be resolved');
+    expect(r.normalizations[0]?.reason).not.toContain('no coordinates');
   });
 
   it('leaves a well-formed offset alone and records nothing', () => {

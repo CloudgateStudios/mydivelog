@@ -24,6 +24,7 @@ COPY apps/api/package.json apps/api/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/db/package.json packages/db/
 COPY packages/domain/package.json packages/domain/
+COPY packages/importers/package.json packages/importers/
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -33,6 +34,7 @@ COPY tsconfig.base.json ./
 COPY packages/contracts packages/contracts
 COPY packages/db packages/db
 COPY packages/domain packages/domain
+COPY packages/importers packages/importers
 COPY apps/api apps/api
 # `...` builds the package's workspace dependencies first. The API imports
 # @mydivelog/db, /contracts and /domain, and tsc resolves them through their
