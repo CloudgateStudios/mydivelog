@@ -8,11 +8,11 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { renumberDives, renumberPlan } from '@mydivelog/domain';
-import { PrismaClient } from './generated/client.ts';
+import { createPrismaClient } from './client.ts';
 import { createDiveRepository } from './repositories/dive.repository.ts';
 import { userScope } from './scope.ts';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const repo = createDiveRepository(prisma);
 
 const userId = randomUUID();
