@@ -21,6 +21,8 @@ RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.spl
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
+COPY packages/contracts/package.json packages/contracts/
+COPY packages/db/package.json packages/db/
 COPY packages/domain/package.json packages/domain/
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
@@ -28,9 +30,14 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # --- build -----------------------------------------------------------------
 FROM deps AS build
 COPY tsconfig.base.json ./
+COPY packages/contracts packages/contracts
+COPY packages/db packages/db
 COPY packages/domain packages/domain
 COPY apps/api apps/api
-RUN pnpm --filter @mydivelog/api build
+# `...` builds the package's workspace dependencies first. The API imports
+# @mydivelog/db, /contracts and /domain, and tsc resolves them through their
+# built output rather than their source.
+RUN pnpm --filter @mydivelog/api... build
 # Produces a self-contained directory with production dependencies only, with
 # workspace links resolved into real files.
 RUN pnpm --filter @mydivelog/api --prod --legacy deploy /out
