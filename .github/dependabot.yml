@@ -65,15 +65,15 @@ updates:
           - '@cspell/*'
           - '@types/node'
     ignore:
-      # TypeScript 7 is the native compiler rewrite, and typescript-eslint does
-      # not support it — not merely the version installed here: 8.69.0, the
-      # current release, declares `typescript: ">=4.8.4 <6.1.0"`, so it does not
-      # support 6 either. Taking 7 means dropping typescript-eslint, and with it
-      # the rule keeping packages/domain free of I/O, which is a Phase 1
-      # acceptance criterion. Revisit when typescript-eslint ships support.
+      # TypeScript 7 only. typescript-eslint 8.69.0 declares
+      # `typescript: ">=4.8.4 <6.1.0"`, which admits 6.0.x and excludes 7 — so
+      # this blocks 7 and above rather than every major. Adopting 7 today means
+      # dropping typescript-eslint, and with it the rule keeping packages/domain
+      # free of I/O, which is a Phase 1 acceptance criterion. Lift this when
+      # typescript-eslint ships support.
       - dependency-name: typescript
-        update-types:
-          - version-update:semver-major
+        versions:
+          - '>=7'
       # @types/node must match the runtime: Node 24 in CI, in engines, and in
       # the base images. Types ahead of the runtime let code compile against
       # APIs that are not there at execution — a failure that lands in
