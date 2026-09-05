@@ -23,7 +23,7 @@ export default async function Export() {
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <h1>Export your logbook</h1>
         <p className="lede">
           Everything you have, whenever you want it. If you ever leave, you leave with all of it.

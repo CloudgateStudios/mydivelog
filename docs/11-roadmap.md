@@ -129,6 +129,9 @@ Built before the user-facing app, because Phase 3's failures need a debugging su
 - WCAG 2.2 AA on primary flows
 - Lighthouse: performance >90, accessibility >95 on marketing pages
 
+> The last two are measured on every pull request rather than asserted — see
+> [the runbook](./runbooks/accessibility-and-performance.md).
+
 ---
 
 ## Phase 6 — Launch Hardening · ~2 weeks

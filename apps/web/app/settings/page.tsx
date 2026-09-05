@@ -39,7 +39,7 @@ export default async function Settings({
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <h1>Settings</h1>
 
         {saved && <p className="notice">Saved. Every screen now uses these units.</p>}

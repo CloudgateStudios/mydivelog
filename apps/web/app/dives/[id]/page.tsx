@@ -56,7 +56,7 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <p className="crumb">
           <a href="/logbook">← Logbook</a>
         </p>
@@ -75,7 +75,7 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
         {series && (
           <section>
             <h2>Depth profile</h2>
-            <ProfileChart series={series} />
+            <ProfileChart series={series} units={u} />
           </section>
         )}
         {dive.profile && !series && (

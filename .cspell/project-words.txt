@@ -1,102 +1,90 @@
-# MyDiveLog project dictionary
+
 #
-# Keep this grouped and alphabetical within groups. Prefer fixing a real typo
-# over adding a word here. One word per line; matching is case-insensitive.
-
-# --- Diving: general vocabulary -------------------------------------------
-divemaster
-drysuit
-freedive
-liveaboard
-liveaboards
-nitrox
-trimix
-
+# "nobody configured this" from "this is switched off" — a distinction the
+# --- Database and API identifiers -----------------------------------------
 # --- Diving: certification agencies ---------------------------------------
-BSAC
-CMAS
-NAUI
-PADI
-
+# --- Diving: general vocabulary -------------------------------------------
 # --- Diving: vendors, apps, and file formats ------------------------------
+# --- Import engine ---------------------------------------------------------
+# --- Ordinary technical English that cspell's dictionaries lack -----------
+# --- Place names ----------------------------------------------------------
+# --- Platform and library names -------------------------------------------
+# --- Product ---------------------------------------------------------------
+# --- Standards, protocols, and compliance ---------------------------------
+# --- UDDF schema identifiers (quoted verbatim from the spec and real files)
+# --- Vendors and hostnames -------------------------------------------------
+# --- Verbatim quotes from real source data --------------------------------
+# Do not "fix" these.
+# Keep this grouped and alphabetical within groups. Prefer fixing a real typo
+# MyDiveLog project dictionary
+# These are MISSPELLED ON PURPOSE. The docs quote a diver's spreadsheet that
+# Used throughout the auth, mail and Access checks, which all distinguish
+# also an issue code the API returns (unparseable_xml), so it stays.
+# codebase makes deliberately, so the word earns its place.
+# contains "Dift" (drift) in 39 rows; correcting it here would destroy the
+# cspell prefers "unparsable"; this spelling is the more common one and is
+# example the import engine's fuzzy-matching is specified against.
+# over adding a word here. One word per line; matching is case-insensitive.
+ASVS
+BSAC
+Bonaire
+CCPA
+CMAS
+DKIM
+DMARC          # OWASP Application Security Verification Standard
+DPAPI         # Windows Data Protection API
 Deepblu
+Dift
 Diviac
+Dockerfiles   # cspell knows "Dockerfile" but not the plural
+HSTS
+Kralendijk
+MSIX
+NAUI
+Namecheap
+PADI
+PITR          # point-in-time recovery
+Riverpod
+Roatan
 Scubapro
 Shearwater
 Suunto
 TRAK          # Scubapro LogTRAK
 UDDF          # Universal Dive Data Format
-
-# --- UDDF schema identifiers (quoted verbatim from the spec and real files)
-leadquantity
-opencircuit
-
-# --- Place names ----------------------------------------------------------
-Bonaire
-Kralendijk
-Roatan
-
-# --- Standards, protocols, and compliance ---------------------------------
-ASVS
-DKIM
-DMARC          # OWASP Application Security Verification Standard
-CCPA
-HSTS
-PITR          # point-in-time recovery
 WCAG
-
-# --- Vendors and hostnames -------------------------------------------------
-Dockerfiles   # cspell knows "Dockerfile" but not the plural
-Namecheap
-cloudflareaccess    # part of the Access login hostname
-cloudflarestorage   # part of the R2 endpoint hostname
-
-# --- Platform and library names -------------------------------------------
-DPAPI         # Windows Data Protection API
-flyctl        # Fly.io CLI
-MSIX
-Riverpod
-earthdistance # PostgreSQL extension
-zstd
-
-# --- Database and API identifiers -----------------------------------------
 autoincrement
-pooler        # Neon connection pooler
-sslmode       # Postgres connection parameter
-timestamptz
-
-# --- Ordinary technical English that cspell's dictionaries lack -----------
 checkpointing
 checksummed
+cloudflareaccess    # part of the Access login hostname
+cloudflarestorage   # part of the R2 endpoint hostname
 cookieless
+divemaster
 dogfooded
+drysuit
+earthdistance # PostgreSQL extension
+flyctl        # Fly.io CLI
+freedive
 generatable
 hostable       # as in self-hostable
 hostnames
 journaled
+leadquantity
+lighthouseci
+liveaboard
+liveaboards
+mydivelog
+nitrox
+opencircuit
+pooler        # Neon connection pooler
 prefs
 rollups
 signups
+sslmode       # Postgres connection parameter
 sublinearly
+timestamptz
+trimix
+unconfigured
 undoable
 unmetered
-
-# --- Product ---------------------------------------------------------------
-mydivelog
-
-# --- Verbatim quotes from real source data --------------------------------
-# These are MISSPELLED ON PURPOSE. The docs quote a diver's spreadsheet that
-# contains "Dift" (drift) in 39 rows; correcting it here would destroy the
-# example the import engine's fuzzy-matching is specified against.
-# Do not "fix" these.
-Dift
-
-# --- Import engine ---------------------------------------------------------
-# cspell prefers "unparsable"; this spelling is the more common one and is
-# also an issue code the API returns (unparseable_xml), so it stays.
 unparseable
-
-# Used throughout the auth, mail and Access checks, which all distinguish
-# "nobody configured this" from "this is switched off" — a distinction the
-# codebase makes deliberately, so the word earns its place.
-unconfigured
+zstd

@@ -8,7 +8,11 @@
   --border: #e2e5ec;
   --text: #1b1f28;
   --muted: #6a7382;
-  --accent: #1f6feb;
+  /* #1f6feb was 4.48:1 against this off-white body -- under AA by a hair, and
+     only on the body: against a white panel it measured 4.63:1, which is how
+     it survived review by eye. This is 5.66:1 on the body and 5.85:1 on a
+     panel, and reads as the same blue. */
+  --accent: #1a5fd0;
   --bad: #b42318;
   color-scheme: light;
 }
@@ -109,6 +113,16 @@ input:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* A date input is four tab stops in Chrome -- month, day, year, and the
+   calendar button in its shadow tree. On that fourth stop focus is no longer
+   on the input, so the rule above stops applying and the ring disappears
+   mid-field. Found by tabbing, not by looking. */
+input[type='date']::-webkit-calendar-picker-indicator:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
 }
 
 .divider {
@@ -646,6 +660,35 @@ select:focus-visible {
   display: inline-block;
 }
 
+/*
+ * Off screen until it has focus. Reaching the first dive on the log otherwise
+ * means tabbing past every link in the header, on every page, forever.
+ */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A programmatically focused main must not draw a ring as though the reader
+   had tabbed to it; the point is to move the caret, not to highlight a region. */
+main:focus {
+  outline: none;
+}
+
 /* --- Filtering the log --------------------------------------------------- */
 
 /*
@@ -807,8 +850,14 @@ tbody th {
   color: var(--muted);
   cursor: pointer;
   font-size: 15px;
-  padding: 0 0.3rem;
   line-height: 1;
+  /* WCAG 2.2 SC 2.5.8: a target smaller than 24x24 is one a shaking hand, a
+     boat deck or a phone misses. A x glyph is about 8px wide. */
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .unbutton:hover {
@@ -854,4 +903,31 @@ tbody th {
 .pager .button {
   width: auto;
   display: inline-block;
+}
+
+.profile-table {
+  margin-top: 0.75rem;
+  font-size: 13px;
+}
+
+.profile-table > summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.3rem 0;
+}
+
+.profile-table > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.profile-table table {
+  margin-top: 0.5rem;
+}
+
+/* The deepest sample, marked in weight as well as in the text a screen reader
+   is given — a row identified by colour alone is a row half the readers miss. */
+.profile-table tr.deepest th,
+.profile-table tr.deepest td {
+  font-weight: 600;
 }

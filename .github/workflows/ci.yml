@@ -133,6 +133,97 @@ jobs:
         env:
           AUTH_ACCESS_SECRET: integration-tests-only-not-a-real-secret-value
 
+  accessibility:
+    name: Accessibility and Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare --activate
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The browser is most of this job's install time, and it only changes
+      # when Playwright does.
+      - uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      # The same stack the runbook starts, from the same compose file and the
+      # same .env.example. A CI-only approximation of the environment would
+      # measure a page nobody runs.
+      - name: Start Postgres and object storage
+        run: |
+          cp .env.example .env
+          pnpm services:up
+
+      - name: Build
+        run: pnpm build
+
+      - name: Apply migrations and seed reference data
+        run: pnpm db:deploy && pnpm db:seed
+
+      # Production builds, not `next dev`. A development server is several
+      # times slower to respond and compiles on demand, so a performance score
+      # taken against it measures the dev server rather than the site.
+      - name: Start the API and the site
+        run: |
+          pnpm --filter @mydivelog/api start > /tmp/api.log 2>&1 &
+          pnpm --filter @mydivelog/web start > /tmp/web.log 2>&1 &
+          for i in $(seq 1 60); do
+            api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:53001/health || true)
+            web=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:53000/ || true)
+            if [ "$api" = "200" ] && [ "$web" = "200" ]; then echo "up after ${i}s"; exit 0; fi
+            sleep 1
+          done
+          echo "::error::the stack did not come up"
+          tail -40 /tmp/api.log /tmp/web.log
+          exit 1
+
+      # Real dives, so the accessibility checks run against a page with content
+      # in it. An empty logbook has no table, no filters worth applying and no
+      # depth profile -- it would pass every check by having nothing to fail.
+      - name: Load the sample logbook
+        run: pnpm demo
+
+      - name: WCAG 2.2 AA on the primary flows
+        run: pnpm test:a11y
+
+      - name: Lighthouse on the marketing pages
+        run: pnpm test:lighthouse
+
+      - name: Keep the evidence when something fails
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: accessibility-run
+          path: |
+            playwright-report/
+            test-results/
+            .lighthouseci/
+          retention-days: 7
+
   images:
     name: Container images
     runs-on: ubuntu-latest

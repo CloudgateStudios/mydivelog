@@ -77,7 +77,7 @@ export default async function Logbook({
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <h1>Your logbook</h1>
 
         <SavedViews
@@ -91,11 +91,13 @@ export default async function Logbook({
         <FilterBar filters={filters} facets={facets} prefs={u.prefs} />
 
         {/*
-          Announced politely rather than assertively: the count changes on every
-          filter, and a screen reader interrupting itself mid-sentence to say a
-          new number is worse than hearing it a moment later.
+          No aria-live. Every navigation here is a full page load — the filter
+          bar is a native GET form and the view chips are plain anchors — so a
+          live region would never fire, and the screen reader announces the new
+          document anyway. An attribute that describes behaviour the page does
+          not have is worse than none: it reads as covered.
         */}
-        <p className="result-count" aria-live="polite">
+        <p className="result-count">
           <Count total={page.total} shown={page.data.length} sentence={sentence} />
         </p>
 

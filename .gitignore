@@ -26,3 +26,8 @@ build/
 # Test / coverage
 coverage/
 *.log
+
+# Accessibility and performance runs
+/test-results
+/playwright-report
+/.lighthouseci

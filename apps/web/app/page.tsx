@@ -38,7 +38,7 @@ export default async function Landing() {
         </a>
       </header>
 
-      <main className="landing">
+      <main id="main" tabIndex={-1} className="landing">
         <section className="hero">
           <h1>Every dive you have logged, in one place.</h1>
           <p className="lede">
