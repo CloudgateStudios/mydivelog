@@ -12,7 +12,6 @@ import { createPrismaClient, type PrismaClient } from '@mydivelog/db';
  */
 
 declare global {
-   
   var __adminPrisma: PrismaClient | undefined;
 }
 
