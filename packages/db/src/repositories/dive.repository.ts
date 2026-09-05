@@ -1,6 +1,18 @@
 import type { Prisma, PrismaClient } from '../generated/client.ts';
 import type { UserScope } from '../scope.ts';
 
+/**
+ * How a filtered log is ordered.
+ *
+ * Every one of these is completed with `id` as a tiebreaker below, which is
+ * what makes cursor pagination correct: Prisma's cursor walks a sequence, and
+ * a sort with ties has no single sequence to walk. Two dives on the same day
+ * — a morning and an afternoon dive with the same recorded start, which the
+ * spreadsheet produces often — would otherwise be able to swap places between
+ * page one and page two, showing one twice and the other never.
+ */
+export type DiveSort = 'date_desc' | 'date_asc' | 'depth_desc' | 'duration_desc' | 'number_asc';
+
 export type DiveListFilters = {
   from?: Date;
   to?: Date;
@@ -9,6 +21,11 @@ export type DiveListFilters = {
   hasProfile?: boolean;
   minDepthM?: number;
   maxDepthM?: number;
+  /** Tag slugs, all of which must be present. See `where` below. */
+  tagSlugs?: string[];
+  /** Free text over site name, notes and buddy names. */
+  q?: string;
+  sort?: DiveSort;
   limit?: number;
   cursor?: string;
 };
@@ -25,33 +42,165 @@ export function createDiveRepository(prisma: PrismaClient) {
     deletedAt: null,
   });
 
+  /**
+   * A date filter reads the *local* start time, not UTC.
+   *
+   * "Dives in March" means the dives the diver did in March where they were,
+   * and a 7am dive in Bonaire is the 6th in UTC and the 5th on the boat. The
+   * column is `timestamp without time zone` holding wall clock, so comparing
+   * it to a wall-clock bound is comparing like with like.
+   */
+  const whereFor = (scope: UserScope, filters: DiveListFilters): Prisma.DiveWhereInput => {
+    const where: Prisma.DiveWhereInput = { ...owned(scope) };
+
+    if (filters.from || filters.to) {
+      where.startTimeLocal = {
+        ...(filters.from ? { gte: filters.from } : {}),
+        ...(filters.to ? { lte: filters.to } : {}),
+      };
+    }
+    if (filters.siteId) where.siteId = filters.siteId;
+    if (filters.tripId) where.tripId = filters.tripId;
+    if (filters.hasProfile !== undefined) where.hasProfile = filters.hasProfile;
+    if (filters.minDepthM !== undefined || filters.maxDepthM !== undefined) {
+      where.maxDepthM = {
+        ...(filters.minDepthM !== undefined ? { gte: filters.minDepthM } : {}),
+        ...(filters.maxDepthM !== undefined ? { lte: filters.maxDepthM } : {}),
+      };
+    }
+
+    // Every tag must be present, which needs one `some` per slug: a single
+    // `some: { tag: { slug: { in: [...] } } }` is "any of", and a diver who
+    // picks `wreck` and `night` is narrowing, not widening.
+    if (filters.tagSlugs?.length) {
+      where.AND = filters.tagSlugs.map((slug) => ({ tags: { some: { tag: { slug } } } }));
+    }
+
+    // Free text over the fields a diver would recognise a dive by. Deliberately
+    // not `privateNotes`: it is shown on no screen and included in no export, so
+    // a dive matched only there arrives with nothing on it that explains why.
+    if (filters.q?.trim()) {
+      const contains = { contains: filters.q.trim(), mode: 'insensitive' as const };
+      where.OR = [
+        { notes: contains },
+        { site: { name: contains } },
+        { buddies: { some: { buddy: { displayName: contains } } } },
+      ];
+    }
+
+    return where;
+  };
+
+  /**
+   * A total order. See DiveSort.
+   *
+   * Ordering is by UTC while *filtering* is by local time, and the split is
+   * deliberate. "March" is a local question — a 7am dive in Bonaire is the 5th
+   * on the boat and the 6th in UTC. But "which dive came first" is not: sorting
+   * a logbook by wall clock puts an 8am dive in Fiji before a 9pm dive in
+   * Bonaire that actually happened two days earlier, and dive 24 lands above
+   * dive 23.
+   */
+  const orderFor = (sort: DiveSort = 'date_desc'): Prisma.DiveOrderByWithRelationInput[] => {
+    const tiebreak = { id: 'asc' } as const;
+    switch (sort) {
+      case 'date_asc':
+        return [{ startTimeUtc: 'asc' }, tiebreak];
+      // Nulls last on both: a dive with no recorded depth is not the deepest,
+      // and Postgres sorts NULL first on DESC by default.
+      case 'depth_desc':
+        return [{ maxDepthM: { sort: 'desc', nulls: 'last' } }, tiebreak];
+      case 'duration_desc':
+        return [{ durationS: { sort: 'desc', nulls: 'last' } }, tiebreak];
+      case 'number_asc':
+        return [{ diveNumber: 'asc' }, tiebreak];
+      default:
+        return [{ startTimeUtc: 'desc' }, tiebreak];
+    }
+  };
+
   return {
     async list(scope: UserScope, filters: DiveListFilters = {}) {
-      const where: Prisma.DiveWhereInput = { ...owned(scope) };
-
-      if (filters.from || filters.to) {
-        where.startTimeUtc = {
-          ...(filters.from ? { gte: filters.from } : {}),
-          ...(filters.to ? { lte: filters.to } : {}),
-        };
-      }
-      if (filters.siteId) where.siteId = filters.siteId;
-      if (filters.tripId) where.tripId = filters.tripId;
-      if (filters.hasProfile !== undefined) where.hasProfile = filters.hasProfile;
-      if (filters.minDepthM !== undefined || filters.maxDepthM !== undefined) {
-        where.maxDepthM = {
-          ...(filters.minDepthM !== undefined ? { gte: filters.minDepthM } : {}),
-          ...(filters.maxDepthM !== undefined ? { lte: filters.maxDepthM } : {}),
-        };
-      }
-
       const take = Math.min(filters.limit ?? 50, 200);
       return prisma.dive.findMany({
-        where,
-        orderBy: { startTimeUtc: 'desc' },
+        where: whereFor(scope, filters),
+        orderBy: orderFor(filters.sort),
         take: take + 1, // one extra row tells the caller whether more exist
         ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       });
+    },
+
+    /**
+     * How many dives match, ignoring pagination.
+     *
+     * Separate from `list` and asked for explicitly, because it is a second
+     * query and most callers do not need it. A filter UI does: "no dives" and
+     * "no dives on this page" look identical without it, and the difference is
+     * whether the diver should widen the filter or press next.
+     */
+    async count(scope: UserScope, filters: DiveListFilters = {}) {
+      return prisma.dive.count({ where: whereFor(scope, filters) });
+    },
+
+    /**
+     * What this diver can actually filter by, with counts.
+     *
+     * Only sites and tags that appear on at least one of their dives. A
+     * dropdown offering every site in the reference data is a list of ways to
+     * get an empty page, and the counts turn choosing a filter into reading
+     * the shape of a logbook.
+     */
+    async facets(scope: UserScope) {
+      const [sites, tags, bounds] = await Promise.all([
+        prisma.dive.groupBy({
+          by: ['siteId'],
+          where: { ...owned(scope), siteId: { not: null } },
+          _count: { _all: true },
+        }),
+        prisma.diveTag.groupBy({
+          by: ['tagId'],
+          where: { dive: owned(scope) },
+          _count: { _all: true },
+        }),
+        prisma.dive.aggregate({
+          where: owned(scope),
+          _min: { startTimeLocal: true, maxDepthM: true },
+          _max: { startTimeLocal: true, maxDepthM: true },
+        }),
+      ]);
+
+      const [siteRows, tagRows] = await Promise.all([
+        prisma.site.findMany({
+          where: { id: { in: sites.map((s) => s.siteId as string) } },
+          select: { id: true, name: true },
+        }),
+        prisma.tag.findMany({
+          where: { id: { in: tags.map((t) => t.tagId) } },
+          select: { id: true, slug: true, label: true },
+        }),
+      ]);
+
+      const byCountThenName = <T extends { count: number; name: string }>(a: T, b: T) =>
+        b.count - a.count || a.name.localeCompare(b.name);
+
+      return {
+        sites: siteRows
+          .map((site) => ({
+            id: site.id,
+            name: site.name,
+            count: sites.find((s) => s.siteId === site.id)?._count._all ?? 0,
+          }))
+          .sort(byCountThenName),
+        tags: tagRows
+          .map((tag) => ({
+            slug: tag.slug,
+            name: tag.label,
+            count: tags.find((t) => t.tagId === tag.id)?._count._all ?? 0,
+          }))
+          .sort(byCountThenName),
+        depthM: { min: bounds._min.maxDepthM, max: bounds._max.maxDepthM },
+        dates: { first: bounds._min.startTimeLocal, last: bounds._max.startTimeLocal },
+      };
     },
 
     /** Returns null rather than throwing, so callers answer 404 not 403. */
@@ -168,10 +317,6 @@ export function createDiveRepository(prisma: PrismaClient) {
         data: { deletedAt: null, version: { increment: 1 } },
       });
       return result.count === 1;
-    },
-
-    async count(scope: UserScope) {
-      return prisma.dive.count({ where: owned(scope) });
     },
 
     /** Highest live dive number in use. */

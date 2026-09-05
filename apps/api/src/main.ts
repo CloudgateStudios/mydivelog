@@ -1,6 +1,21 @@
 import 'reflect-metadata';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.ts';
+
+/**
+ * Load the repo-root .env, the same way prisma.config.ts and vitest.config.ts
+ * already do.
+ *
+ * `nest start` does not read one, so `pnpm dev` from a clean clone failed at
+ * boot on a missing AUTH_ACCESS_SECRET even though .env.example sets it — the
+ * runbook's three commands did not work, and the reason was invisible from the
+ * error. A deployed image has no .env (it is gitignored and dockerignored), so
+ * this is a no-op there and configuration still comes from the platform.
+ */
+const envPath = fileURLToPath(new URL('../../../.env', import.meta.url));
+if (existsSync(envPath)) process.loadEnvFile(envPath);
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);

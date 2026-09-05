@@ -63,6 +63,7 @@ model User {
   entitlement    Entitlement?
   refreshTokens  RefreshToken[]
   idempotencyKeys IdempotencyKey[]
+  savedViews     SavedView[]
 
   @@index([deletedAt])
   @@map("users")
@@ -95,6 +96,37 @@ model UserPreferences {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
+}
+
+/**
+ * A named filter set: "the log the way I keep looking at it".
+ *
+ * `query` is the canonical query string of the log page — "tag=wreck&minDepthM=30"
+ * — rather than a column per filter. Filters will keep being added, and a
+ * column-per-filter table needs a migration for each one; worse, a view saved
+ * before a filter existed becomes a row with a NULL that is indistinguishable
+ * from "the diver left it blank".
+ *
+ * The cost is that the string is unvalidated at rest, so it is re-parsed
+ * through the same schema the endpoint uses on every read. A view naming a
+ * filter that no longer exists degrades to the filters that do, which is the
+ * behaviour a diver wants from a bookmark that has outlived a feature.
+ */
+model SavedView {
+  id       String @id @db.Uuid
+  userId   String @db.Uuid
+  name     String
+  query    String
+  position Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId, position])
+  @@map("saved_views")
 }
 
 model DiverProfile {

@@ -28,6 +28,15 @@ export class DivesController {
   }
 
   /**
+   * What this diver can filter by. Declared before ':id' for the same reason
+   * as "renumber".
+   */
+  @Get('facets')
+  facets(@Scope() scope: UserScope) {
+    return this.dives.facets(scope);
+  }
+
+  /**
    * The decoded depth profile. Separate from the dive because the samples are
    * large and most views do not need them.
    */

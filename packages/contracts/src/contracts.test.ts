@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CreateDive, ListDivesQuery, MAX_DEPTH_M, UpdateDive } from './dives.ts';
+import { CreateDive, divesDateRange, ListDivesQuery, MAX_DEPTH_M, UpdateDive } from './dives.ts';
 import { ProblemDetails } from './common.ts';
 import { buildOpenApiDocument } from './openapi.ts';
 
@@ -133,5 +133,23 @@ describe('the OpenAPI document', () => {
   it('is serializable, since it is emitted as JSON', () => {
     expect(() => JSON.stringify(doc)).not.toThrow();
     expect(JSON.parse(JSON.stringify(doc)).info.version).toBe('1.2.3');
+  });
+});
+
+/**
+ * A date filter is a question about days, and the bug it invites is losing the
+ * last one — a diver who filters "to March 31st" and does not see that day's
+ * dives has been told the filter is broken, and they are right.
+ */
+describe('the log date range', () => {
+  it('runs to the last millisecond of the closing day', () => {
+    const { from, to } = divesDateRange({ from: '2026-03-01', to: '2026-03-31' });
+    expect(from?.toISOString()).toBe('2026-03-01T00:00:00.000Z');
+    expect(to?.toISOString()).toBe('2026-03-31T23:59:59.999Z');
+  });
+
+  it('leaves an open end open', () => {
+    expect(divesDateRange({ from: '2026-03-01' }).to).toBeUndefined();
+    expect(divesDateRange({}).from).toBeUndefined();
   });
 });
