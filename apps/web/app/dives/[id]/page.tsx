@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { apiJson, currentUser } from '../../../lib/api';
 import { ProfileChart } from '../../../components/ProfileChart';
 import { AppHeader } from '../../../components/AppHeader';
+import { withUnits } from '../../../lib/units';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,7 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
   if (!user) redirect('/signin');
 
   const { id } = await params;
+  const u = await withUnits();
   const dive = await apiJson<Detail>(`/v1/dives/${id}`).catch(() => undefined);
   if (!dive) notFound();
 
@@ -66,8 +68,8 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
         <p className="lede">
           {formatLocal(dive.startTimeLocal)}{' '}
           <span className="muted">{offset(dive.tzOffsetMinutes)}</span>
-          {dive.maxDepthM !== null && ` · ${dive.maxDepthM.toFixed(1)} m`}
-          {dive.durationS !== null && ` · ${Math.round(dive.durationS / 60)} min`}
+          {dive.maxDepthM !== null && ` · ${u.depth(dive.maxDepthM)}`}
+          {dive.durationS !== null && ` · ${u.duration(dive.durationS)}`}
         </p>
 
         {series && (
@@ -89,16 +91,13 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
               label="Started"
               value={`${formatLocal(dive.startTimeLocal)} ${offset(dive.tzOffsetMinutes)}`}
             />
-            <Fact label="Duration" value={minutes(dive.durationS)} />
-            <Fact label="Max depth" value={metres(dive.maxDepthM)} />
-            <Fact label="Average depth" value={metres(dive.avgDepthM)} />
-            <Fact label="Water temperature" value={celsius(dive.waterTempMinC)} />
-            <Fact label="Air temperature" value={celsius(dive.airTempC)} />
-            <Fact label="Visibility" value={metres(dive.visibilityM)} />
-            <Fact
-              label="Weight"
-              value={dive.weightKg === null ? '—' : `${dive.weightKg.toFixed(1)} kg`}
-            />
+            <Fact label="Duration" value={u.duration(dive.durationS)} />
+            <Fact label="Max depth" value={u.depth(dive.maxDepthM)} />
+            <Fact label="Average depth" value={u.depth(dive.avgDepthM)} />
+            <Fact label="Water temperature" value={u.temperature(dive.waterTempMinC)} />
+            <Fact label="Air temperature" value={u.temperature(dive.airTempC)} />
+            <Fact label="Visibility" value={u.depth(dive.visibilityM)} />
+            <Fact label="Weight" value={u.weight(dive.weightKg)} />
             <Fact label="Water" value={dive.waterType ?? '—'} />
             <Fact label="Site" value={dive.site?.name ?? '—'} />
             <Fact
@@ -121,7 +120,7 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
           </section>
         )}
 
-        <Provenance dive={dive} />
+        <Provenance dive={dive} u={u} />
       </main>
     </>
   );
@@ -135,14 +134,21 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
  * answer on the page rather than in a support email. The value that did not
  * win is shown too, because it was not wrong — it was rounded.
  */
-function Provenance({ dive }: { dive: Detail }) {
+function Provenance({ dive, u }: { dive: Detail; u: Awaited<ReturnType<typeof withUnits>> }) {
   if (dive.sources.length === 0) return null;
 
   const contested = new Map<string, Detail['provenance']>();
   for (const row of dive.provenance) {
     contested.set(row.fieldPath, [...(contested.get(row.fieldPath) ?? []), row]);
   }
-  // Only fields where the sources actually said something different.
+  // Only fields where the sources actually said something different, at the
+  // precision this diver is shown.
+  //
+  // A consequence worth knowing: in imperial, 14.099 m and 14.0208 m are both
+  // 46 ft, so max depth stops being listed as a disagreement. That is correct
+  // for this panel — it explains what is on the screen, and telling someone
+  // two identical numbers disagree is confusing rather than rigorous. The
+  // underlying values are unchanged and the admin panel still shows both.
   //
   // Filtering on "more than one source" alone listed duration twice at 2776
   // and start time twice at 19:07 — both sources agreeing, presented as a
@@ -151,7 +157,7 @@ function Provenance({ dive }: { dive: Detail }) {
   // says otherwise is just noise.
   const disagreements = [...contested.entries()]
     .filter(([fieldPath, rows]) => {
-      const shown = new Set(rows.map((r) => display(fieldPath, r.value)));
+      const shown = new Set(rows.map((r) => display(fieldPath, r.value, u)));
       return shown.size > 1;
     })
     .sort(([a], [b]) => a.localeCompare(b));
@@ -193,13 +199,14 @@ function Provenance({ dive }: { dive: Detail }) {
                   <tr key={fieldPath}>
                     <td>{fieldLabel(fieldPath)}</td>
                     <td>
-                      {display(fieldPath, shown?.value)}{' '}
+                      {display(fieldPath, shown?.value, u)}{' '}
                       <span className="muted">from {sourceName(shown?.sourceKind ?? '')}</span>
                     </td>
                     <td className="muted">
                       {others
                         .map(
-                          (o) => `${display(fieldPath, o.value)} from ${sourceName(o.sourceKind)}`,
+                          (o) =>
+                            `${display(fieldPath, o.value, u)} from ${sourceName(o.sourceKind)}`,
                         )
                         .join('; ')}
                     </td>
@@ -254,26 +261,32 @@ const FIELD_LABELS: Record<string, string> = {
 const fieldLabel = (path: string): string => FIELD_LABELS[path] ?? path;
 
 /** Units per field, so a bare `2776` never appears next to the word Duration. */
-const UNITS: Record<string, (value: number) => string> = {
-  maxDepthM: (v) => `${v.toFixed(2)} m`,
-  avgDepthM: (v) => `${v.toFixed(2)} m`,
-  visibilityM: (v) => `${v.toFixed(1)} m`,
-  durationS: (v) => `${Math.round(v / 60)} min`,
-  waterTempMinC: (v) => `${v.toFixed(1)} °C`,
-  airTempC: (v) => `${v.toFixed(1)} °C`,
-  weightKg: (v) => `${v.toFixed(1)} kg`,
+const unitsFor = (
+  u: Awaited<ReturnType<typeof withUnits>>,
+): Record<string, (value: number) => string> => ({
+  maxDepthM: (v) => u.depth(v),
+  avgDepthM: (v) => u.depth(v),
+  visibilityM: (v) => u.depth(v),
+  durationS: (v) => u.duration(v),
+  waterTempMinC: (v) => u.temperature(v),
+  airTempC: (v) => u.temperature(v),
+  weightKg: (v) => u.weight(v),
   tzOffsetMinutes: (v) => offset(v),
   'site.lat': (v) => v.toFixed(5),
   'site.lon': (v) => v.toFixed(5),
-};
+});
 
-function display(fieldPath: string, value: unknown): string {
+function display(
+  fieldPath: string,
+  value: unknown,
+  u: Awaited<ReturnType<typeof withUnits>>,
+): string {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'string' && value.startsWith('@date:')) {
     return formatLocal(value.slice(6));
   }
   if (typeof value === 'number') {
-    return UNITS[fieldPath]?.(value) ?? String(Number(value.toFixed(4)));
+    return unitsFor(u)[fieldPath]?.(value) ?? String(Number(value.toFixed(4)));
   }
   if (Array.isArray(value)) {
     return value
@@ -288,9 +301,6 @@ function display(fieldPath: string, value: unknown): string {
 }
 
 const formatLocal = (iso: string): string => iso.replace('T', ' ').slice(0, 16);
-const metres = (v: number | null): string => (v === null ? '—' : `${v.toFixed(1)} m`);
-const minutes = (v: number | null): string => (v === null ? '—' : `${Math.round(v / 60)} min`);
-const celsius = (v: number | null): string => (v === null ? '—' : `${v.toFixed(1)} °C`);
 const offset = (v: number | null): string => {
   if (v === null) return '';
   const sign = v < 0 ? '-' : '+';

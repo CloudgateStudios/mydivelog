@@ -192,6 +192,24 @@ export function buildOpenApiDocument(version = '0.0.0') {
         },
       },
 
+      '/preferences': {
+        get: {
+          operationId: 'getPreferences',
+          tags: ['preferences'],
+          security: bearer,
+          description:
+            'Display units. Returns the defaults rather than 404 for a diver who has never ' +
+            'opened settings.',
+          responses: { '200': ok(auth.UnitPreferences), '401': problem },
+        },
+        put: {
+          operationId: 'updatePreferences',
+          tags: ['preferences'],
+          security: bearer,
+          requestBody: body(auth.UpdatePreferences),
+          responses: { '200': ok(auth.UnitPreferences), '400': problem, '401': problem },
+        },
+      },
       '/dives': {
         get: {
           operationId: 'listDives',

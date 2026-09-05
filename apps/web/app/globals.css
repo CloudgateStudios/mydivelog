@@ -602,3 +602,46 @@ main.app section:first-of-type h2 {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
 }
+
+/* --- Settings ------------------------------------------------------------ */
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  margin: 0 0 1.25rem;
+}
+legend {
+  padding: 0 0.4rem;
+  font-size: 13px;
+  color: var(--muted);
+}
+.choice {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text);
+}
+.choice input {
+  width: auto;
+}
+select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cards .button {
+  margin-top: 0.85rem;
+  width: auto;
+  display: inline-block;
+}

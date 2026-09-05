@@ -16,6 +16,7 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
       <nav>
         <a href="/logbook">Logbook</a>
         <a href="/import">Import</a>
+        <a href="/settings">Settings</a>
       </nav>
       <span className="muted">{user.displayName ?? user.email}</span>
       <form action={signOut} style={{ marginLeft: 'auto' }}>
