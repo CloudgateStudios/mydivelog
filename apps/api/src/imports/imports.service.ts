@@ -194,11 +194,23 @@ export class ImportsService {
     }
   }
 
-  /** Existing dives, narrowed to what matching needs. */
+  /**
+   * Existing dives, narrowed to what matching needs.
+   *
+   * Gases come from provenance rather than a column, because that is where the
+   * importer records them. Omitting them cost every match the gas signal's
+   * 0.05 — which left the seed files merging at exactly 0.80, the threshold
+   * itself, with no margin at all. The pure pipeline scored the same dives
+   * 0.85, and the difference was invisible because both merge.
+   */
   private async candidates(scope: UserScope): Promise<MatchCandidate[]> {
     const dives = await this.prisma.dive.findMany({
       where: { userId: scope.userId, deletedAt: null },
-      include: { site: true, sources: { select: { sourceRef: true } } },
+      include: {
+        site: true,
+        sources: { select: { sourceRef: true } },
+        provenance: { where: { fieldPath: 'gases', isSelected: true } },
+      },
     });
     return dives.map((dive) => ({
       id: dive.id,
@@ -215,6 +227,7 @@ export class ImportsService {
             },
           }
         : {}),
+      ...gasesOf(dive.provenance),
       sourceRefs: dive.sources.flatMap((s) => (s.sourceRef ? [s.sourceRef] : [])),
     }));
   }
@@ -369,6 +382,18 @@ function reasonFor(err: unknown): string {
   if (typeof detail === 'string' && detail.length > 0) return detail;
   if (err instanceof Error && err.message.length > 0) return err.message;
   return String(err);
+}
+
+function gasesOf(provenance: readonly { value: unknown }[]): { gases?: { o2Fraction: number }[] } {
+  const value = provenance[0]?.value;
+  if (!Array.isArray(value)) return {};
+  const gases = value.filter(
+    (g): g is { o2Fraction: number } =>
+      typeof g === 'object' &&
+      g !== null &&
+      typeof (g as { o2Fraction?: unknown }).o2Fraction === 'number',
+  );
+  return gases.length > 0 ? { gases } : {};
 }
 
 const sourceRefOf = (raw: unknown): string | undefined => {
