@@ -9,6 +9,7 @@ export const metadata = {
 const NAV = [
   ['/', 'Overview'],
   ['/imports', 'Imports'],
+  ['/health', 'Format health'],
   ['/dives', 'Dives'],
   ['/sites', 'Sites'],
   ['/tags', 'Tags'],
