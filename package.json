@@ -27,7 +27,8 @@
     "db:reset": "pnpm --filter @mydivelog/db db:reset",
     "db:studio": "pnpm --filter @mydivelog/db db:studio",
     "verify": "turbo lint typecheck test build && pnpm format:check && pnpm spellcheck",
-    "prepare": "husky"
+    "prepare": "husky",
+    "demo": "node scripts/demo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

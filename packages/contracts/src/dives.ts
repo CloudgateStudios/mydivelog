@@ -103,3 +103,64 @@ export const LogSummary = z.object({
   longestDiveS: Seconds.nullable(),
   averageDepthM: Metres.nullable(),
 });
+
+/**
+ * A dive with the context a detail view needs.
+ *
+ * `provenance` is the part that matters: every value any source asserted, and
+ * which one the dive currently shows. It is what lets a diver ask "why does it
+ * say 14.099 when I wrote 46 feet" and get an answer rather than a shrug.
+ */
+export const DiveProvenanceEntry = z.object({
+  fieldPath: z.string(),
+  value: z.unknown(),
+  isSelected: z.boolean(),
+  sourceKind: z.string(),
+  sourceRef: z.string().nullish(),
+  recordedAt: IsoDateTime,
+});
+
+export const DiveDetail = Dive.extend({
+  site: z
+    .object({
+      id: Uuid,
+      name: z.string(),
+      latitude: z.number().nullish(),
+      longitude: z.number().nullish(),
+    })
+    .nullish(),
+  tags: z.array(z.object({ slug: z.string(), label: z.string() })).default([]),
+  buddies: z.array(z.string()).default([]),
+  /** Summary only. The samples are a separate request. */
+  profile: z
+    .object({
+      sampleCount: z.number().int(),
+      maxDepthM: z.number(),
+      avgDepthM: z.number(),
+      durationS: z.number().int(),
+      minTempC: z.number().nullish(),
+      maxTempC: z.number().nullish(),
+      channels: z.array(z.string()),
+    })
+    .nullish(),
+  sources: z
+    .array(
+      z.object({
+        sourceKind: z.string(),
+        sourceRef: z.string().nullish(),
+        recordedAt: IsoDateTime,
+      }),
+    )
+    .default([]),
+  provenance: z.array(DiveProvenanceEntry).default([]),
+});
+export type DiveDetail = z.infer<typeof DiveDetail>;
+
+/** The decoded depth profile, fetched on its own because it is large. */
+export const DiveProfileSeries = z.object({
+  timeS: z.array(z.number()),
+  depthM: z.array(z.number()),
+  tempC: z.array(z.number()).optional(),
+  pressureBar: z.array(z.number()).optional(),
+});
+export type DiveProfileSeries = z.infer<typeof DiveProfileSeries>;

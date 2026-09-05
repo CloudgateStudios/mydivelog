@@ -60,6 +60,31 @@ export function createDiveRepository(prisma: PrismaClient) {
     },
 
     /**
+     * A dive with everything a detail view needs, in one query.
+     *
+     * Provenance comes along because "where did this value come from" is the
+     * question this product exists to answer, and a second round trip to
+     * answer it makes it feel like a footnote rather than the point.
+     *
+     * The profile's samples are deliberately not here — they live in object
+     * storage and are fetched separately, so a dive that has one still loads
+     * at the speed of a dive that does not.
+     */
+    async findDetailById(scope: UserScope, id: string) {
+      return prisma.dive.findFirst({
+        where: { ...owned(scope), id },
+        include: {
+          site: true,
+          profile: true,
+          tags: { include: { tag: true } },
+          buddies: { include: { buddy: true } },
+          sources: { orderBy: { recordedAt: 'asc' } },
+          provenance: true,
+        },
+      });
+    },
+
+    /**
      * `diveNumber` is required, and most sources do not supply one — the sample
      * UDDF carries none across 96 dives — so it defaults to the next free
      * number for this diver.

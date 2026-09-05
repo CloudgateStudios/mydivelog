@@ -3,8 +3,10 @@
 A digital dive logbook that consolidates a diver's scattered records — spreadsheets, dive
 computer apps, vendor clouds — into one history they can trust and take with them.
 
-**Status:** Phase 0 (foundations). No product features yet. See
-[the implementation plan](./docs/README.md).
+**Status:** Phases 0–4 complete, Phase 5 (web portal) in progress. Import, merge,
+provenance and revert all work end to end; sign-in, a logbook and dive detail exist in the
+web app. See [the implementation plan](./docs/README.md) and
+[the roadmap](./docs/11-roadmap.md).
 
 ## Quick start
 
@@ -18,6 +20,22 @@ pnpm dev
 
 `pnpm dev` starts Postgres and MinIO in Docker, creates the storage buckets, then runs all
 four applications.
+
+On a fresh database, apply the schema and load the two real seed files:
+
+```bash
+pnpm db:deploy && pnpm db:seed   # schema, then the tag taxonomy and reference data
+pnpm demo                        # imports the fixtures through the API
+```
+
+```
+  spreadsheet-sample.csv   24 new,  0 merged into dives you already had
+  uddf-sample.uddf          0 new,  6 merged into dives you already had
+```
+
+24 spreadsheet rows and 6 computer dives become 24 dives, not 30 — six of them are the
+same dives recorded twice. [Running locally](./docs/runbooks/running-locally.md) covers
+signing in and what to look at.
 
 | Service       | URL                    | Health        |
 | ------------- | ---------------------- | ------------- |

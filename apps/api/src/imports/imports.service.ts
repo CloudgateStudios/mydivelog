@@ -315,7 +315,17 @@ export class ImportsService {
         ...(sourceRefOf(row.raw) === undefined ? {} : { sourceRef: sourceRefOf(row.raw) }),
         sourceFileKey: batch.originalFileKey,
         rawPayload: row.raw,
-        recordedAt: (fields['startTimeUtc'] as Date | undefined) ?? new Date(),
+        // When the source says the dive happened, not when we read the file.
+        //
+        // Import time was the fallback, which quietly made every spreadsheet
+        // look newer than every computer export — and "most recent wins" is
+        // the tiebreak between sources of equal standing, so a spreadsheet
+        // imported today would beat a watch's reading from March on any field
+        // where neither outranks the other.
+        recordedAt:
+          (fields['startTimeUtc'] as Date | undefined) ??
+          (fields['startTimeLocal'] as Date | undefined) ??
+          new Date(),
         fields,
         ...(profile ? { profile: await this.storeProfile(scope, profile) } : {}),
       });

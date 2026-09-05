@@ -17,13 +17,16 @@ RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.spl
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
+COPY packages/domain/package.json packages/domain/
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+COPY tsconfig.base.json ./
+COPY packages/domain packages/domain
 COPY apps/web apps/web
-RUN pnpm --filter @mydivelog/web build
+RUN pnpm --filter @mydivelog/web... build
 
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
