@@ -24,8 +24,18 @@ primary_region = "ord"
 #
 # The path is where `pnpm deploy --prod` lands the db package inside the image;
 # the Prisma CLI is a runtime dependency of that package for this reason.
+#
+# The seed follows the migration. It is idempotent — every row upserts under a
+# deterministic id — and touches only system-owned reference data: agencies,
+# the tag taxonomy, gas mixes and regions. Without it no deployed environment
+# has a tag taxonomy, so import mints a private copy of `shore` for every
+# diver and a shared vocabulary stops being shared.
+#
+# It runs from `dist`, not from `prisma/seed.ts`: the package lands under
+# node_modules in the image and Node will not strip types from TypeScript
+# there.
 [deploy]
-  release_command = "sh -c 'cd node_modules/@mydivelog/db && node_modules/.bin/prisma migrate deploy'"
+  release_command = "sh -c 'cd node_modules/@mydivelog/db && node_modules/.bin/prisma migrate deploy && node dist/seed-cli.js'"
 
 [http_service]
   internal_port = 8080
