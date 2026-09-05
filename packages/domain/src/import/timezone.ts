@@ -100,10 +100,19 @@ export function repairOffset(
 
   // Either geography contradicts the reading, or there is nothing to check it
   // against. Keep what the file said and let a human look.
+  //
+  // The two "nothing to check against" cases are told apart deliberately. A
+  // single message blaming missing coordinates was shown for a file that had
+  // them, when what was actually missing was a resolver on our side — telling
+  // a diver their file is deficient because of our configuration is worse than
+  // saying nothing.
+  const hasCoordinates = site?.lat !== undefined && site.lon !== undefined;
   const because =
-    derived === undefined
-      ? 'no site coordinates to corroborate it'
-      : `the site's coordinates resolve to ${formatOffset(derived)}, not ${formatOffset(intended)}`;
+    derived !== undefined
+      ? `the site's coordinates resolve to ${formatOffset(derived)}, not ${formatOffset(intended)}`
+      : hasCoordinates
+        ? 'the timezone could not be resolved from the site to confirm it'
+        : 'the file records no coordinates for the site to corroborate it';
 
   return {
     offsetMinutes,

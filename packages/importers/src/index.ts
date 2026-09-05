@@ -9,3 +9,4 @@ export * from './export/types.ts';
 export * from './export/mydivelog.ts';
 export * from './export/uddf.ts';
 export * from './export/csv.ts';
+export * from './detect.ts';

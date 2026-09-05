@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import * as auth from './auth.ts';
+import * as imports from './imports.ts';
 import { PageQuery, ProblemDetails, pageOf } from './common.ts';
 import * as dives from './dives.ts';
 
@@ -250,6 +251,100 @@ export function buildOpenApiDocument(version = '0.0.0') {
           parameters: [idempotencyKey],
           requestBody: body(dives.RenumberDives),
           responses: { '200': ok(dives.RenumberResult), '401': problem },
+        },
+      },
+      '/imports': {
+        get: {
+          operationId: 'listImports',
+          tags: ['imports'],
+          responses: { '200': ok(z.object({ data: z.array(imports.ImportBatch) })) },
+        },
+        post: {
+          operationId: 'createImport',
+          tags: ['imports'],
+          description:
+            'Uploads a dive log file as multipart/form-data under the field `file`. ' +
+            'Parses and matches it against the existing logbook and returns the proposal. ' +
+            'Nothing is written to the logbook until commit.',
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['file'],
+                  properties: { file: { type: 'string', format: 'binary' } },
+                },
+              },
+            },
+          },
+          responses: { '201': ok(imports.ImportBatchDetail), '400': problem },
+        },
+      },
+      '/imports/{id}': {
+        get: {
+          operationId: 'getImport',
+          tags: ['imports'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { '200': ok(imports.ImportBatchDetail), '404': problem },
+        },
+      },
+      '/imports/{id}/rows/{rowIndex}': {
+        post: {
+          operationId: 'decideImportRow',
+          tags: ['imports'],
+          description: "Overrides one row's decision before commit.",
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'rowIndex', in: 'path', required: true, schema: { type: 'integer' } },
+          ],
+          requestBody: body(imports.UpdateImportRow),
+          responses: {
+            '204': { description: 'Decision recorded' },
+            '400': problem,
+            '404': problem,
+          },
+        },
+      },
+      '/imports/{id}/commit': {
+        post: {
+          operationId: 'commitImport',
+          tags: ['imports'],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { '200': ok(imports.CommitImportResult), '400': problem, '404': problem },
+        },
+      },
+      '/imports/{id}/revert': {
+        post: {
+          operationId: 'revertImport',
+          tags: ['imports'],
+          description:
+            'Undoes a committed import. Available indefinitely: dives created by the batch ' +
+            'are deleted, and dives that pre-existed return to their prior state.',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { '200': ok(imports.RevertImportResult), '400': problem, '404': problem },
+        },
+      },
+      '/exports': {
+        get: {
+          operationId: 'exportLogbook',
+          tags: ['exports'],
+          description: 'The whole logbook in one request. Deliberately not paginated.',
+          parameters: [
+            {
+              name: 'format',
+              in: 'query',
+              required: false,
+              schema: { type: 'string', enum: ['mydivelog', 'uddf', 'csv'], default: 'mydivelog' },
+            },
+            {
+              name: 'units',
+              in: 'query',
+              required: false,
+              schema: { type: 'string', enum: ['metric', 'imperial'], default: 'metric' },
+            },
+          ],
+          responses: { '200': { description: 'The logbook, as a file attachment' } },
         },
       },
       '/stats/summary': {

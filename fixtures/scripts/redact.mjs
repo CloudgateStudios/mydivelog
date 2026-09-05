@@ -20,8 +20,18 @@ const OUT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // Fixed offset applied to every coordinate. Relative geometry survives, so site
 // clustering still behaves identically; absolute position does not identify a
 // real place.
+//
+// The longitude shift is also constrained to land in a zone with the SAME UTC
+// offset as the real sites (-04:00). An earlier shift moved them into -03:00,
+// which quietly disabled the most important test in the fixture: the malformed
+// `-00:04` offsets can only be repaired when geography independently agrees,
+// so a resolver looking up the redacted coordinates correctly refused, and the
+// repair path had no end-to-end coverage at all.
+//
+// Check this if you ever change these numbers. Relative geometry is not the
+// only property the fixture has to preserve.
 const LAT_SHIFT = -7.331;
-const LON_SHIFT = 12.884;
+const LON_SHIFT = 4.884;
 
 const KEEP_TAIL = 14; // trailing rows: the window that overlaps the UDDF export
 const KEEP_DIVES = 6; // UDDF dives to keep

@@ -19,8 +19,10 @@ committed fixtures are reduced and shifted:
 - Only the overlapping window is kept, plus a few non-overlapping dives on each
   side, so merge behavior is still exercised
 - Waypoint series are downsampled and truncated
-- Coordinates are offset by a fixed random vector, preserving relative geometry
-  (so site clustering still works) while not identifying real locations
+- Coordinates are offset by a fixed vector, preserving relative geometry (so
+  site clustering still works) while not identifying real locations. **The
+  shift must also land in a zone with the same UTC offset as the real sites**
+  — see below
 
 **Every data hazard is preserved deliberately.** These are not defects in the
 fixtures — they are the reason the fixtures exist:
@@ -39,6 +41,22 @@ fixtures — they are the reason the fixtures exist:
 | Derived/rollup column                           | `spreadsheet-sample.csv` |
 
 Do not "clean up" these files. A fixture that parses easily tests nothing.
+
+### The coordinate shift carries a second constraint
+
+An earlier shift moved the sites from a −04:00 zone into −03:00. Relative
+geometry was preserved and site clustering behaved identically, so nothing
+looked wrong — but it silently disabled the most important test in the
+fixture.
+
+The malformed `-00:04` offsets can only be repaired when geography
+independently agrees. With the coordinates in −03:00, a resolver looking them
+up correctly refused to confirm −04:00, so the repair path had no end-to-end
+coverage with a real timezone lookup at all. The golden snapshot passed
+throughout, because it stubs the resolver.
+
+If you change `LAT_SHIFT` or `LON_SHIFT` in `scripts/redact.mjs`, check the
+resulting offset as well as the geometry.
 
 ## The golden snapshot
 

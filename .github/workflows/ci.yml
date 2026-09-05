@@ -113,7 +113,7 @@ jobs:
       # generated client is gitignored and the domain package's dist is a
       # build artifact, so a clean checkout has neither.
       - name: Build dependencies and generate the client
-        run: pnpm turbo run build --filter=@mydivelog/db...
+        run: pnpm turbo run build --filter=@mydivelog/db... --filter=@mydivelog/api...
 
       # The same command the Fly release command runs, against a fresh
       # database. A migration that only works on an already-migrated database
@@ -121,8 +121,17 @@ jobs:
       - name: Apply migrations
         run: pnpm --filter @mydivelog/db db:deploy
 
+      # Reference data the API's tag resolution expects. Left out, the tests
+      # still pass but exercise the "no system tags" path only.
+      - name: Seed reference data
+        run: pnpm --filter @mydivelog/db db:seed
+
       - name: Run integration tests
-        run: pnpm --filter @mydivelog/db test:integration
+        run: |
+          pnpm --filter @mydivelog/db test:integration
+          pnpm --filter @mydivelog/api test:integration
+        env:
+          AUTH_ACCESS_SECRET: integration-tests-only-not-a-real-secret-value
 
   images:
     name: Container images

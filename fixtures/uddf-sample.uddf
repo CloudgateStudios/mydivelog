@@ -11,7 +11,7 @@
             <geography>
                 <location>site_69ab7a96dce6e40c7d3abe65</location>
                 <latitude>4.772435</latitude>
-                <longitude>-55.403250</longitude>
+                <longitude>-63.40325</longitude>
                 <altitude>3.0</altitude>
             </geography>
         </site>
@@ -20,7 +20,7 @@
             <geography>
                 <location>site_69ab22331e3c5f6b780c69ac</location>
                 <latitude>4.752156</latitude>
-                <longitude>-55.398690</longitude>
+                <longitude>-63.39869</longitude>
                 <altitude>1.1679561</altitude>
             </geography>
         </site>
@@ -29,7 +29,7 @@
             <geography>
                 <location>site_69ab22341e3c5f6b780c69af</location>
                 <latitude>4.879779</latitude>
-                <longitude>-55.437830</longitude>
+                <longitude>-63.43783</longitude>
                 <altitude>4.590246</altitude>
             </geography>
         </site>
@@ -38,7 +38,7 @@
             <geography>
                 <location>site_69a9fc2dbe199b60d0450a4d</location>
                 <latitude>4.888037</latitude>
-                <longitude>-55.468310</longitude>
+                <longitude>-63.46831</longitude>
                 <altitude>2.0902495</altitude>
             </geography>
         </site>
@@ -47,7 +47,7 @@
             <geography>
                 <location>site_69a9fc19be199b60d0450a41</location>
                 <latitude>4.857499</latitude>
-                <longitude>-55.413160</longitude>
+                <longitude>-63.41316</longitude>
                 <altitude>-2.969344</altitude>
             </geography>
         </site>
@@ -56,7 +56,7 @@
             <geography>
                 <location>site_69a9fc2abe199b60d0450a46</location>
                 <latitude>4.707790</latitude>
-                <longitude>-55.380860</longitude>
+                <longitude>-63.38086</longitude>
                 <altitude>-196.0</altitude>
             </geography>
         </site>
