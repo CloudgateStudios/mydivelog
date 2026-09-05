@@ -7,7 +7,7 @@ is a claim. These are measured on every pull request, by the
 | Criterion | How it is checked | Where it runs |
 |---|---|---|
 | WCAG 2.2 AA on primary flows | axe-core through Playwright, plus keyboard tests | `pnpm test:a11y` |
-| Lighthouse performance > 90 on marketing pages | Lighthouse CI, three runs per URL | `pnpm test:lighthouse` |
+| Lighthouse performance > 90 on marketing pages | Lighthouse CI, two runs of each of seven pages | `pnpm test:lighthouse` |
 | Lighthouse accessibility > 95 on marketing pages | the same run | `pnpm test:lighthouse` |
 
 ## Running them yourself

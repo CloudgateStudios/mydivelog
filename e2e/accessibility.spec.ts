@@ -36,6 +36,11 @@ async function countOf(page: Page): Promise<number> {
 const PUBLIC_PAGES = [
   ['the landing page', '/'],
   ['sign in', '/signin'],
+  ['supported formats', '/formats'],
+  ['pricing', '/pricing'],
+  ['the documentation', '/docs'],
+  ['privacy', '/legal/privacy'],
+  ['terms', '/legal/terms'],
 ] as const;
 
 const SIGNED_IN_PAGES = [
@@ -54,6 +59,39 @@ test.describe('public pages', () => {
       expect(report(violations), report(violations)).toBe('');
     });
   }
+});
+
+test.describe('the public site', () => {
+  test('every page links to every other, and none of the links are broken', async ({
+    page,
+    request,
+  }) => {
+    // Six pages sharing one footer, which is exactly the arrangement where a
+    // link is added to five of them.
+    for (const [name, path] of PUBLIC_PAGES) {
+      await page.goto(path);
+      const hrefs = await page
+        .locator('a[href^="/"]')
+        .evaluateAll((links) => [...new Set(links.map((a) => a.getAttribute('href') ?? ''))]);
+
+      for (const href of hrefs) {
+        const response = await request.get(href, { maxRedirects: 0 });
+        // 307 is the signed-out redirect from an authenticated page, which is
+        // a working link and not a broken one.
+        expect([200, 307], `${name} links to ${href}`).toContain(response.status());
+      }
+    }
+  });
+
+  test('states plainly that it is not a dive computer', async ({ page }) => {
+    // docs/10-security-privacy.md draws this boundary deliberately: the moment
+    // the product looks like it gives dive guidance it becomes a different
+    // product. It belongs on every public page, not only in the terms.
+    for (const [name, path] of PUBLIC_PAGES) {
+      await page.goto(path);
+      await expect(page.locator('.site-footer'), name).toContainText(/not a dive computer/i);
+    }
+  });
 });
 
 test.describe('signed in', () => {

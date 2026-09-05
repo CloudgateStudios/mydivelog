@@ -1,5 +1,17 @@
 # Security, Privacy & Compliance
 
+> **This document is intent, not a description of the running system.** Several
+> protections below are designed but not built — application-layer encryption of
+> notes, self-serve account deletion, `POST /v1/me/export-all`, and Sentry
+> scrubbing among them. Writing them in the present tense is how the landing
+> page came to claim an importer that does not exist.
+>
+> What the software actually does today is stated on
+> [the privacy page](../apps/web/app/legal/privacy/page.tsx), which is written
+> against the implementation and separates built from planned. If the two
+> disagree, the privacy page is the one a user reads, so it is the one that
+> must be right.
+
 ## Threat Model
 
 What actually matters here:
