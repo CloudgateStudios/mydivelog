@@ -95,3 +95,8 @@ Dift
 # cspell prefers "unparsable"; this spelling is the more common one and is
 # also an issue code the API returns (unparseable_xml), so it stays.
 unparseable
+
+# Used throughout the auth, mail and Access checks, which all distinguish
+# "nobody configured this" from "this is switched off" — a distinction the
+# codebase makes deliberately, so the word earns its place.
+unconfigured
