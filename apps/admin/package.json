@@ -12,6 +12,7 @@
     "generate": "echo 'nothing to generate'"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1126.0",
     "@mydivelog/db": "workspace:*",
     "@mydivelog/domain": "workspace:*",
     "next": "^16.3.3",

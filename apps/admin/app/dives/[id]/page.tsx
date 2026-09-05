@@ -1,4 +1,7 @@
 import { notFound } from 'next/navigation';
+import { decodeProfile } from '@mydivelog/domain';
+import { ProfileChart } from '../../../components/ProfileChart';
+import { readProfileBlob, storageConfigured } from '../../../lib/storage';
 import { db, DIVE_SELECT, redactProvenanceValue, WITHHELD_FIELD_PATHS } from '../../../lib/db';
 import {
   celsius,
@@ -131,6 +134,10 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
       {dive.profile && (
         <>
           <h2>Profile</h2>
+          {/* Fetched and decoded here rather than trusted. The summary columns
+              are denormalized at import; drawing the blob is the only way to
+              confirm the samples themselves survived. */}
+          <ProfilePanel storageKey={dive.profile.storageKey} />
           <div className="panel">
             <table>
               <tbody>
@@ -225,6 +232,38 @@ export default async function DiveDetail({ params }: { params: Promise<{ id: str
       </div>
     </main>
   );
+}
+
+async function ProfilePanel({ storageKey }: { storageKey: string }) {
+  if (!storageConfigured) {
+    return (
+      <p className="empty">
+        Object storage is not configured here, so the samples cannot be fetched. The summary below
+        is what was denormalized at import.
+      </p>
+    );
+  }
+
+  const blob = await readProfileBlob(storageKey);
+  if (!blob) {
+    return (
+      <p className="empty">
+        <span className="tag bad">missing</span> No blob at <code>{storageKey}</code>. The dive
+        claims a profile that object storage does not have.
+      </p>
+    );
+  }
+
+  try {
+    return <ProfileChart series={decodeProfile(blob)} />;
+  } catch (err) {
+    // A blob that will not decode is exactly what this page exists to surface.
+    return (
+      <p className="empty">
+        <span className="tag bad">undecodable</span> {String(err)}
+      </p>
+    );
+  }
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
