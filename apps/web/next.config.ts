@@ -1,4 +1,11 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+
+// One .env at the repo root, which every other package already reads and Next
+// does not look for.
+const envPath = fileURLToPath(new URL('../../.env', import.meta.url));
+if (existsSync(envPath)) process.loadEnvFile(envPath);
 
 const config: NextConfig = {
   reactStrictMode: true,
