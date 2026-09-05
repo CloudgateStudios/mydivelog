@@ -28,10 +28,15 @@
     "db:studio": "pnpm --filter @mydivelog/db db:studio",
     "verify": "turbo lint typecheck test build && pnpm format:check && pnpm spellcheck",
     "prepare": "husky",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "test:a11y": "playwright test",
+    "test:lighthouse": "lhci autorun"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.62.1",
     "cspell": "^10.1.1",
     "eslint": "^10.9.1",
     "husky": "^9.1.7",

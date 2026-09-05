@@ -127,3 +127,55 @@ function buildTemperature(
     })
     .join(' ');
 }
+
+export type ProfileRow = {
+  timeS: number;
+  depthM: number;
+  tempC?: number;
+  /** The deepest sample of the dive, which is forced into every table. */
+  isDeepest: boolean;
+};
+
+/**
+ * The chart as a table.
+ *
+ * A depth profile drawn as an SVG path is a picture of a dive, not a record of
+ * one — a screen reader is handed a single alt string and everything the curve
+ * actually says is gone. docs/08-clients.md requires an equivalent, and this
+ * builds it.
+ *
+ * Not every sample: a 50-minute dive is two hundred of them, and a table that
+ * long is a different way of hiding the same information. Evenly spaced rows
+ * describe the shape, and the deepest sample is forced in on top of them —
+ * because it is the one number a diver looks for, and even spacing lands on it
+ * only by accident.
+ */
+export function buildProfileTable(series: ProfileSeries, rows = 12): ProfileRow[] {
+  const timeS = series.timeS ?? [];
+  const depthM = series.depthM ?? [];
+  if (timeS.length === 0 || depthM.length !== timeS.length) return [];
+
+  const tempC = series.tempC?.length === timeS.length ? series.tempC : undefined;
+  const deepest = depthM.reduce((best, d, i) => (d > (depthM[best] as number) ? i : best), 0);
+
+  // A Set so the forced deepest sample cannot appear twice when the even
+  // spacing happens to land on it.
+  const chosen = new Set<number>([0, timeS.length - 1, deepest]);
+  const step = Math.max(1, Math.floor((timeS.length - 1) / Math.max(1, rows - 1)));
+  for (let i = 0; i < timeS.length; i += step) chosen.add(i);
+
+  const start = timeS[0] as number;
+  return [...chosen]
+    .sort((a, b) => a - b)
+    .map((i) => {
+      const temperature = tempC?.[i];
+      return {
+        timeS: (timeS[i] as number) - start,
+        depthM: depthM[i] as number,
+        ...(temperature !== undefined && Number.isFinite(temperature)
+          ? { tempC: temperature }
+          : {}),
+        isDeepest: i === deepest,
+      };
+    });
+}

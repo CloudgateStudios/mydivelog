@@ -39,7 +39,7 @@ export default async function Import({
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <h1>Import dives</h1>
         <p className="lede">
           A spreadsheet, a dive computer export, or a MyDiveLog backup. Nothing is added to your

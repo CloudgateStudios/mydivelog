@@ -65,7 +65,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <p className="crumb">
           <a href="/import">← Imports</a>
         </p>
@@ -285,7 +285,7 @@ async function Done({
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <p className="crumb">
           <a href="/import">← Imports</a>
         </p>
@@ -333,7 +333,7 @@ function Failed({
   return (
     <>
       <AppHeader user={user} />
-      <main className="app">
+      <main id="main" tabIndex={-1} className="app">
         <p className="crumb">
           <a href="/import">← Imports</a>
         </p>
