@@ -66,6 +66,12 @@ request is not acceptable.
 Setup is documented step by step in
 [the environment setup runbook](./runbooks/environment-setup.md).
 
+> **Cloudflare Access protects a hostname, not an application.** Fly serves
+> every app on `<app>.fly.dev` as well, which reaches the same container
+> without passing through Cloudflare — so the admin panel verifies the Access
+> JWT itself. See [the admin access runbook](./runbooks/admin-access.md); it
+> exists because that gap was live.
+
 **Local must be a single command.** `pnpm dev` brings up Postgres, MinIO, API, worker, web,
 admin, migrated and seeded — including the fixture dive data. A contributor who can't run
 the import engine locally in ten minutes won't work on it.
