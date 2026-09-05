@@ -68,11 +68,22 @@ export type CommitResult = {
  * resolution step rather than being written here.
  */
 /**
- * Columns a dive cannot be without. Left alone when nothing asserts them,
- * because a dive with no start time is not a row worth keeping — if every
- * source for it is gone, the dive is deleted rather than blanked.
+ * Columns a dive cannot be without, and has no sensible empty value for.
+ *
+ * Left alone when nothing asserts them: a dive with no start time is not a row
+ * worth keeping, and if every source for it is gone the dive is deleted rather
+ * than blanked.
+ *
+ * `tzOffsetMinutes` is deliberately not here even though the column is NOT
+ * NULL, because zero is a meaningful value for it — "we do not know the
+ * offset" — and treating it as unclearable meant a revert left the offset the
+ * removed source had contributed. A dive reverted back to a spreadsheet that
+ * records no timezone kept claiming -04:00.
  */
-const REQUIRED_COLUMNS = new Set(['startTimeUtc', 'startTimeLocal', 'tzOffsetMinutes']);
+const REQUIRED_COLUMNS = new Set(['startTimeUtc', 'startTimeLocal']);
+
+/** What an unasserted column falls back to, where a default is meaningful. */
+const COLUMN_DEFAULTS: Record<string, unknown> = { tzOffsetMinutes: 0 };
 
 const DIVE_COLUMNS = {
   startTimeUtc: 'startTimeUtc',
@@ -179,7 +190,13 @@ export function createImportRepository(prisma: PrismaClient) {
             },
           });
 
-          await writeProvenance(tx, diveId, sourceId, row.fields);
+          await writeProvenance(tx, diveId, sourceId, {
+            ...row.fields,
+            // Recorded as an assertion so a revert can take the profile away
+            // with the source that brought it. The samples stay in object
+            // storage; this is only the fact that this source had one.
+            ...(row.profile ? { profile: { sampleCount: row.profile.sampleCount } } : {}),
+          });
           if (row.profile) await writeProfile(tx, diveId, row.profile);
           await resolve(tx, scope, diveId);
         }
@@ -340,7 +357,9 @@ async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> 
       // to go back to empty, or revert leaves the value behind and the dive
       // claims a duration nothing measured. Skipping here passed every test
       // except the one that mattered.
-      if (!REQUIRED_COLUMNS.has(path)) data[column] = null;
+      if (!REQUIRED_COLUMNS.has(path)) {
+        data[column] = path in COLUMN_DEFAULTS ? COLUMN_DEFAULTS[path] : null;
+      }
       continue;
     }
     data[column] = INT_COLUMNS.has(column) ? Math.round(Number(value)) : value;
@@ -362,6 +381,17 @@ async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> 
       set.add(p.fieldPath);
       selectedBySource.set(p.sourceId, set);
     }
+  }
+
+  // A profile belongs to the source that brought it. Without this, reverting
+  // the import that supplied one leaves the dive claiming a depth profile it
+  // no longer has, pointing at a blob nothing references.
+  const stillHasProfile = sources.some((source) =>
+    source.provenance.some((row) => row.fieldPath === 'profile'),
+  );
+  if (!stillHasProfile) {
+    await tx.diveProfile.deleteMany({ where: { diveId } });
+    await tx.dive.update({ where: { id: diveId }, data: { hasProfile: false } });
   }
 
   await tx.diveFieldProvenance.updateMany({ where: { diveId }, data: { isSelected: false } });

@@ -44,7 +44,12 @@ async function call(path: string, init: RequestInit, token?: string): Promise<Re
     headers: {
       ...(init.headers ?? {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
-      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      // Only for JSON. A FormData body carries a multipart boundary that
+      // fetch generates, and setting the header by hand discards it — the API
+      // then receives a body it cannot parse and reports no file uploaded.
+      ...(init.body && !(init.body instanceof FormData)
+        ? { 'content-type': 'application/json' }
+        : {}),
     },
     // A logbook page must not be served from a cache shared with another
     // diver, and Next caches fetches by default.
