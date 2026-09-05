@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.1126.0",
     "@mydivelog/db": "workspace:*",
     "@mydivelog/domain": "workspace:*",
+    "jose": "^6.2.10",
     "next": "^16.3.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
