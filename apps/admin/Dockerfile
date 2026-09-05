@@ -17,13 +17,21 @@ RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.spl
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/admin/package.json apps/admin/
+COPY packages/db/package.json packages/db/
+COPY packages/domain/package.json packages/domain/
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+COPY tsconfig.base.json ./
+COPY packages/domain packages/domain
+COPY packages/db packages/db
 COPY apps/admin apps/admin
-RUN pnpm --filter @mydivelog/admin build
+# The Prisma client is generated, not committed, and @mydivelog/db compiles
+# against it. `...` builds the workspace dependencies first.
+RUN pnpm --filter @mydivelog/db generate
+RUN pnpm --filter @mydivelog/admin... build
 
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1

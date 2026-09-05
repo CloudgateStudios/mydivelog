@@ -113,6 +113,12 @@ describe('importing the computer export onto an existing logbook', () => {
     // trustworthy and the six dives are recognised as dives already logged.
     expect(batch.rows.every((r) => r.decision === 'merge')).toBe(true);
 
+    // Above the threshold, not at it. These sat at exactly 0.80 while the pure
+    // pipeline scored them 0.85, because the candidate builder never carried
+    // gases and the gas signal could not fire. Both merged, so nothing looked
+    // wrong — which is the point of asserting the margin.
+    expect(batch.rows.every((r) => (r.matchScore ?? 0) > 0.8)).toBe(true);
+
     const result = await commitAll(uddfBatch);
     expect(result.merged).toHaveLength(6);
     expect(result.created).toHaveLength(0);

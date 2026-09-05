@@ -1,0 +1,203 @@
+/*
+ * Deliberately plain. This is a staff tool for reading rows and understanding
+ * why an import decided what it did — density and legibility matter, styling
+ * does not.
+ */
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #262b36;
+  --text: #e6e9ef;
+  --muted: #8b93a7;
+  --accent: #5aa9e6;
+  --good: #4ec9a0;
+  --warn: #e2b341;
+  --bad: #e06c75;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    14px/1.5 ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+header.top {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+header.top strong {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+header.top nav {
+  display: flex;
+  gap: 1.1rem;
+}
+header.top nav a {
+  color: var(--muted);
+  font-size: 13px;
+}
+header.top nav a:hover {
+  color: var(--text);
+}
+
+main {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+h1 {
+  font-size: 20px;
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+h2 {
+  font-size: 15px;
+  margin: 1.75rem 0 0.6rem;
+  font-weight: 600;
+}
+p.lede {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+  max-width: 70ch;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  min-width: 130px;
+}
+.card .n {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.card .k {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th,
+td {
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+tbody tr:hover {
+  background: #1c202a;
+}
+code,
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tag.good {
+  color: var(--good);
+  border-color: #24493d;
+}
+.tag.warn {
+  color: var(--warn);
+  border-color: #4a3f1e;
+}
+.tag.bad {
+  color: var(--bad);
+  border-color: #4d2a2d;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.panel > table {
+  border-radius: 6px;
+}
+
+pre {
+  background: #0b0d11;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.7rem;
+  overflow-x: auto;
+  font-size: 12px;
+  margin: 0;
+  max-height: 22rem;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 1.25rem 0.7rem;
+}
+.muted {
+  color: var(--muted);
+}
+.withheld {
+  color: var(--muted);
+  font-style: italic;
+}
+details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}

@@ -44,11 +44,12 @@
     "node": ">=24"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
+    "*.{ts,tsx}": [
+      "eslint --fix",
       "prettier --write"
     ],
-    "*.{ts,tsx}": [
-      "eslint --fix"
+    "*.{js,jsx,json,md,yml,yaml,css}": [
+      "prettier --write"
     ]
   }
 }
