@@ -32,6 +32,19 @@ const jwks = TEAM_DOMAIN
   ? createRemoteJWKSet(new URL(`https://${TEAM_DOMAIN}/cdn-cgi/access/certs`))
   : undefined;
 
+// Said once, at startup, because a half-configured check looks exactly like a
+// configured one from the outside. Signature and issuer alone already close
+// the hostname bypass this module exists for; the audience narrows it further,
+// to tokens minted for this application rather than any application in the
+// team.
+if (TEAM_DOMAIN && !AUDIENCE && !DISABLED) {
+  console.warn(
+    'admin: Cloudflare Access tokens are verified against ' +
+      `${TEAM_DOMAIN} but the audience is not pinned. Set CF_ACCESS_AUD so a ` +
+      'token minted for another application in this Access team is not accepted here.',
+  );
+}
+
 export type AccessResult =
   | { ok: true; email?: string; reason: 'verified' | 'check-disabled' }
   | { ok: false; reason: string };

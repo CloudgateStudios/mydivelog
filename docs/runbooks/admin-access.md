@@ -30,22 +30,45 @@ Both values come from the Cloudflare dashboard.
 to `https://snowy-waterfall-f56e.cloudflareaccess.com/cdn-cgi/access/login/...`
 then the team domain is `snowy-waterfall-f56e.cloudflareaccess.com`.
 
-**Audience (AUD)** is per application: Access → Applications → your admin app →
-Overview → *Application Audience (AUD) Tag*. Without it, a token minted for any
-other application in the same Access team is accepted here — so it is worth the
-extra minute.
+The team domain alone closes the hostname bypass: it pins the signature and
+the issuer, so a request that did not come through this Access team is refused.
+Set it first and the panel is protected.
 
 ```bash
 for env in dev prod; do
   fly secrets set --app "mydivelog-admin-${env}" \
-    CF_ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com \
-    CF_ACCESS_AUD=<the app's AUD tag>
+    CF_ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com
 done
 ```
 
-> The AUD tag differs per application, so `dev` and `prod` take different
-> values. Setting one on both is worse than setting neither, because it looks
-> configured.
+**Audience (AUD)** narrows it further, to tokens minted for *this* application
+rather than any application in the team. It is worth adding, and it is not
+what stands between the panel and the internet.
+
+One Access application can cover several hostnames — ours has both
+`admin.mydivelog.app` and `admin-dev.mydivelog.app` as destinations — and an
+AUD belongs to the **application**, not the hostname. So both Fly apps take the
+same value here. If you later split dev and prod into separate Access
+applications, they get different ones.
+
+```bash
+for env in dev prod; do
+  fly secrets set --app "mydivelog-admin-${env}" CF_ACCESS_AUD=<the AUD tag>
+done
+```
+
+Finding it in the dashboard has moved around. If Access → Applications → your
+app → **Details** does not show it, ask the API:
+
+```bash
+curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/access/apps" \
+  | jq -r '.result[] | "\(.name)\t\(.aud)"'
+```
+
+Until it is set, the app logs a warning at startup saying the audience is not
+pinned — a half-configured check looks exactly like a configured one from the
+outside, so it says so from the inside.
 
 ## Verifying
 
