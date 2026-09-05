@@ -27,6 +27,12 @@ const report = (violations: Awaited<ReturnType<AxeBuilder['analyze']>>['violatio
     )
     .join('\n');
 
+/** The number the log says it matched, which is not the number on this page. */
+async function countOf(page: Page): Promise<number> {
+  const text = (await page.locator('.result-count').textContent()) ?? '';
+  return Number(/^(\d+)/.exec(text.trim())?.[1] ?? '0');
+}
+
 const PUBLIC_PAGES = [
   ['the landing page', '/'],
   ['sign in', '/signin'],
@@ -81,12 +87,26 @@ test.describe('keyboard', () => {
   test('the log can be filtered without a mouse', async ({ page }) => {
     // The whole point of building the filter bar as a plain form. If this
     // needs a pointer, the form is not a form.
+    //
+    // Asserts that the filter *narrowed*, not that it found some particular
+    // number: this ran green locally against a database that had accumulated
+    // several `pnpm demo` runs and failed on a cold CI runner, where the same
+    // fixture yields a different count. A test that encodes how many times
+    // somebody seeded their laptop is testing the laptop.
     await page.goto('/logbook');
+    const before = await countOf(page);
+    expect(before, 'the log must have dives for this to mean anything').toBeGreaterThan(1);
+
     await page.getByLabel('Search').fill('Angel');
     await page.getByRole('button', { name: 'Apply' }).press('Enter');
 
     await expect(page).toHaveURL(/q=Angel/);
-    await expect(page.locator('.result-count')).toContainText('4 dives');
+    await expect(page.locator('.result-count')).toContainText('Angel');
+
+    const after = await countOf(page);
+    expect(after).toBeGreaterThan(0);
+    expect(after).toBeLessThan(before);
+    await expect(page.locator('tbody tr')).toHaveCount(after);
   });
 
   test('every interactive element on the log shows focus', async ({ page }) => {
