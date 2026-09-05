@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+import './globals.css';
 
 export const metadata = {
   title: 'MyDiveLog',
-  description: 'One logbook for every dive.',
+  description: 'Every dive you have logged, in one place.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

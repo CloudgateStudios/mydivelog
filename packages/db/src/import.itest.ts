@@ -215,6 +215,56 @@ describe('commit is idempotent', () => {
   });
 });
 
+describe('time fields', () => {
+  it('derives UTC when a source records only a wall clock', async () => {
+    // A spreadsheet has no timezone, so nothing asserts startTimeUtc and the
+    // row kept the epoch placeholder it was created with. Every dive imported
+    // from a spreadsheet was stored as 1970-01-01 UTC — the local time
+    // displayed correctly, so the logbook looked right while sorting, surface
+    // intervals and every UTC-bounded query were wrong.
+    const b = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, b, [
+      sheetRow({ fields: { startTimeLocal: SHEET_TIME, maxDepthM: 14 } }),
+    ]);
+
+    const dive = await diveOf(created[0] as string);
+    expect(dive.startTimeUtc.getTime()).not.toBe(0);
+    expect(dive.startTimeUtc.toISOString()).toBe(SHEET_TIME.toISOString());
+    expect(dive.startTimeLocal.toISOString()).toBe(SHEET_TIME.toISOString());
+  });
+
+  it('uses the offset when a source does record one', async () => {
+    const b = await batch('uddf');
+    const { created } = await repo.commit(scope, b, [
+      sheetRow({
+        sourceKind: 'uddf',
+        fields: { startTimeLocal: WATCH_TIME, tzOffsetMinutes: -240, maxDepthM: 14 },
+      }),
+    ]);
+
+    const dive = await diveOf(created[0] as string);
+    // 19:07:42 local at -04:00 is 23:07:42 UTC.
+    expect(dive.startTimeUtc.toISOString()).toBe('2026-03-06T23:07:42.000Z');
+  });
+
+  it('keeps an asserted UTC rather than recomputing it', async () => {
+    const b = await batch('uddf');
+    const { created } = await repo.commit(scope, b, [
+      sheetRow({
+        sourceKind: 'uddf',
+        fields: {
+          startTimeLocal: WATCH_TIME,
+          startTimeUtc: new Date('2026-03-06T23:07:42Z'),
+          tzOffsetMinutes: -240,
+        },
+      }),
+    ]);
+    expect((await diveOf(created[0] as string)).startTimeUtc.toISOString()).toBe(
+      '2026-03-06T23:07:42.000Z',
+    );
+  });
+});
+
 describe('sites and tags', () => {
   const withSite = (over: Record<string, unknown> = {}): CommitRow =>
     sheetRow({

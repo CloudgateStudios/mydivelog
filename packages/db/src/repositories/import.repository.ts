@@ -330,7 +330,7 @@ async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> 
     })),
   );
 
-  const values = selectedValues(merged);
+  const values = completeTimes(selectedValues(merged));
   const data: Record<string, unknown> = { hasContestedFields: merged.hasContestedFields };
 
   for (const [path, column] of Object.entries(DIVE_COLUMNS)) {
@@ -371,6 +371,39 @@ async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> 
       data: { isSelected: true },
     });
   }
+}
+
+/**
+ * Fills in whichever of the three time fields the sources did not assert.
+ *
+ * A spreadsheet records a wall clock and no timezone, so nothing asserts
+ * `startTimeUtc` — and the row keeps the epoch placeholder it was created
+ * with. Every dive imported from a spreadsheet was stored as 1970-01-01 UTC:
+ * the local time displayed correctly, so a logbook looked right while sorting
+ * by time, surface intervals and any UTC-bounded query were all wrong.
+ *
+ * With no offset to go on, local is used as UTC. That is a guess, and it is
+ * the guess the schema already forces by requiring all three columns — but it
+ * is at least self-consistent and it sorts. The offset stays unasserted, so
+ * the admin panel shows it as assumed rather than as something a source said.
+ */
+function completeTimes(values: Record<string, unknown>): Record<string, unknown> {
+  const local = values['startTimeLocal'];
+  const utc = values['startTimeUtc'];
+  const offset = values['tzOffsetMinutes'];
+  const minute = 60_000;
+
+  if (local instanceof Date && !(utc instanceof Date)) {
+    return {
+      ...values,
+      startTimeUtc:
+        typeof offset === 'number' ? new Date(local.getTime() - offset * minute) : local,
+    };
+  }
+  if (utc instanceof Date && !(local instanceof Date) && typeof offset === 'number') {
+    return { ...values, startTimeLocal: new Date(utc.getTime() + offset * minute) };
+  }
+  return values;
 }
 
 /** Which fields an instrument measured rather than was told. */
