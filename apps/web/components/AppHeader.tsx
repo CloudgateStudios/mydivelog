@@ -13,6 +13,10 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
       <a className="brand" href="/logbook">
         MyDiveLog
       </a>
+      <nav>
+        <a href="/logbook">Logbook</a>
+        <a href="/import">Import</a>
+      </nav>
       <span className="muted">{user.displayName ?? user.email}</span>
       <form action={signOut} style={{ marginLeft: 'auto' }}>
         <button className="link" type="submit">

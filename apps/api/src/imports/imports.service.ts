@@ -302,6 +302,8 @@ export class ImportsService {
     for (const row of batch.rows) {
       const fields = deserialize(row.observation as Record<string, unknown>);
       const profile = fields['profile'] as ProfileSeries | undefined;
+      // The samples are far too large for a JSON provenance column. The
+      // repository records the fact that this source had a profile.
       delete fields['profile'];
 
       rows.push({

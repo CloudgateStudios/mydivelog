@@ -39,6 +39,14 @@ const batch = async (sourceKind: string): Promise<string> => {
 const SHEET_TIME = new Date('2026-03-06T19:07:00Z');
 const WATCH_TIME = new Date('2026-03-06T19:07:42Z');
 
+/**
+ * A spreadsheet row, shaped like a real one.
+ *
+ * It records a wall clock and no timezone. An earlier version of this fixture
+ * asserted `tzOffsetMinutes` and `startTimeUtc`, which no spreadsheet does —
+ * and that made the whole-row revert test pass over a real bug, because the
+ * surviving source happened to assert every field the removed one had.
+ */
 const sheetRow = (over: Partial<CommitRow> = {}): CommitRow => ({
   rowIndex: 0,
   decision: 'create',
@@ -46,8 +54,6 @@ const sheetRow = (over: Partial<CommitRow> = {}): CommitRow => ({
   recordedAt: new Date('2026-03-06T00:00:00Z'),
   fields: {
     startTimeLocal: SHEET_TIME,
-    startTimeUtc: SHEET_TIME,
-    tzOffsetMinutes: -240,
     maxDepthM: 14.0208,
     weightKg: 10.886,
     notes: 'Saw an eagle ray.',
@@ -102,7 +108,9 @@ describe('commit', () => {
     const b = await batch('spreadsheet');
     const { created } = await repo.commit(scope, b, [sheetRow()]);
     const rows = await prisma.diveFieldProvenance.findMany({ where: { diveId: created[0] } });
-    expect(rows).toHaveLength(7);
+    // A spreadsheet asserts a local time, a depth, a weight, notes and
+    // visibility — and no timezone, which is the point of the fixture.
+    expect(rows).toHaveLength(5);
     expect(rows.every((r) => r.isSelected)).toBe(true);
   });
 
@@ -476,6 +484,71 @@ describe('sites and tags', () => {
   });
 });
 
+describe('revert takes back what the source brought', () => {
+  const withProfile = (diveId: string): CommitRow => ({
+    ...watchRow(diveId),
+    profile: {
+      storageKey: 'test/profile.mdlp',
+      format: 'mdl-profile-v1',
+      sampleCount: 38,
+      byteSize: 256,
+      checksum: 'abc',
+      channels: ['timeS', 'depthM'],
+      maxDepthM: 14.1,
+      avgDepthM: 8,
+      durationS: 2776,
+    },
+  });
+
+  it('clears an offset the removed source contributed', async () => {
+    // A spreadsheet records no timezone. Reverting the computer export must
+    // leave the dive not claiming one — it kept -04:00, because the column is
+    // NOT NULL and was treated as unclearable.
+    const sheet = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, sheet, [sheetRow()]);
+    const diveId = created[0] as string;
+    expect((await diveOf(diveId)).tzOffsetMinutes).toBe(0);
+
+    const watch = await batch('uddf');
+    await repo.commit(scope, watch, [watchRow(diveId)]);
+    expect((await diveOf(diveId)).tzOffsetMinutes).toBe(-240);
+
+    await repo.revert(scope, watch);
+    expect((await diveOf(diveId)).tzOffsetMinutes).toBe(0);
+  });
+
+  it('takes the depth profile away with the source that brought it', async () => {
+    // Otherwise the dive claims a profile it no longer has, pointing at a blob
+    // nothing references.
+    const sheet = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, sheet, [sheetRow()]);
+    const diveId = created[0] as string;
+
+    const watch = await batch('uddf');
+    await repo.commit(scope, watch, [withProfile(diveId)]);
+    expect((await diveOf(diveId)).hasProfile).toBe(true);
+    expect(await prisma.diveProfile.count({ where: { diveId } })).toBe(1);
+
+    await repo.revert(scope, watch);
+    expect((await diveOf(diveId)).hasProfile).toBe(false);
+    expect(await prisma.diveProfile.count({ where: { diveId } })).toBe(0);
+  });
+
+  it('keeps a profile whose source is still attached', async () => {
+    const watch = await batch('uddf');
+    const { created } = await repo.commit(scope, watch, [
+      { ...withProfile(''), decision: 'create', diveId: undefined },
+    ]);
+    const diveId = created[0] as string;
+
+    const second = await batch('spreadsheet');
+    await repo.commit(scope, second, [{ ...sheetRow(), decision: 'merge', diveId }]);
+    await repo.revert(scope, second);
+
+    expect((await diveOf(diveId)).hasProfile).toBe(true);
+  });
+});
+
 describe('revert', () => {
   it('restores a pre-existing dive to its exact prior state', async () => {
     // The acceptance criterion for the phase. Not "close to" — identical.
@@ -598,6 +671,6 @@ describe('revert', () => {
     const after = await diveOf(diveId);
     expect(after.maxDepthM).toBeCloseTo(before.maxDepthM ?? 0, 9);
     expect(await prisma.diveSource.count({ where: { diveId } })).toBe(1);
-    expect(await prisma.diveFieldProvenance.count({ where: { diveId } })).toBe(7);
+    expect(await prisma.diveFieldProvenance.count({ where: { diveId } })).toBe(5);
   });
 });
