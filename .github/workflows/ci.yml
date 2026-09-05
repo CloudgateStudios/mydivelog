@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Every pull request, not only those targeting main. A branch stacked on
+  # another feature branch was getting no CI at all — the checks silently did
+  # not exist rather than failing, which is the worst way for them to be absent.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
