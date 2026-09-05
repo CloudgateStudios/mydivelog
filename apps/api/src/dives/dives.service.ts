@@ -8,6 +8,7 @@ import {
   renumberPlan,
   summarizeLog,
 } from '@mydivelog/domain';
+import { divesDateRange } from '@mydivelog/contracts';
 import type { CreateDive, ListDivesQuery, UpdateDive } from '@mydivelog/contracts';
 import { notFound } from '../common/problem-details.ts';
 import { StorageService } from '../storage/storage.service.ts';
@@ -21,6 +22,20 @@ import { StorageService } from '../storage/storage.service.ts';
  */
 const wallClock = (iso: string): Date => new Date(iso.endsWith('Z') ? iso : `${iso}Z`);
 
+/** The query string as repository filters. Cursor and limit are paging, not filtering. */
+const filtersFor = (query: ListDivesQuery) => ({
+  ...divesDateRange(query),
+  ...(query.siteId ? { siteId: query.siteId } : {}),
+  ...(query.tripId ? { tripId: query.tripId } : {}),
+  ...(query.hasProfile !== undefined ? { hasProfile: query.hasProfile } : {}),
+  ...(query.minDepthM !== undefined ? { minDepthM: query.minDepthM } : {}),
+  ...(query.maxDepthM !== undefined ? { maxDepthM: query.maxDepthM } : {}),
+  ...(query.tag?.length ? { tagSlugs: query.tag } : {}),
+  ...(query.q ? { q: query.q } : {}),
+  sort: query.sort,
+  ...(query.cursor ? { cursor: query.cursor } : {}),
+});
+
 @Injectable()
 export class DivesService {
   private readonly prisma = getPrismaClient();
@@ -29,23 +44,25 @@ export class DivesService {
   constructor(private readonly storage: StorageService) {}
 
   async list(scope: UserScope, query: ListDivesQuery) {
-    const rows = await this.repo.list(scope, {
-      ...(query.from ? { from: new Date(query.from) } : {}),
-      ...(query.to ? { to: new Date(query.to) } : {}),
-      ...(query.siteId ? { siteId: query.siteId } : {}),
-      ...(query.tripId ? { tripId: query.tripId } : {}),
-      ...(query.hasProfile !== undefined ? { hasProfile: query.hasProfile } : {}),
-      ...(query.minDepthM !== undefined ? { minDepthM: query.minDepthM } : {}),
-      ...(query.maxDepthM !== undefined ? { maxDepthM: query.maxDepthM } : {}),
-      limit: query.limit,
-      ...(query.cursor ? { cursor: query.cursor } : {}),
-    });
+    const filters = filtersFor(query);
+    const rows = await this.repo.list(scope, { ...filters, limit: query.limit });
 
     // The repository fetches one extra row so the caller can tell whether more
     // exist without a second count query.
     const hasMore = rows.length > query.limit;
     const data = hasMore ? rows.slice(0, query.limit) : rows;
-    return { data, nextCursor: hasMore ? (data.at(-1)?.id ?? null) : null };
+
+    return {
+      data,
+      nextCursor: hasMore ? (data.at(-1)?.id ?? null) : null,
+      // Counted only when asked. See the repository: it is a second query, and
+      // most callers page rather than count.
+      ...(query.withTotal ? { total: await this.repo.count(scope, filters) } : {}),
+    };
+  }
+
+  async facets(scope: UserScope) {
+    return this.repo.facets(scope);
   }
 
   async get(scope: UserScope, id: string) {

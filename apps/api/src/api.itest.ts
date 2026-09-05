@@ -20,8 +20,12 @@ let http: ReturnType<typeof request>;
 
 const emailA = `a-${randomUUID()}@itest.invalid`;
 const emailB = `b-${randomUUID()}@itest.invalid`;
+// The filter suite asserts exact counts, so it needs a logbook the other
+// suites are not adding dives to.
+const emailC = `c-${randomUUID()}@itest.invalid`;
 let tokenA = '';
 let tokenB = '';
+let tokenC = '';
 
 const newDive = (overrides: Record<string, unknown> = {}) => ({
   startTimeUtc: '2026-03-06T23:07:42.000Z',
@@ -51,10 +55,11 @@ beforeAll(async () => {
 
   tokenA = await login(emailA);
   tokenB = await login(emailB);
+  tokenC = await login(emailC);
 }, 60_000);
 
 afterAll(async () => {
-  await prisma.user.deleteMany({ where: { email: { in: [emailA, emailB] } } });
+  await prisma.user.deleteMany({ where: { email: { in: [emailA, emailB, emailC] } } });
   await app?.close();
   await prisma.$disconnect();
 });
@@ -81,13 +86,14 @@ describe('authentication', () => {
   });
 
   it('rotates refresh tokens and revokes the family when one is replayed', async () => {
-    const first = await http.post('/v1/auth/dev/login').send({ email: emailA }).expect(201);
+    // 200, not 201: logging in returns a session, it does not create a resource.
+    const first = await http.post('/v1/auth/dev/login').send({ email: emailA }).expect(200);
     const original = first.body.refreshToken as string;
 
     const rotated = await http
       .post('/v1/auth/refresh')
       .send({ refreshToken: original })
-      .expect(201);
+      .expect(200);
     expect(rotated.body.refreshToken).not.toBe(original);
 
     // Replaying the consumed token means it leaked: the whole family dies.
@@ -168,7 +174,7 @@ describe('dive lifecycle', () => {
   it('soft deletes and restores', async () => {
     await http.delete(`/v1/dives/${id}`).set('authorization', `Bearer ${tokenA}`).expect(204);
     await http.get(`/v1/dives/${id}`).set('authorization', `Bearer ${tokenA}`).expect(404);
-    await http.post(`/v1/dives/${id}/restore`).set('authorization', `Bearer ${tokenA}`).expect(201);
+    await http.post(`/v1/dives/${id}/restore`).set('authorization', `Bearer ${tokenA}`).expect(200);
     await http.get(`/v1/dives/${id}`).set('authorization', `Bearer ${tokenA}`).expect(200);
   });
 
@@ -276,6 +282,196 @@ describe('idempotency', () => {
       .send(body)
       .expect(201);
     expect(b.body.id).not.toBe(a.body.id);
+  });
+});
+
+/**
+ * Filtering, against a real query parser.
+ *
+ * The unit tests cover the string handling; what only a real request can show
+ * is whether Express hands a repeated `?tag=` to Nest as an array at all. It
+ * is the kind of thing that works in a test that builds the object by hand and
+ * fails on the wire.
+ */
+describe('filtering the log', () => {
+  const tagged = async (slug: string, label: string) => {
+    const tag = await prisma.tag.create({
+      data: { id: randomUUID(), slug, label, category: 'activity' },
+    });
+    return tag.id;
+  };
+
+  let wreckId = '';
+  let nightId = '';
+  let siteId = '';
+
+  beforeAll(async () => {
+    wreckId = await tagged(`wreck-${randomUUID()}`, 'Wreck');
+    nightId = await tagged(`night-${randomUUID()}`, 'Night');
+
+    const site = await prisma.site.create({
+      data: { id: randomUUID(), name: `Hilma Hooker ${randomUUID()}` },
+    });
+    siteId = site.id;
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: emailC } });
+    const make = async (overrides: Record<string, unknown>, tags: string[], diveNumber: number) => {
+      const dive = await prisma.dive.create({
+        data: {
+          id: randomUUID(),
+          userId: user.id,
+          diveNumber,
+          tzOffsetMinutes: -240,
+          startTimeUtc: new Date('2026-03-06T23:07:42.000Z'),
+          startTimeLocal: new Date('2026-03-06T19:07:42.000Z'),
+          ...overrides,
+        },
+      });
+      for (const tagId of tags) {
+        await prisma.diveTag.create({ data: { diveId: dive.id, tagId } });
+      }
+      return dive.id;
+    };
+
+    // A wreck dive at night, a wreck dive by day, a night dive on a reef.
+    await make(
+      { maxDepthM: 30, siteId, notes: 'manta ray on the safety stop' },
+      [wreckId, nightId],
+      9001,
+    );
+    await make({ maxDepthM: 28, siteId }, [wreckId], 9002);
+    await make({ maxDepthM: 12 }, [nightId], 9003);
+  }, 60_000);
+
+  const list = async (query: string) => {
+    const res = await http
+      .get(`/v1/dives?${query}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    return res.body as { data: { id: string; diveNumber: number }[]; total?: number };
+  };
+
+  it('narrows on two tags rather than widening', async () => {
+    const slugs = await prisma.tag.findMany({
+      where: { id: { in: [wreckId, nightId] } },
+      select: { slug: true, id: true },
+    });
+    const wreck = slugs.find((t) => t.id === wreckId)?.slug as string;
+    const night = slugs.find((t) => t.id === nightId)?.slug as string;
+
+    expect((await list(`tag=${wreck}`)).data).toHaveLength(2);
+    expect((await list(`tag=${night}`)).data).toHaveLength(2);
+    // The one dive carrying both. If Express collapsed the repeat, this is 2.
+    const both = await list(`tag=${wreck}&tag=${night}`);
+    expect(both.data).toHaveLength(1);
+    expect(both.data[0]?.diveNumber).toBe(9001);
+  });
+
+  it('searches notes and site names, and not the notes marked private', async () => {
+    expect((await list('q=manta')).data).toHaveLength(1);
+    expect((await list('q=Hilma')).data).toHaveLength(2);
+    expect((await list('q=MANTA')).data, 'case insensitive').toHaveLength(1);
+  });
+
+  it('filters on a depth range in metres', async () => {
+    expect((await list('minDepthM=29')).data).toHaveLength(1);
+    expect((await list('minDepthM=20&maxDepthM=29')).data).toHaveLength(1);
+  });
+
+  it('includes the closing day of a date range', async () => {
+    // The dive is 19:07 local on the 6th. A `to` that stopped at midnight
+    // would drop it, which is the bug this range exists to prevent.
+    expect((await list('from=2026-03-06&to=2026-03-06&withTotal=true')).total).toBe(3);
+    expect((await list('from=2026-03-07')).data).toHaveLength(0);
+  });
+
+  it('counts matches only when asked', async () => {
+    expect((await list('q=manta')).total).toBeUndefined();
+    expect((await list('q=manta&withTotal=true')).total).toBe(1);
+  });
+
+  it('pages without repeating or losing a dive when the sort has ties', async () => {
+    // All three share a start time. Without the id tiebreaker the two pages
+    // can overlap, and a diver sees one dive twice and another never.
+    const first = await list('limit=2&sort=date_desc');
+    expect(first.data).toHaveLength(2);
+    const second = await list(
+      `limit=2&sort=date_desc&cursor=${(first as { nextCursor?: string }).nextCursor}`,
+    );
+    const ids = [...first.data, ...second.data].map((d) => d.id);
+    expect(new Set(ids).size, 'no dive appears on both pages').toBe(ids.length);
+  });
+
+  it('offers only the sites and tags this diver has actually dived', async () => {
+    const res = await http
+      .get('/v1/dives/facets')
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    expect(res.body.sites.map((s: { id: string }) => s.id)).toContain(siteId);
+    expect(res.body.sites.find((s: { id: string }) => s.id === siteId).count).toBe(2);
+
+    const other = await http
+      .get('/v1/dives/facets')
+      .set('authorization', `Bearer ${tokenB}`)
+      .expect(200);
+    expect(other.body.sites.map((s: { id: string }) => s.id)).not.toContain(siteId);
+  });
+});
+
+describe('saved views', () => {
+  it('round-trips a filter set and reopens it', async () => {
+    const name = `Deep wrecks ${randomUUID()}`;
+    const created = await http
+      .post('/v1/saved-views')
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ name, query: 'minDepthM=30&sort=depth_desc&limit=25' })
+      .expect(201);
+    // Paging is stripped; the filters survive.
+    expect(created.body.query).toBe('minDepthM=30&sort=depth_desc');
+
+    const list = await http
+      .get('/v1/saved-views')
+      .set('authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(list.body.data.map((v: { name: string }) => v.name)).toContain(name);
+
+    await http
+      .delete(`/v1/saved-views/${created.body.id}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .expect(204);
+  });
+
+  it('replaces rather than failing when a name is reused', async () => {
+    const name = `Night ${randomUUID()}`;
+    const post = (query: string) =>
+      http
+        .post('/v1/saved-views')
+        .set('authorization', `Bearer ${tokenA}`)
+        .send({ name, query })
+        .expect(201);
+
+    const first = await post('minDepthM=10');
+    const second = await post('minDepthM=20');
+    expect(second.body.id).toBe(first.body.id);
+    expect(second.body.query).toContain('minDepthM=20');
+  });
+
+  it("will not delete another diver's view", async () => {
+    const created = await http
+      .post('/v1/saved-views')
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ name: `Private ${randomUUID()}`, query: 'q=manta' })
+      .expect(201);
+
+    await http
+      .delete(`/v1/saved-views/${created.body.id}`)
+      .set('authorization', `Bearer ${tokenB}`)
+      .expect(404);
+    await http
+      .get('/v1/saved-views')
+      .set('authorization', `Bearer ${tokenB}`)
+      .expect(200)
+      .expect((res) => expect(res.body.data).toHaveLength(0));
   });
 });
 

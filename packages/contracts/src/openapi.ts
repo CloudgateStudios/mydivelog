@@ -227,6 +227,45 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '201': ok(dives.Dive, 'Created'), '401': problem, '422': problem },
         },
       },
+      '/dives/facets': {
+        get: {
+          operationId: 'getDiveFacets',
+          tags: ['dives'],
+          security: bearer,
+          description:
+            'The sites and tags that appear on this diver\u2019s own dives, with counts, plus ' +
+            'the range their depths and dates actually span. What a filter UI can offer ' +
+            'without offering a way to reach an empty page.',
+          responses: { '200': ok(dives.DiveFacets), '401': problem },
+        },
+      },
+      '/saved-views': {
+        get: {
+          operationId: 'listSavedViews',
+          tags: ['dives'],
+          security: bearer,
+          responses: { '200': ok(z.object({ data: z.array(dives.SavedView) })), '401': problem },
+        },
+        post: {
+          operationId: 'createSavedView',
+          tags: ['dives'],
+          security: bearer,
+          description:
+            'Saving under a name already in use replaces that view\u2019s filters rather than ' +
+            'failing: a diver cannot see the uniqueness constraint, only that nothing happened.',
+          requestBody: body(dives.CreateSavedView),
+          responses: { '201': ok(dives.SavedView, 'Created'), '401': problem, '422': problem },
+        },
+      },
+      '/saved-views/{id}': {
+        delete: {
+          operationId: 'deleteSavedView',
+          tags: ['dives'],
+          security: bearer,
+          parameters: [pathId],
+          responses: { '204': { description: 'Deleted' }, '401': problem, '404': problem },
+        },
+      },
       '/dives/{id}/profile': {
         get: {
           operationId: 'getDiveProfile',

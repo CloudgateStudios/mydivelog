@@ -74,9 +74,16 @@ if you want it actually sent.
 |---|---|
 | http://localhost:53000 | Landing page |
 | http://localhost:53000/logbook | Your dives, newest first |
+| [?tag=shore&tag=night](http://localhost:53000/logbook?tag=shore&tag=night) | Two tags narrow rather than widen — one dive, not twenty-two |
+| [?minDepthM=30](http://localhost:53000/logbook?minDepthM=30) | Depth bounds are metres in the URL whatever units you read them in |
 | a dive from that list | Depth profile, fields, and where each value came from |
 | http://localhost:53002 | Admin panel — imports, provenance, format health |
 | http://localhost:53002/imports | Every row of an import: decision, score, what changed and why |
+
+Filters live in the URL, so every one of those is a link you can share, and
+saving a view is naming one. Switch to imperial in settings and the depth
+filter offers 60 and 100 ft while the URL keeps metres — which is why a saved
+view means one range rather than whatever the person opening it has set.
 
 The dives dated 2026-03-05 and 2026-03-06 are the six the two files both
 describe. Open one and the provenance panel shows the three fields the sources
