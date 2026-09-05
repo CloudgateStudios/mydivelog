@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { apiJson, currentUser } from '../../lib/api';
 import { AppHeader } from '../../components/AppHeader';
+import { withUnits } from '../../lib/units';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ export default async function Logbook() {
   const user = await currentUser();
   if (!user) redirect('/signin');
 
+  const u = await withUnits();
   const page = await apiJson<{ data: Dive[]; total?: number }>('/v1/dives?limit=25').catch(() => ({
     data: [] as Dive[],
   }));
@@ -54,12 +56,8 @@ export default async function Logbook() {
                     <a href={`/dives/${dive.id}`}>{dive.diveNumber}</a>
                   </td>
                   <td>{dive.startTimeLocal.slice(0, 10)}</td>
-                  <td className="num">
-                    {dive.maxDepthM === null ? '—' : `${dive.maxDepthM.toFixed(1)} m`}
-                  </td>
-                  <td className="num">
-                    {dive.durationS === null ? '—' : `${Math.round(dive.durationS / 60)} min`}
-                  </td>
+                  <td className="num">{u.depth(dive.maxDepthM)}</td>
+                  <td className="num">{u.duration(dive.durationS)}</td>
                 </tr>
               ))}
             </tbody>

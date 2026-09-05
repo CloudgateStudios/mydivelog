@@ -9,11 +9,12 @@ import { RequestIdMiddleware } from './common/request-id.middleware.ts';
 import { DivesModule } from './dives/dives.module.ts';
 import { HealthModule } from './health/health.module.ts';
 import { ImportsModule } from './imports/imports.module.ts';
+import { PreferencesModule } from './preferences/preferences.module.ts';
 import { StorageModule } from './storage/storage.module.ts';
 import { OpenApiController } from './openapi/openapi.controller.ts';
 
 @Module({
-  imports: [AuthModule, HealthModule, DivesModule, StorageModule, ImportsModule],
+  imports: [AuthModule, HealthModule, DivesModule, StorageModule, ImportsModule, PreferencesModule],
   controllers: [OpenApiController],
   providers: [
     // Authentication is global: a new controller is guarded unless it opts out

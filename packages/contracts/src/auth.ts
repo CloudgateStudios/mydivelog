@@ -74,3 +74,22 @@ export const AuthEvent = z.object({
   provider: AuthProvider,
   at: IsoDateTime,
 });
+
+/**
+ * Display preferences.
+ *
+ * Per-quantity overrides exist because divers are not consistent — plenty who
+ * log depth in feet still think in Celsius — and forcing one system on them
+ * makes half their logbook read wrong.
+ */
+export const UnitPreferences = z.object({
+  unitSystem: z.enum(['metric', 'imperial']).default('metric'),
+  depthUnit: z.enum(['m', 'ft']).nullish(),
+  temperatureUnit: z.enum(['C', 'F']).nullish(),
+  weightUnit: z.enum(['kg', 'lb']).nullish(),
+  pressureUnit: z.enum(['bar', 'psi']).nullish(),
+});
+export type UnitPreferences = z.infer<typeof UnitPreferences>;
+
+export const UpdatePreferences = UnitPreferences.partial();
+export type UpdatePreferences = z.infer<typeof UpdatePreferences>;
