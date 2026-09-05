@@ -209,6 +209,18 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '201': ok(dives.Dive, 'Created'), '401': problem, '422': problem },
         },
       },
+      '/dives/{id}/profile': {
+        get: {
+          operationId: 'getDiveProfile',
+          tags: ['dives'],
+          security: bearer,
+          description:
+            'The decoded depth profile. Its own request because the samples are large and ' +
+            'most views do not need them.',
+          parameters: [pathId],
+          responses: { '200': ok(dives.DiveProfileSeries), '401': problem, '404': problem },
+        },
+      },
       '/dives/{id}': {
         get: {
           operationId: 'getDive',
@@ -216,7 +228,7 @@ export function buildOpenApiDocument(version = '0.0.0') {
           security: bearer,
           parameters: [pathId],
           // 404 rather than 403 for another user's dive: existence is not disclosed.
-          responses: { '200': ok(dives.Dive), '401': problem, '404': problem },
+          responses: { '200': ok(dives.DiveDetail), '401': problem, '404': problem },
         },
         patch: {
           operationId: 'updateDive',

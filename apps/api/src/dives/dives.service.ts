@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { createDiveRepository, getPrismaClient, type UserScope } from '@mydivelog/db';
-import { computeIntervals, renumberDives, renumberPlan, summarizeLog } from '@mydivelog/domain';
+import {
+  computeIntervals,
+  decodeProfile,
+  renumberDives,
+  renumberPlan,
+  summarizeLog,
+} from '@mydivelog/domain';
 import type { CreateDive, ListDivesQuery, UpdateDive } from '@mydivelog/contracts';
 import { notFound } from '../common/problem-details.ts';
+import { StorageService } from '../storage/storage.service.ts';
 
 /**
  * `startTimeLocal` is a wall-clock time with no zone — the time the diver
@@ -18,6 +25,8 @@ const wallClock = (iso: string): Date => new Date(iso.endsWith('Z') ? iso : `${i
 export class DivesService {
   private readonly prisma = getPrismaClient();
   private readonly repo = createDiveRepository(getPrismaClient());
+
+  constructor(private readonly storage: StorageService) {}
 
   async list(scope: UserScope, query: ListDivesQuery) {
     const rows = await this.repo.list(scope, {
@@ -42,9 +51,66 @@ export class DivesService {
   async get(scope: UserScope, id: string) {
     // 404 rather than 403: another user's dive must not be distinguishable from
     // one that does not exist.
-    const dive = await this.repo.findById(scope, id);
+    const dive = await this.repo.findDetailById(scope, id);
     if (!dive) throw notFound('Dive');
-    return dive;
+
+    const sourceById = new Map(dive.sources.map((source) => [source.id, source]));
+    const { sources, provenance, tags, buddies, site, profile, ...rest } = dive;
+
+    return {
+      ...rest,
+      site: site
+        ? {
+            id: site.id,
+            name: site.name,
+            latitude: site.latitude,
+            longitude: site.longitude,
+          }
+        : null,
+      tags: tags.map((t) => ({ slug: t.tag.slug, label: t.tag.label })),
+      buddies: buddies.map((b) => b.buddy.displayName),
+      profile: profile
+        ? {
+            sampleCount: profile.sampleCount,
+            maxDepthM: profile.maxDepthM,
+            avgDepthM: profile.avgDepthM,
+            durationS: profile.durationS,
+            minTempC: profile.minTempC,
+            maxTempC: profile.maxTempC,
+            channels: profile.channels,
+          }
+        : null,
+      sources: sources.map((source) => ({
+        sourceKind: source.sourceKind,
+        sourceRef: source.sourceRef,
+        recordedAt: source.recordedAt,
+      })),
+      // Flattened with the source's kind attached, because a source id means
+      // nothing to a diver and "your spreadsheet" means everything.
+      provenance: provenance.map((row) => ({
+        fieldPath: row.fieldPath,
+        value: row.value,
+        isSelected: row.isSelected,
+        sourceKind: sourceById.get(row.sourceId)?.sourceKind ?? 'unknown',
+        sourceRef: sourceById.get(row.sourceId)?.sourceRef ?? null,
+        recordedAt: sourceById.get(row.sourceId)?.recordedAt ?? row.diveId,
+      })),
+    };
+  }
+
+  /**
+   * The decoded depth profile.
+   *
+   * Its own request because the samples are large and most views do not need
+   * them — a dive that has a profile should still list at the speed of one
+   * that does not.
+   */
+  async profile(scope: UserScope, id: string) {
+    const dive = await this.repo.findDetailById(scope, id);
+    if (!dive?.profile) throw notFound('Profile');
+
+    const blob = await this.storage.getProfile(dive.profile.storageKey);
+    return decodeProfile(blob);
   }
 
   async create(scope: UserScope, input: CreateDive) {

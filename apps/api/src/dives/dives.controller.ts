@@ -27,6 +27,16 @@ export class DivesController {
     return this.dives.renumber(scope, body.startAt);
   }
 
+  /**
+   * The decoded depth profile. Separate from the dive because the samples are
+   * large and most views do not need them.
+   */
+  @Get(':id/profile')
+  @HttpCode(200)
+  profile(@Scope() scope: UserScope, @Param('id') id: string) {
+    return this.dives.profile(scope, id);
+  }
+
   @Get(':id')
   get(@Scope() scope: UserScope, @Param('id') id: string) {
     return this.dives.get(scope, id);

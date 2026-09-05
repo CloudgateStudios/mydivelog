@@ -1,0 +1,24 @@
+import { clearSession } from '../lib/session';
+import { redirect } from 'next/navigation';
+
+export function AppHeader({ user }: { user: { email: string; displayName: string | null } }) {
+  async function signOut(): Promise<void> {
+    'use server';
+    await clearSession();
+    redirect('/signin');
+  }
+
+  return (
+    <header className="nav">
+      <a className="brand" href="/logbook">
+        MyDiveLog
+      </a>
+      <span className="muted">{user.displayName ?? user.email}</span>
+      <form action={signOut} style={{ marginLeft: 'auto' }}>
+        <button className="link" type="submit">
+          Sign out
+        </button>
+      </form>
+    </header>
+  );
+}

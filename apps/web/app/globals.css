@@ -193,3 +193,285 @@ th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* --- Marketing ----------------------------------------------------------- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+.brand {
+  font-weight: 650;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.nav nav {
+  display: flex;
+  gap: 1.25rem;
+}
+.nav nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+.nav nav a:hover {
+  color: var(--text);
+}
+.nav > .button {
+  margin-left: auto;
+}
+.button.small {
+  width: auto;
+  padding: 0.4rem 0.9rem;
+  font-size: 14px;
+}
+
+.landing {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+.hero {
+  padding: 4.5rem 0 3rem;
+  max-width: 44rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+.lede {
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0 0 1.5rem;
+  max-width: 44rem;
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.actions .button {
+  width: auto;
+  padding: 0.7rem 1.4rem;
+}
+
+.section {
+  padding: 3rem 0;
+  border-top: 1px solid var(--border);
+}
+.section h2 {
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  letter-spacing: -0.015em;
+  margin: 0 0 0.75rem;
+}
+.section h3 {
+  font-size: 15px;
+  margin: 0 0 0.6rem;
+}
+
+/* Three columns that become one on a phone. The third is the point, so it is
+   last in the DOM as well as visually — a screen reader reaches it last too. */
+.merge {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+}
+.merge-col {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  background: var(--panel);
+}
+.merge-col.result {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.merge-col dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.1rem;
+}
+.merge-col dt {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.6rem;
+}
+.merge-col dd {
+  margin: 0;
+  font-size: 15px;
+}
+.merge-col dd.absent {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.cards article {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.1rem 1.2rem;
+  background: var(--panel);
+}
+.cards p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+}
+
+.footnote {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 1.25rem 0 0;
+  max-width: 46rem;
+}
+.cta {
+  text-align: center;
+}
+.cta .lede {
+  margin-left: auto;
+  margin-right: auto;
+}
+.cta .button {
+  width: auto;
+  padding: 0.7rem 1.6rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+/* Respect a reduced-motion preference before adding any motion at all. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- Dive detail --------------------------------------------------------- */
+
+.crumb {
+  margin: 0 0 0.5rem;
+  font-size: 14px;
+}
+main.app h2 {
+  font-size: 16px;
+  margin: 2rem 0 0.75rem;
+}
+main.app h3 {
+  font-size: 14px;
+  margin: 1.5rem 0 0.6rem;
+}
+main.app section:first-of-type h2 {
+  margin-top: 1.5rem;
+}
+
+.profile {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--panel);
+}
+.profile svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.profile .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.profile .axis {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.profile .depth-area {
+  fill: var(--accent);
+  fill-opacity: 0.14;
+}
+.profile .depth-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.profile .temp-line {
+  fill: none;
+  stroke: #c08a2e;
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+.profile figcaption {
+  margin-top: 0.5rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem 1.5rem;
+  margin: 0;
+}
+.facts dt {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.facts dd {
+  margin: 0.1rem 0 0;
+  font-size: 15px;
+}
+
+.notes {
+  white-space: pre-wrap;
+  border-left: 3px solid var(--border);
+  padding-left: 0.9rem;
+  margin: 0;
+}
+
+.sources {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+.sources li {
+  padding: 0.3rem 0;
+}
