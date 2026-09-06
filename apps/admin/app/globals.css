@@ -99,11 +99,30 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Links keep their underline.
+ *
+ * The accent is only 1.9:1 against body text in light and 1.6:1 in dark, so
+ * colour alone does not distinguish a link inside a sentence — which is both a
+ * WCAG failure and a real problem for anyone who cannot separate those two
+ * blues. The underline is the distinction; the colour is a bonus.
+ *
+ * Navigation and the wordmark opt out below: they are not inside a text block,
+ * so nothing has to tell them apart from prose.
+ */
 a {
   color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+header.top nav a,
+.wordmark {
   text-decoration: none;
 }
-a:hover {
+
+header.top nav a:hover {
   text-decoration: underline;
 }
 
