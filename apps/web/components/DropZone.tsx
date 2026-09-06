@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
+import { PendingNotice } from './SubmitButton';
 
 const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
@@ -81,6 +82,9 @@ export function DropZone({ action }: { action: (formData: FormData) => void }) {
           }}
         />
         {name && !tooBig && <p className="muted small">{name}</p>}
+        <PendingNotice>
+          Reading {name ?? 'your file'}. A large dive computer export takes a moment.
+        </PendingNotice>
       </div>
       {tooBig && (
         <p className="notice bad" role="alert">

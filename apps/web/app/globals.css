@@ -1384,3 +1384,58 @@ tbody th {
   outline-offset: 3px;
   border-radius: 4px;
 }
+
+/* --- Work in progress ---------------------------------------------------- */
+
+/*
+ * Links take the accent. Without this rule they fell back to the browser's
+ * default blue and purple — which is how a visited breadcrumb ended up the one
+ * purple thing on an otherwise blue-green page.
+ */
+a {
+  color: var(--accent);
+}
+
+a:visited {
+  color: var(--accent);
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.5em;
+  vertical-align: -0.1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Reduced motion means no spin, not no indicator: the person still needs to
+ * know something is happening.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: currentColor;
+    opacity: 0.5;
+  }
+}
+
+.notice.pending {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+button[aria-busy='true'] {
+  cursor: progress;
+}

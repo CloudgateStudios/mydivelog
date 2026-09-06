@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { SubmitButton } from '../../../components/SubmitButton';
 import { apiFetch, currentUser } from '../../../lib/api';
 import { getImport, type ImportBatch, type ImportRow } from '../../../lib/imports';
 import { AppHeader } from '../../../components/AppHeader';
@@ -158,11 +159,14 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         )}
 
         <form action={commit} className="commit">
-          <button className="button primary" type="submit" disabled={undecided.length > 0}>
+          <SubmitButton
+            disabled={undecided.length > 0}
+            pendingLabel={`Adding ${creating.length + merging.length} dives…`}
+          >
             {undecided.length > 0
-              ? `Decide the ${undecided.length} above first`
+              ? `${undecided.length} still to decide`
               : commitLabel(creating.length, merging.length)}
-          </button>
+          </SubmitButton>
           <p className="muted small">You can undo this afterwards, at any time.</p>
         </form>
       </main>
@@ -307,9 +311,9 @@ async function Done({
                 See your logbook
               </a>
               <form action={revert}>
-                <button className="button" type="submit">
+                <SubmitButton className="button" pendingLabel="Undoing…">
                   Undo this import
-                </button>
+                </SubmitButton>
               </form>
             </div>
             <p className="muted small">

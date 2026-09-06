@@ -35,6 +35,31 @@ import { resolveTimezone } from './timezone.resolver.ts';
  * that stores a file, remembers what was proposed, and lets a human change it
  * before anything is written to their logbook.
  */
+/**
+ * Enough to hide the latency of a round trip, few enough that a 512 MB machine
+ * is not holding a hundred encoded profiles at once.
+ */
+const PROFILE_UPLOAD_CONCURRENCY = 8;
+
+/**
+ * `Promise.all` in slices, keeping the results in the order they were given.
+ *
+ * Not `Promise.all` over everything: ninety-six simultaneous uploads is a
+ * different failure from ninety-six sequential ones, and this code runs on a
+ * small shared machine.
+ */
+async function inBatches<T, R>(
+  items: readonly T[],
+  size: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    results.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+  }
+  return results;
+}
+
 @Injectable()
 export class ImportsService {
   private readonly logger = new Logger(ImportsService.name);
@@ -298,15 +323,35 @@ export class ImportsService {
       throw badRequest(`This import is ${batch.status} and cannot be committed.`, 'not_in_review');
     }
 
-    const rows: CommitRow[] = [];
-    for (const row of batch.rows) {
+    const prepared = batch.rows.map((row) => {
       const fields = deserialize(row.observation as Record<string, unknown>);
       const profile = fields['profile'] as ProfileSeries | undefined;
       // The samples are far too large for a JSON provenance column. The
       // repository records the fact that this source had a profile.
       delete fields['profile'];
+      return { row, fields, profile };
+    });
 
-      rows.push({
+    /*
+     * Every profile is uploaded before the transaction opens, and they go up
+     * several at a time.
+     *
+     * They were done one per row inside the loop below, which meant a 96-dive
+     * export was 96 strictly sequential round trips to object storage. Against
+     * a local MinIO that is four seconds; against R2 from a Fly machine it is
+     * most of a minute, during which the import button appears to do nothing.
+     *
+     * They are independent and keyed by content hash, so order does not matter
+     * and a repeat is a no-op. The concurrency is bounded because the machine
+     * has 512 MB and each encoded profile is held in memory while it uploads.
+     */
+    const stored = await inBatches(prepared, PROFILE_UPLOAD_CONCURRENCY, async (item) =>
+      item.profile ? this.storeProfile(scope, item.profile) : undefined,
+    );
+
+    const rows: CommitRow[] = prepared.map(({ row, fields }, index) => {
+      const profile = stored[index];
+      return {
         rowIndex: row.rowIndex,
         // A row nobody decided is not imported. Pending means the engine was
         // not sure and the diver did not say.
@@ -329,9 +374,9 @@ export class ImportsService {
           (fields['startTimeLocal'] as Date | undefined) ??
           new Date(),
         fields,
-        ...(profile ? { profile: await this.storeProfile(scope, profile) } : {}),
-      });
-    }
+        ...(profile ? { profile } : {}),
+      };
+    });
 
     return this.repo.commit(scope, batchId, rows);
   }
