@@ -528,6 +528,173 @@ describe('saved views', () => {
   });
 });
 
+describe('trips', () => {
+  let tripId = '';
+
+  it('creates a trip and puts dives in it', async () => {
+    const created = await http
+      .post('/v1/trips')
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ name: 'Bonaire 2026', startDate: '2026-03-02', endDate: '2026-03-08' })
+      .expect(201);
+    tripId = created.body.id;
+
+    const dives = await http
+      .get('/v1/dives?limit=2')
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    const diveIds = dives.body.data.map((d: { id: string }) => d.id);
+
+    const assigned = await http
+      .post(`/v1/trips/${tripId}/dives`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ diveIds })
+      .expect(200);
+    expect(assigned.body.changed).toBe(2);
+
+    const detail = await http
+      .get(`/v1/trips/${tripId}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    expect(detail.body.dives).toHaveLength(2);
+  });
+
+  it("will not pull another diver's dive into a trip", async () => {
+    // Scoped on both sides. A crafted request must not be able to move a dive
+    // that is not the caller's, and must not report that it did.
+    const theirs = await prisma.dive.findFirstOrThrow({
+      where: { user: { email: emailA }, deletedAt: null },
+      select: { id: true, tripId: true },
+    });
+
+    const res = await http
+      .post(`/v1/trips/${tripId}/dives`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ diveIds: [theirs.id] })
+      .expect(200);
+    expect(res.body.changed).toBe(0);
+
+    const after = await prisma.dive.findUniqueOrThrow({ where: { id: theirs.id } });
+    expect(after.tripId).toBe(theirs.tripId);
+  });
+
+  it('releases the dives when the trip is deleted rather than removing them', async () => {
+    // Deleting a trip must never look like deleting the diving.
+    const before = await http
+      .get(`/v1/trips/${tripId}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    const diveIds = before.body.dives.map((d: { id: string }) => d.id);
+
+    await http.delete(`/v1/trips/${tripId}`).set('authorization', `Bearer ${tokenC}`).expect(204);
+
+    const survivors = await prisma.dive.findMany({ where: { id: { in: diveIds } } });
+    expect(survivors).toHaveLength(diveIds.length);
+    expect(survivors.every((d) => d.tripId === null && d.deletedAt === null)).toBe(true);
+  });
+
+  it("answers 404 for another diver's trip", async () => {
+    const created = await http
+      .post('/v1/trips')
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ name: `Private ${randomUUID()}` })
+      .expect(201);
+    await http
+      .get(`/v1/trips/${created.body.id}`)
+      .set('authorization', `Bearer ${tokenB}`)
+      .expect(404);
+  });
+});
+
+describe('gear', () => {
+  it('refuses to delete kit that has been on dives, and says to retire it', async () => {
+    // A wetsuit you no longer own was still on four hundred dives. Deleting it
+    // would rewrite them, so the API refuses with something actionable.
+    const item = await http
+      .post('/v1/gear')
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ kind: 'wetsuit', name: `Bare Jacket ${randomUUID()}` })
+      .expect(201);
+
+    const dive = await prisma.dive.findFirstOrThrow({
+      where: { user: { email: emailC }, deletedAt: null },
+      select: { id: true },
+    });
+    await prisma.diveGear.create({ data: { diveId: dive.id, gearItemId: item.body.id } });
+
+    const refused = await http
+      .delete(`/v1/gear/${item.body.id}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(409);
+    expect(refused.body.errors[0].code).toBe('gear_in_use');
+
+    // Retiring works, and is reversible.
+    const retired = await http
+      .patch(`/v1/gear/${item.body.id}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ retired: true })
+      .expect(200);
+    expect(retired.body.retiredAt).not.toBeNull();
+
+    const restored = await http
+      .patch(`/v1/gear/${item.body.id}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ retired: false })
+      .expect(200);
+    expect(restored.body.retiredAt).toBeNull();
+  });
+
+  it('deletes kit that was never on a dive', async () => {
+    const item = await http
+      .post('/v1/gear')
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ kind: 'fins', name: `Unused ${randomUUID()}` })
+      .expect(201);
+    await http
+      .delete(`/v1/gear/${item.body.id}`)
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(204);
+  });
+
+  it('attaches an accepted suggestion to the dives it was counted from', async () => {
+    // The suggestion says "on 3 dives". An item created from it and left on
+    // zero makes that count a promise the page then breaks.
+    const name = `Full Wet Suit ${randomUUID()}`;
+    const dives = await prisma.dive.findMany({
+      where: { user: { email: emailC }, deletedAt: null },
+      select: { id: true },
+      take: 2,
+    });
+    const source = await prisma.diveSource.create({
+      data: {
+        id: randomUUID(),
+        diveId: dives[0]?.id as string,
+        sourceKind: 'spreadsheet',
+        recordedAt: new Date(),
+      },
+    });
+    for (const dive of dives) {
+      // Composite key: (diveId, fieldPath, sourceId). No id column.
+      await prisma.diveFieldProvenance.create({
+        data: {
+          diveId: dive.id,
+          sourceId: source.id,
+          fieldPath: 'gear',
+          value: `${name}, Boots`,
+          isSelected: true,
+        },
+      });
+    }
+
+    const created = await http
+      .post('/v1/gear')
+      .set('authorization', `Bearer ${tokenC}`)
+      .send({ kind: 'wetsuit', name, linkImportedDives: true })
+      .expect(201);
+    expect(created.body.dives).toBe(2);
+  });
+});
+
 describe('the OpenAPI document', () => {
   it('is served publicly and describes the routes that exist', async () => {
     const res = await http.get('/v1/openapi.json').expect(200);

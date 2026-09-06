@@ -48,6 +48,8 @@ const SIGNED_IN_PAGES = [
   ['a filtered logbook', '/logbook?tag=shore&sort=depth_desc'],
   ['stats', '/stats'],
   ['sites', '/sites'],
+  ['trips', '/trips'],
+  ['gear', '/gear'],
   ['settings', '/settings'],
   ['export', '/export'],
   ['import', '/import'],

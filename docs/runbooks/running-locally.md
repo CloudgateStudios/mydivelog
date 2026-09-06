@@ -79,6 +79,8 @@ if you want it actually sent.
 | a dive from that list | Depth profile, fields, and where each value came from |
 | http://localhost:53000/stats | Dives by year, depth and month — with the empty years drawn |
 | http://localhost:53000/sites | Where you have dived, plotted from your own coordinates |
+| http://localhost:53000/trips | Runs of dives the logbook already looks like; one click names one |
+| http://localhost:53000/gear | Kit pulled out of the spreadsheet's Equipment column |
 | http://localhost:53002 | Admin panel — imports, provenance, format health |
 | http://localhost:53002/imports | Every row of an import: decision, score, what changed and why |
 

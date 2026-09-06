@@ -262,6 +262,102 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '200': ok(z.object({ data: z.array(dives.DiverSite) })), '401': problem },
         },
       },
+      '/trips': {
+        get: {
+          operationId: 'listTrips',
+          tags: ['trips'],
+          security: bearer,
+          responses: { '200': ok(z.object({ data: z.array(dives.Trip) })), '401': problem },
+        },
+        post: {
+          operationId: 'createTrip',
+          tags: ['trips'],
+          security: bearer,
+          requestBody: body(dives.CreateTrip),
+          responses: { '201': ok(dives.Trip, 'Created'), '401': problem, '422': problem },
+        },
+      },
+      '/trips/{id}': {
+        get: {
+          operationId: 'getTrip',
+          tags: ['trips'],
+          security: bearer,
+          parameters: [pathId],
+          responses: { '200': ok(dives.Trip), '401': problem, '404': problem },
+        },
+        patch: {
+          operationId: 'updateTrip',
+          tags: ['trips'],
+          security: bearer,
+          parameters: [pathId],
+          requestBody: body(dives.UpdateTrip),
+          responses: { '200': ok(dives.Trip), '401': problem, '404': problem },
+        },
+        delete: {
+          operationId: 'deleteTrip',
+          tags: ['trips'],
+          security: bearer,
+          description:
+            'Deletes the trip, not the diving. Its dives go back to belonging to no trip.',
+          parameters: [pathId],
+          responses: { '204': { description: 'Deleted' }, '401': problem, '404': problem },
+        },
+      },
+      '/gear': {
+        get: {
+          operationId: 'listGear',
+          tags: ['gear'],
+          security: bearer,
+          responses: { '200': ok(z.object({ data: z.array(dives.GearItem) })), '401': problem },
+        },
+        post: {
+          operationId: 'createGearItem',
+          tags: ['gear'],
+          security: bearer,
+          requestBody: body(dives.CreateGearItem),
+          responses: { '201': ok(dives.GearItem, 'Created'), '401': problem, '422': problem },
+        },
+      },
+      '/gear/suggestions': {
+        get: {
+          operationId: 'listGearSuggestions',
+          tags: ['gear'],
+          security: bearer,
+          description:
+            'Kit the importer already saw as free text, with no item for it yet. Splitting the ' +
+            'spreadsheet\u2019s Equipment column on import would be guessing; offering it here ' +
+            'is not, because the diver is looking at the list.',
+          responses: {
+            '200': ok(z.object({ data: z.array(dives.GearSuggestion) })),
+            '401': problem,
+          },
+        },
+      },
+      '/gear/{id}': {
+        patch: {
+          operationId: 'updateGearItem',
+          tags: ['gear'],
+          security: bearer,
+          parameters: [pathId],
+          requestBody: body(dives.UpdateGearItem),
+          responses: { '200': ok(dives.GearItem), '401': problem, '404': problem },
+        },
+        delete: {
+          operationId: 'deleteGearItem',
+          tags: ['gear'],
+          security: bearer,
+          description:
+            'Only for kit that was never on a dive. Anything that has been is answered 409 and ' +
+            'should be retired instead \u2014 deleting it would change dives that happened.',
+          parameters: [pathId],
+          responses: {
+            '204': { description: 'Deleted' },
+            '401': problem,
+            '404': problem,
+            '409': problem,
+          },
+        },
+      },
       '/saved-views': {
         get: {
           operationId: 'listSavedViews',

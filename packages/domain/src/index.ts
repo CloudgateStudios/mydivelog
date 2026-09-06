@@ -10,3 +10,4 @@ export * from './profile/chart.ts';
 export * from './dives/index.ts';
 export * from './import/index.ts';
 export * from './sites/map.ts';
+export * from './trips/index.ts';

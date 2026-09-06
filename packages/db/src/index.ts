@@ -4,6 +4,8 @@ export * from './repositories/dive.repository.ts';
 export * from './repositories/import.repository.ts';
 export * from './repositories/saved-view.repository.ts';
 export * from './repositories/site.repository.ts';
+export * from './repositories/trip.repository.ts';
+export * from './repositories/gear.repository.ts';
 export * from './seed.ts';
 export { Prisma } from './generated/client.ts';
 // Re-exported so consumers can name types that reference them; without this,
