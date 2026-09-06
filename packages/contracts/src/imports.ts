@@ -2,6 +2,22 @@ import { z } from 'zod';
 import { IsoDateTime, Uuid } from './common.ts';
 
 /**
+ * The largest file an import will accept.
+ *
+ * Lives here because both sides need it and they must agree: the API rejects
+ * anything larger, and the web app has to know before it posts — a Server
+ * Action buffers the whole body in memory, so an oversized upload fails inside
+ * Next before any of our code runs and produces a blank 500.
+ *
+ * 32 MB is a real ceiling rather than a round number: the real 96-dive
+ * Oceanic+ export is 4.4 MB, so this is roughly seven hundred dives with full
+ * depth profiles. It is bounded by the web VM's memory, not by ambition —
+ * docs/10-security-privacy.md wants 100 MB, and that needs the presigned
+ * direct-to-storage upload it describes, which is designed and not built.
+ */
+export const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+
+/**
  * Import is a staged pipeline with human review, never a direct write. These
  * are the shapes that make that reviewable: what a file was read as, what the
  * engine proposes for each row, and what the diver decided.

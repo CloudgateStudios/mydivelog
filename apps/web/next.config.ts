@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
 
 // One .env at the repo root, which every other package already reads and Next
 // does not look for.
@@ -51,6 +52,20 @@ const SECURITY_HEADERS = [
 
 const config: NextConfig = {
   reactStrictMode: true,
+  experimental: {
+    /*
+     * An import posts the file through a Server Action, and Next buffers the
+     * whole body with a default limit of 1 MB. The API accepts 32 MB, so every
+     * upload between the two failed inside Next before any of our code ran —
+     * a blank "This page couldn't load" with the real reason only in the
+     * server log. The real 96-dive Oceanic+ export is 4.4 MB, so this was
+     * every dive computer export of any size.
+     *
+     * Matched to MAX_UPLOAD_BYTES rather than picked: two limits that disagree
+     * is what caused this.
+     */
+    serverActions: { bodySizeLimit: MAX_UPLOAD_BYTES },
+  },
   // Standalone output ships a self-contained server directory, so the runtime
   // container does not need node_modules or a package manager.
   output: 'standalone',
