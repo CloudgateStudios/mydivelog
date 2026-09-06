@@ -1085,3 +1085,87 @@ tbody th {
   max-width: 68ch;
   margin: 0 auto 1rem;
 }
+
+/* --- Stats and sites ----------------------------------------------------- */
+
+.stat-grid {
+  margin-bottom: 1.5rem;
+}
+
+.chart {
+  margin: 0.5rem 0 2rem;
+}
+
+.chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart .bar {
+  fill: var(--accent);
+  opacity: 0.75;
+}
+
+.chart .bar.on {
+  opacity: 1;
+}
+
+.chart .axis {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+.chart-table {
+  font-size: 13px;
+  margin-top: 0.25rem;
+}
+
+.chart-table > summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.3rem 0;
+}
+
+.chart-table > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-map {
+  margin: 0 0 1.5rem;
+}
+
+.site-map svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.site-map .sea {
+  fill: var(--panel);
+}
+
+.site-map .site-dot {
+  fill: var(--accent);
+  fill-opacity: 0.35;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.site-map .site-label {
+  font-size: 12px;
+  fill: var(--text);
+}
+
+.site-map .axis {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.site-map figcaption {
+  margin-top: 0.5rem;
+  max-width: 70ch;
+}

@@ -4,6 +4,11 @@ import { createDiveRepository, getPrismaClient, type UserScope } from '@mydivelo
 import {
   computeIntervals,
   decodeProfile,
+  depthHistogram,
+  divesByMonth,
+  divesByYear,
+  longestStreak,
+  nextMilestone,
   renumberDives,
   renumberPlan,
   summarizeLog,
@@ -179,6 +184,40 @@ export class DivesService {
       select: { durationS: true, maxDepthM: true },
     });
     return summarizeLog(rows);
+  }
+
+  /**
+   * Everything the stats page draws, from one pass over the log.
+   *
+   * One query rather than five endpoints: the aggregations are pure functions
+   * over the same rows, and a page that made five round trips to compute
+   * numbers from identical data would be slower and could show five mutually
+   * inconsistent answers if a dive were added between them.
+   *
+   * `bucketM` comes from the caller because a histogram bucketed at 5 m and
+   * relabelled in feet has boundaries of 16.4 and 32.8 ft, which is nobody's
+   * mental model of depth.
+   */
+  async overview(scope: UserScope, bucketM: number) {
+    const rows = await this.prisma.dive.findMany({
+      where: { userId: scope.userId, deletedAt: null },
+      select: { startTimeLocal: true, durationS: true, maxDepthM: true },
+      orderBy: { startTimeUtc: 'asc' },
+    });
+
+    const totals = summarizeLog(rows);
+    const streak = longestStreak(rows);
+
+    return {
+      totals,
+      byYear: divesByYear(rows),
+      byMonth: divesByMonth(rows),
+      depthHistogram: depthHistogram(rows, bucketM),
+      milestone: nextMilestone(totals.diveCount) ?? null,
+      streak: streak ?? null,
+      firstDive: rows[0]?.startTimeLocal ?? null,
+      lastDive: rows.at(-1)?.startTimeLocal ?? null,
+    };
   }
 
   /** Surface intervals and repetition indices, derived rather than stored. */

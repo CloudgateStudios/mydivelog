@@ -239,6 +239,29 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '200': ok(dives.DiveFacets), '401': problem },
         },
       },
+      '/stats/overview': {
+        get: {
+          operationId: 'getStatsOverview',
+          tags: ['stats'],
+          security: bearer,
+          description:
+            'Everything the stats page draws, from one pass over the log. One request rather ' +
+            'than five, so the numbers cannot disagree with each other.',
+          parameters: queryParams(dives.StatsOverviewQuery),
+          responses: { '200': ok(dives.StatsOverview), '401': problem },
+        },
+      },
+      '/sites': {
+        get: {
+          operationId: 'listSites',
+          tags: ['sites'],
+          security: bearer,
+          description:
+            'The sites this diver has actually dived, with their own dive count at each. A ' +
+            'site nobody has dived is not one of their sites.',
+          responses: { '200': ok(z.object({ data: z.array(dives.DiverSite) })), '401': problem },
+        },
+      },
       '/saved-views': {
         get: {
           operationId: 'listSavedViews',

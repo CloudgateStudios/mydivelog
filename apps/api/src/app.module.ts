@@ -11,6 +11,7 @@ import { HealthModule } from './health/health.module.ts';
 import { ImportsModule } from './imports/imports.module.ts';
 import { PreferencesModule } from './preferences/preferences.module.ts';
 import { SavedViewsModule } from './saved-views/saved-views.module.ts';
+import { SitesModule } from './sites/sites.module.ts';
 import { StorageModule } from './storage/storage.module.ts';
 import { OpenApiController } from './openapi/openapi.controller.ts';
 
@@ -23,6 +24,7 @@ import { OpenApiController } from './openapi/openapi.controller.ts';
     ImportsModule,
     PreferencesModule,
     SavedViewsModule,
+    SitesModule,
   ],
   controllers: [OpenApiController],
   providers: [

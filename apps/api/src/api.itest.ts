@@ -293,19 +293,26 @@ describe('idempotency', () => {
  * is the kind of thing that works in a test that builds the object by hand and
  * fails on the wire.
  */
-describe('filtering the log', () => {
+/**
+ * Three dives belonging to the third diver: a wreck dive at night, a wreck
+ * dive by day, and a night dive on a reef.
+ *
+ * At module scope because both the filter suite and the stats suite read them,
+ * and a fixture owned by whichever suite needed it first is how the next one
+ * ends up building a second, subtly different copy.
+ */
+let wreckId = '';
+let nightId = '';
+let siteId = '';
+
+beforeAll(async () => {
   const tagged = async (slug: string, label: string) => {
     const tag = await prisma.tag.create({
       data: { id: randomUUID(), slug, label, category: 'activity' },
     });
     return tag.id;
   };
-
-  let wreckId = '';
-  let nightId = '';
-  let siteId = '';
-
-  beforeAll(async () => {
+  {
     wreckId = await tagged(`wreck-${randomUUID()}`, 'Wreck');
     nightId = await tagged(`night-${randomUUID()}`, 'Night');
 
@@ -341,8 +348,10 @@ describe('filtering the log', () => {
     );
     await make({ maxDepthM: 28, siteId }, [wreckId], 9002);
     await make({ maxDepthM: 12 }, [nightId], 9003);
-  }, 60_000);
+  }
+}, 60_000);
 
+describe('filtering the log', () => {
   const list = async (query: string) => {
     const res = await http
       .get(`/v1/dives?${query}`)
@@ -415,6 +424,50 @@ describe('filtering the log', () => {
       .set('authorization', `Bearer ${tokenB}`)
       .expect(200);
     expect(other.body.sites.map((s: { id: string }) => s.id)).not.toContain(siteId);
+  });
+});
+
+describe('stats and sites', () => {
+  it('answers every number the stats page draws from one request', async () => {
+    const res = await http
+      .get('/v1/stats/overview?bucketM=5')
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+
+    expect(res.body.totals.diveCount).toBe(3);
+    expect(res.body.byMonth).toHaveLength(12);
+    expect(res.body.milestone.at).toBe(25);
+    // Three dives at the same moment on one day is one day, not three.
+    expect(res.body.streak.days).toBe(1);
+    expect(
+      res.body.depthHistogram.reduce((n: number, b: { dives: number }) => n + b.dives, 0),
+    ).toBe(3);
+  });
+
+  it('buckets depth at the width the caller asked for', async () => {
+    // 10 ft is 3.048 m. A diver reading feet wants round feet, and bucketing
+    // in metres then relabelling gives boundaries of 16.4 and 32.8 ft.
+    const res = await http
+      .get('/v1/stats/overview?bucketM=3.048')
+      .set('authorization', `Bearer ${tokenC}`)
+      .expect(200);
+    expect(res.body.depthHistogram[0].toM).toBeCloseTo(3.048, 3);
+  });
+
+  it('lists only the sites this diver has dived, with their own counts', async () => {
+    const res = await http.get('/v1/sites').set('authorization', `Bearer ${tokenC}`).expect(200);
+    const mine = res.body.data.find((s: { id: string }) => s.id === siteId);
+    expect(mine.dives).toBe(2);
+
+    // Site records are shared; a diver with no dives there has no such site.
+    const other = await http.get('/v1/sites').set('authorization', `Bearer ${tokenB}`).expect(200);
+    expect(other.body.data.map((s: { id: string }) => s.id)).not.toContain(siteId);
+  });
+
+  it('answers 404 for a site the diver has never dived, not 403', async () => {
+    // Existence is not disclosed: 403 would confirm the shared table holds it.
+    await http.get(`/v1/sites/${siteId}`).set('authorization', `Bearer ${tokenB}`).expect(404);
+    await http.get(`/v1/sites/${siteId}`).set('authorization', `Bearer ${tokenC}`).expect(200);
   });
 });
 
