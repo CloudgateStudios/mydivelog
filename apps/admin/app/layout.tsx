@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
+/* Self-hosted; the panel's CSP allows font-src 'self' and nothing else. */
+import '@fontsource/ibm-plex-sans/latin-400.css';
+import '@fontsource/ibm-plex-sans/latin-600.css';
+import '@fontsource/ibm-plex-serif/latin-600.css';
+import '@fontsource/ibm-plex-mono/latin-400.css';
 import './globals.css';
+import { Wordmark } from '../components/Wordmark';
 
 export const metadata = {
   title: 'MyDiveLog Admin',
@@ -21,7 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <header className="top">
-          <strong>MyDiveLog Admin</strong>
+          <Wordmark />
           <nav>
             {NAV.map(([href, label]) => (
               <a key={href} href={href}>

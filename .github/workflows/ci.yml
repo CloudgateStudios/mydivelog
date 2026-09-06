@@ -98,9 +98,9 @@ jobs:
           # lines, and that arrived as a package.json change.
           images=$(matches '(Dockerfile|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$)')
 
-          # The accessibility suite drives real pages against a real API, so
-          # anything either of them is built from counts.
-          web=$(matches '^(apps/(web|api)/|packages/(domain|contracts|db|importers)/|e2e/|playwright\.config\.ts$|lighthouserc\.json$|\.github/workflows/ci\.yml$)')
+          # The accessibility suite drives real pages of both apps against a
+          # real API, so anything any of them is built from counts.
+          web=$(matches '^(apps/(web|api|admin)/|packages/(domain|contracts|db|importers)/|e2e/|playwright\.config\.ts$|lighthouserc\.json$|\.github/workflows/ci\.yml$)')
 
           {
             echo "code=$code"
@@ -288,18 +288,23 @@ jobs:
       # Production builds, not `next dev`. A development server is several
       # times slower to respond and compiles on demand, so a performance score
       # taken against it measures the dev server rather than the site.
-      - name: Start the API and the site
+      - name: Start the API, the site and the staff panel
         run: |
           pnpm --filter @mydivelog/api start > /tmp/api.log 2>&1 &
           pnpm --filter @mydivelog/web start > /tmp/web.log 2>&1 &
-          for i in $(seq 1 60); do
+          pnpm --filter @mydivelog/admin start > /tmp/admin.log 2>&1 &
+          for i in $(seq 1 90); do
             api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:53001/health || true)
             web=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:53000/ || true)
-            if [ "$api" = "200" ] && [ "$web" = "200" ]; then echo "up after ${i}s"; exit 0; fi
+            adm=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:53002/ || true)
+            if [ "$api" = "200" ] && [ "$web" = "200" ] && [ "$adm" = "200" ]; then
+              echo "up after ${i}s"
+              exit 0
+            fi
             sleep 1
           done
           echo "::error::the stack did not come up"
-          tail -40 /tmp/api.log /tmp/web.log
+          tail -40 /tmp/api.log /tmp/web.log /tmp/admin.log
           exit 1
 
       # Real dives, so the accessibility checks run against a page with content
@@ -308,6 +313,10 @@ jobs:
       - name: Load the sample logbook
         run: pnpm demo
 
+      # Both apps, both colour schemes. The palette is defined in two themes,
+      # and until this ran twice only one of them was ever exercised — which
+      # is how a primary button shipped at 1.9:1 against its own background
+      # after dark.
       - name: WCAG 2.2 AA on the primary flows
         run: pnpm test:a11y
 

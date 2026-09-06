@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1126.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/ibm-plex-serif": "^5.3.0",
     "@mydivelog/db": "workspace:*",
     "@mydivelog/domain": "workspace:*",
     "jose": "^6.2.10",

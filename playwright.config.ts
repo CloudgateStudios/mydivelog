@@ -22,5 +22,16 @@ export default defineConfig({
     baseURL: process.env['WEB_URL'] ?? 'http://localhost:53000',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  /*
+   * Every test runs twice, once per colour scheme.
+   *
+   * The palette is defined in two themes and only one of them was ever
+   * exercised, which meant "it works in dark mode" was an assertion rather
+   * than a measurement. A contrast failure that only exists at night is
+   * exactly the kind that ships.
+   */
+  projects: [
+    { name: 'light', use: { ...devices['Desktop Chrome'], colorScheme: 'light' } },
+    { name: 'dark', use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
+  ],
 });

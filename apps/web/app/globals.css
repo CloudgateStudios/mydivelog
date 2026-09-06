@@ -25,9 +25,14 @@
   --text: #12303f; /* 12.9:1 on bg */
   --muted: #4e6e7e; /* 5.1:1 on bg */
 
-  --accent: #0e5c7a; /* 6.9:1 on bg, 7.4:1 for white on it */
+  --accent: #0e5c7a;
+  /* What goes *on* the accent. It has to be a token: --accent is dark in
+     light theme and light in dark theme, so a hard-coded #fff here reads at
+     7.4:1 by day and 1.9:1 by night. It did, until the suite ran in both. */
+  --on-accent: #ffffff; /* 6.9:1 on bg, 7.4:1 for white on it */
   --signal: #ae4121; /* 5.5:1 on bg — see the note above */
   --good: #186043; /* 7.0:1 on bg */
+  --warn: #8a5a06; /* 5.5:1 on bg */
   --bad: #961b22; /* 7.9:1 on bg, and clearly redder than --signal */
 
   --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -50,9 +55,11 @@
     --text: #e8f0f4; /* 14.8:1 on bg */
     --muted: #8faab8; /* 7.0:1 on bg */
 
-    --accent: #7ec8e8; /* 9.2:1 on bg */
+    --accent: #7ec8e8;
+    --on-accent: #0c1e29; /* 9.2:1 on the accent */ /* 9.2:1 on bg */
     --signal: #f0805b; /* 6.4:1 on bg */
     --good: #5fd8a2;
+    --warn: #e2b341;
     --bad: #f08a85;
 
     color-scheme: dark;
@@ -138,7 +145,7 @@ h1 {
 .button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .stack {
@@ -584,10 +591,10 @@ main.app section:first-of-type h2 {
   margin: 0.6rem 0;
 }
 .group.good {
-  border-left-color: #2e9e6b;
+  border-left-color: var(--good);
 }
 .group.warn {
-  border-left-color: #c08a2e;
+  border-left-color: var(--warn);
 }
 .group > summary {
   cursor: pointer;

@@ -112,10 +112,28 @@ screen reader.
 - **Headings are serif, data is tabular.** Those two do most of the work of
   looking like this product rather than any other.
 
+## The staff panel
+
+The admin panel wears the same tokens, so a color means the same thing on both
+sides of the login. It was dark-only — a reasonable default for a tool people
+open at night and a bad one for anyone using it beside a window — and now
+follows the reader like everything else.
+
+Two differences, both deliberate. Its body text is a point smaller, because
+reading a lot of rows at once is the job. And its wordmark carries a **Staff**
+badge in `--signal`: the panel shows other people's dives, and nobody glancing
+at a screenshot should have to work out which side of the login it came from.
+
+## Testing
+
+The accessibility suite runs every page of **both apps in both color schemes**.
+That is not ceremony. A palette defined in two themes but exercised in one is
+half-tested, and the first run in dark caught a primary button putting white
+text on a light accent at **1.9:1** — from a hard-coded `#fff` that could not
+follow the theme, which is the exact failure this page warns about.
+
 ## Not yet done
 
-- The admin panel still uses its own older dark-only palette. It is staff-
-  facing and deliberately left alone for now.
 - The descending-ground idea is in the tokens but not yet applied structurally
   to the marketing pages; today they all sit at surface level.
 - A spacing scale is not tokenized — spacing is still ad hoc.
