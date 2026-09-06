@@ -159,6 +159,106 @@ export const DiveFacets = z.object({
 });
 export type DiveFacets = z.infer<typeof DiveFacets>;
 
+export const GEAR_KINDS = [
+  'wetsuit',
+  'drysuit',
+  'bcd',
+  'regulator',
+  'computer',
+  'fins',
+  'boots',
+  'hood',
+  'gloves',
+  'light',
+  'camera',
+  'other',
+] as const;
+export const GearKind = z.enum(GEAR_KINDS);
+export type GearKind = z.infer<typeof GearKind>;
+
+export const Trip = z.object({
+  id: Uuid,
+  name: z.string(),
+  startDate: IsoDate.nullable(),
+  endDate: IsoDate.nullable(),
+  operator: z.string().nullable(),
+  notes: z.string().nullable(),
+  dives: z.number().int(),
+});
+export type Trip = z.infer<typeof Trip>;
+
+const tripFields = {
+  name: z.string().trim().min(1).max(120),
+  startDate: IsoDate.nullish(),
+  endDate: IsoDate.nullish(),
+  operator: z.string().trim().max(160).nullish(),
+  notes: z.string().max(4000).nullish(),
+};
+
+export const CreateTrip = z.object(tripFields);
+export type CreateTrip = z.infer<typeof CreateTrip>;
+export const UpdateTrip = z.object(tripFields).partial();
+export type UpdateTrip = z.infer<typeof UpdateTrip>;
+
+/** Which dives go in, or come out. An empty trip is a name and nothing else. */
+export const AssignDives = z.object({ diveIds: z.array(Uuid).min(1).max(500) });
+export type AssignDives = z.infer<typeof AssignDives>;
+
+export const GearItem = z.object({
+  id: Uuid,
+  kind: z.string(),
+  name: z.string(),
+  brand: z.string().nullable(),
+  model: z.string().nullable(),
+  serialNumber: z.string().nullable(),
+  purchasedOn: IsoDate.nullable(),
+  serviceDueOn: IsoDate.nullable(),
+  retiredAt: IsoDateTime.nullable(),
+  isRental: z.boolean(),
+  dives: z.number().int(),
+});
+export type GearItem = z.infer<typeof GearItem>;
+
+const gearFields = {
+  kind: GearKind,
+  name: z.string().trim().min(1).max(120),
+  brand: z.string().trim().max(80).nullish(),
+  model: z.string().trim().max(80).nullish(),
+  serialNumber: z.string().trim().max(80).nullish(),
+  purchasedOn: IsoDate.nullish(),
+  // Regulators need annual service, and a logbook is where a diver would
+  // notice it is overdue.
+  serviceDueOn: IsoDate.nullish(),
+  isRental: z.boolean().optional(),
+};
+
+export const CreateGearItem = z.object({
+  ...gearFields,
+  /**
+   * Attach the new item to the dives whose imported gear text names it.
+   *
+   * Set when accepting a suggestion. Without it, accepting one that says "on
+   * 18 dives" produces an item on zero.
+   */
+  linkImportedDives: z.boolean().optional(),
+});
+export type CreateGearItem = z.infer<typeof CreateGearItem>;
+export const UpdateGearItem = z.object({ ...gearFields, retired: z.boolean() }).partial();
+export type UpdateGearItem = z.infer<typeof UpdateGearItem>;
+
+/**
+ * Kit the importer already saw as free text, with no item for it yet.
+ *
+ * The spreadsheet's Equipment column is prose. Splitting it on import would be
+ * guessing; offering it here is not, because the diver is looking at the list.
+ */
+export const GearSuggestion = z.object({
+  name: z.string(),
+  kind: z.string(),
+  dives: z.number().int(),
+});
+export type GearSuggestion = z.infer<typeof GearSuggestion>;
+
 /**
  * A saved view is a name and a query string, not a row of filter columns.
  *

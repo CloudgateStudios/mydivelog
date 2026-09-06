@@ -217,7 +217,9 @@ th.num {
 .nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  /* Seven destinations now. A smaller gap keeps them on one line down to a
+     tablet, and the wrap below handles narrower than that. */
+  gap: 0.5rem 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
@@ -234,7 +236,8 @@ th.num {
 }
 .nav nav {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
 }
 .nav nav a {
   color: var(--muted);
@@ -1168,4 +1171,118 @@ tbody th {
 .site-map figcaption {
   margin-top: 0.5rem;
   max-width: 70ch;
+}
+
+/* --- Trips and gear ------------------------------------------------------ */
+
+.suggestions {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.suggestions h2 {
+  margin-top: 0;
+}
+
+.suggestion-list,
+.pick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.suggestion-list li + li {
+  margin-top: 0.5rem;
+}
+
+.suggestion-list form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.suggestion-list input[type='text'],
+.suggestion-list input:not([type]),
+.suggestion-list select,
+.narrow-form input,
+.narrow-form select,
+.narrow-form textarea {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.suggestion-list input:not([type]) {
+  /* Shrinks before the Create button wraps to its own line, which read as a
+     broken row rather than as a long name. */
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  max-width: 22rem;
+}
+
+/* Without a basis a select in a wrapping flex row takes the whole width and
+   pushes everything else onto the next line. */
+.suggestion-list select {
+  flex: 0 0 auto;
+  max-width: 11rem;
+}
+
+.suggestion-list .grow {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+}
+
+.suggestion-list li {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.suggestion-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.suggestion-list .button {
+  width: auto;
+}
+
+/* The picker is a wrapping field of chips rather than a tall column: a diver
+   adding a week of dives to a trip is choosing from twenty, not scrolling. */
+.pick-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.narrow-form {
+  max-width: 46rem;
+}
+
+.narrow-form textarea {
+  resize: vertical;
+  width: 100%;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.row-actions .button {
+  width: auto;
+}
+
+.status.overdue {
+  color: var(--bad);
+  border-color: var(--bad);
+  margin-left: 0.4rem;
 }

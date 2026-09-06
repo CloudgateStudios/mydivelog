@@ -17,6 +17,7 @@ RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.spl
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
+COPY packages/contracts/package.json packages/contracts/
 COPY packages/domain/package.json packages/domain/
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
@@ -24,6 +25,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY tsconfig.base.json ./
+COPY packages/contracts packages/contracts
 COPY packages/domain packages/domain
 COPY apps/web apps/web
 RUN pnpm --filter @mydivelog/web... build

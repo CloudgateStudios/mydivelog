@@ -160,6 +160,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@mydivelog/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@mydivelog/domain':
         specifier: workspace:*
         version: link:../../packages/domain

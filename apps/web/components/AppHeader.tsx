@@ -15,7 +15,9 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
       </a>
       <nav>
         <a href="/logbook">Logbook</a>
+        <a href="/trips">Trips</a>
         <a href="/sites">Sites</a>
+        <a href="/gear">Gear</a>
         <a href="/stats">Stats</a>
         <a href="/import">Import</a>
         <a href="/settings">Settings</a>
