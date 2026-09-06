@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { redirectTo } from '../../../lib/redirect';
 import { API_URL } from '../../../lib/api';
 import { storeSession, type TokenPair } from '../../../lib/session';
 
@@ -14,8 +15,7 @@ import { storeSession, type TokenPair } from '../../../lib/session';
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = request.nextUrl.searchParams.get('token');
-  const home = (path: string): NextResponse =>
-    NextResponse.redirect(new URL(path, request.nextUrl.origin));
+  const home = redirectTo;
 
   if (!token) return home('/signin?error=incomplete');
 
