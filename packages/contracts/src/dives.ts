@@ -196,6 +196,52 @@ export const LogSummary = z.object({
 });
 
 /**
+ * Bucket width for the depth histogram, in metres.
+ *
+ * The caller chooses because it is the one unit decision the display layer
+ * cannot make afterwards: bucketing at 5 m and relabelling in feet gives
+ * boundaries of 16.4 and 32.8 ft. A diver reading feet wants 10 ft buckets,
+ * which is 3.048 m.
+ */
+export const StatsOverviewQuery = z.object({
+  bucketM: z.coerce.number().positive().max(50).default(5),
+});
+export type StatsOverviewQuery = z.infer<typeof StatsOverviewQuery>;
+
+export const StatsOverview = z.object({
+  totals: LogSummary,
+  byYear: z.array(
+    z.object({ year: z.number().int(), dives: z.number().int(), bottomTimeS: Seconds }),
+  ),
+  byMonth: z.array(
+    z.object({ month: z.number().int(), name: z.string(), dives: z.number().int() }),
+  ),
+  depthHistogram: z.array(z.object({ fromM: Metres, toM: Metres, dives: z.number().int() })),
+  milestone: z.object({ at: z.number().int(), remaining: z.number().int() }).nullable(),
+  streak: z.object({ days: z.number().int(), from: IsoDateTime, to: IsoDateTime }).nullable(),
+  firstDive: IsoDateTime.nullable(),
+  lastDive: IsoDateTime.nullable(),
+});
+export type StatsOverview = z.infer<typeof StatsOverview>;
+
+/**
+ * A site as this diver's own logbook knows it: their dive count there, and
+ * the range they have seen. Sites they have never dived are not their sites.
+ */
+export const DiverSite = z.object({
+  id: Uuid,
+  name: z.string(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  regionName: z.string().nullable(),
+  dives: z.number().int(),
+  maxDepthM: Metres.nullable(),
+  firstDive: IsoDateTime.nullable(),
+  lastDive: IsoDateTime.nullable(),
+});
+export type DiverSite = z.infer<typeof DiverSite>;
+
+/**
  * A dive with the context a detail view needs.
  *
  * `provenance` is the part that matters: every value any source asserted, and

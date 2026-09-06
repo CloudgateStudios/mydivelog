@@ -46,6 +46,8 @@ const PUBLIC_PAGES = [
 const SIGNED_IN_PAGES = [
   ['the logbook', '/logbook'],
   ['a filtered logbook', '/logbook?tag=shore&sort=depth_desc'],
+  ['stats', '/stats'],
+  ['sites', '/sites'],
   ['settings', '/settings'],
   ['export', '/export'],
   ['import', '/import'],
@@ -204,6 +206,42 @@ test.describe('keyboard', () => {
 
     await first.press('Enter');
     await expect(page.locator('main')).toBeFocused();
+  });
+});
+
+test.describe('charts', () => {
+  test.beforeEach(async ({ context }) => {
+    await signIn(context, 'demo@mydivelog.invalid');
+  });
+
+  test('every chart on the stats page has a table beside it', async ({ page }) => {
+    // Same rule as the depth profile: an SVG of rectangles tells a screen
+    // reader nothing, and docs/08-clients.md requires an equivalent for every
+    // chart rather than for the one somebody remembered.
+    await page.goto('/stats');
+
+    const charts = page.locator('figure.chart');
+    const count = await charts.count();
+    expect(count, 'the stats page should draw some charts').toBeGreaterThan(2);
+
+    for (let i = 0; i < count; i += 1) {
+      const chart = charts.nth(i);
+      const summary = chart.locator('details.chart-table > summary');
+      await expect(summary, `chart ${i} has no table`).toHaveText(/as numbers/i);
+
+      await summary.focus();
+      await summary.press('Enter');
+      await expect(chart.locator('table tbody tr').first()).toBeVisible();
+    }
+  });
+
+  test('the site plot says it is not a map', async ({ page }) => {
+    // It plots the diver's own coordinates and requests nothing from a tile
+    // server. Letting a reader assume otherwise would be a privacy claim made
+    // by omission.
+    await page.goto('/sites');
+    await expect(page.locator('.site-map figcaption')).toContainText(/not a map/i);
+    await expect(page.locator('.site-map svg')).toHaveAttribute('aria-label', /dive sites/i);
   });
 });
 

@@ -77,6 +77,8 @@ if you want it actually sent.
 | [?tag=shore&tag=night](http://localhost:53000/logbook?tag=shore&tag=night) | Two tags narrow rather than widen — one dive, not twenty-two |
 | [?minDepthM=30](http://localhost:53000/logbook?minDepthM=30) | Depth bounds are metres in the URL whatever units you read them in |
 | a dive from that list | Depth profile, fields, and where each value came from |
+| http://localhost:53000/stats | Dives by year, depth and month — with the empty years drawn |
+| http://localhost:53000/sites | Where you have dived, plotted from your own coordinates |
 | http://localhost:53002 | Admin panel — imports, provenance, format health |
 | http://localhost:53002/imports | Every row of an import: decision, score, what changed and why |
 
@@ -92,6 +94,11 @@ genuinely disagreed on, and which one won.
 The admin panel needs no sign-in locally: it is protected by Cloudflare Access
 in deployed environments, and `.env.example` sets
 `ADMIN_ACCESS_CHECK_DISABLED=true` so it is reachable here.
+
+> **Re-running `pnpm demo` accumulates dives.** It is safe — an identical file
+> short-circuits — but a database that has seen a dozen runs is not what a new
+> user sees, and reasoning from one is how a site page came to look like it had
+> merged two different dive sites. Reset before judging anything.
 
 ## Starting over
 

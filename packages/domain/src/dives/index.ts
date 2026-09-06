@@ -3,6 +3,8 @@
  * caller loads rows and passes them in.
  */
 
+export * from './stats.ts';
+
 export type NumberableDive = {
   id: string;
   startTimeUtc: Date;
