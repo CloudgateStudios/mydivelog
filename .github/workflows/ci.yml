@@ -16,8 +16,103 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A full pass costs about twenty billable minutes, and roughly ten of those
+  # were four container builds re-running because somebody edited a paragraph.
+  # This works out what a pull request actually touched so the expensive jobs
+  # can sit out the ones that cannot affect them.
+  #
+  # Two rules keep it from turning into a hole:
+  #
+  #   1. Everything runs on `main`, always. A filter that is too narrow then
+  #      costs one red build at merge rather than silence — which is the
+  #      failure mode that matters, because a check that never runs protects
+  #      nothing. This repository has been bitten by exactly that: the API's
+  #      integration tests were excluded by a shell glob and nobody noticed
+  #      for weeks.
+  #   2. The filters are deliberately generous. Skipping a job that would have
+  #      passed saves nothing worth having.
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      images: ${{ steps.filter.outputs.images }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Both sides of the comparison have to be present locally.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # A push to main runs the lot. See rule 1 above.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            {
+              echo "code=true"
+              echo "images=true"
+              echo "web=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "Not a pull request — running everything."
+            exit 0
+          fi
+
+          # If the comparison cannot be made — a base that is not in this
+          # clone, a shallow fetch, anything unforeseen — run everything. The
+          # failure mode of a filter must be doing too much work, never
+          # quietly doing none.
+          if ! changed=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null); then
+            {
+              echo "code=true"
+              echo "images=true"
+              echo "web=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "::warning::Could not diff $BASE..$HEAD — running everything."
+            exit 0
+          fi
+
+          echo "Changed files:"
+          printf '%s\n' "$changed" | sed 's/^/  /'
+
+          # `grep -q` exits non-zero when nothing matches, which is a normal
+          # outcome here and not a failure.
+          matches() { printf '%s\n' "$changed" | grep -qE "$1" && echo true || echo false; }
+
+          # Anything that is not prose. Documentation cannot break a build, and
+          # the spell check and secret scan below still run on it regardless.
+          # `grep -v` asks whether any changed file is *not* documentation,
+          # which is the question. A lookahead would be the obvious way to
+          # write it and grep -E has none.
+          code=$(printf '%s\n' "$changed" | grep -qvE '^(docs/|\.cspell/|[^/]*\.md$)' && echo true || echo false)
+
+          # What can actually break a container: its Dockerfile, the set of
+          # packages it installs, or a workspace dependency it now needs
+          # copied in. A .tsx edit inside an app that already builds cannot.
+          # Adding @mydivelog/contracts to the web app needed two new COPY
+          # lines, and that arrived as a package.json change.
+          images=$(matches '(Dockerfile|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$)')
+
+          # The accessibility suite drives real pages against a real API, so
+          # anything either of them is built from counts.
+          web=$(matches '^(apps/(web|api)/|packages/(domain|contracts|db|importers)/|e2e/|playwright\.config\.ts$|lighthouserc\.json$|\.github/workflows/ci\.yml$)')
+
+          {
+            echo "code=$code"
+            echo "images=$images"
+            echo "web=$web"
+          } >> "$GITHUB_OUTPUT"
+          echo "code=$code images=$images web=$web"
+
   verify:
     name: Lint, typecheck, test, build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -66,6 +161,8 @@ jobs:
 
   integration:
     name: Integration tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # A real Postgres, because these tests exist to check things a fake cannot:
     # that revert restores a dive from provenance rows that survived in the
@@ -137,6 +234,8 @@ jobs:
 
   accessibility:
     name: Accessibility and Lighthouse
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -228,6 +327,8 @@ jobs:
 
   images:
     name: Container images
+    needs: changes
+    if: needs.changes.outputs.images == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -288,6 +389,8 @@ jobs:
 
   fixtures:
     name: Fixture integrity
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
