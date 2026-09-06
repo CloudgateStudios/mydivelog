@@ -1,35 +1,60 @@
 /*
- * Minimal and legible. The marketing site's design lands with the marketing
- * site; this is the shell the authenticated flows need in order to exist.
+ * Descent.
+ *
+ * The palette is the product's own metaphor: a page begins at surface light
+ * and gets darker with depth, so the ground a thing sits on says how deep in
+ * the app you are. See docs/13-design-system.md.
+ *
+ * Two accents, and the difference matters. `--accent` is interactive — links,
+ * focus, primary buttons — and stays in the water. `--signal` is the one warm
+ * colour, and it is warm for a reason: red is the first wavelength the water
+ * absorbs, so at depth a red thing is black until a torch finds it. It marks
+ * the thing worth looking at and nothing else.
+ *
+ * Every value here was calculated against the grounds it is used on, not
+ * chosen by eye. The accessibility suite re-checks them on every pull request.
  */
 :root {
-  --bg: #fbfbfd;
+  /* Grounds, surface to depth. */
+  --bg: #f4f8fa;
   --panel: #ffffff;
-  --border: #e2e5ec;
-  --text: #1b1f28;
-  --muted: #6a7382;
-  /* #1f6feb was 4.48:1 against this off-white body -- under AA by a hair, and
-     only on the body: against a white panel it measured 4.63:1, which is how
-     it survived review by eye. This is 5.66:1 on the body and 5.85:1 on a
-     panel, and reads as the same blue. */
-  --accent: #1a5fd0;
-  --bad: #b42318;
-  /* 5.18:1 on the body ground, so "Supported" is readable as text rather than
-     recognised as a green shape. */
-  --good: #0f7b3f;
+  --shelf: #e7f0f5;
+  --coastal: #cbdde6;
+  --border: #d5e3ea;
+
+  --text: #12303f; /* 12.9:1 on bg */
+  --muted: #4e6e7e; /* 5.1:1 on bg */
+
+  --accent: #0e5c7a; /* 6.9:1 on bg, 7.4:1 for white on it */
+  --signal: #ae4121; /* 5.5:1 on bg — see the note above */
+  --good: #186043; /* 7.0:1 on bg */
+  --bad: #961b22; /* 7.9:1 on bg, and clearly redder than --signal */
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --border: #262b36;
-    --text: #e6e9ef;
-    --muted: #8b93a7;
-    --accent: #5aa9e6;
-    --bad: #e06c75;
-    --good: #4ade80;
+    /* Not an inversion. The dark palette is the same water, deeper — which is
+       also where this product gets used: night dives and liveaboard cabins. */
+    --bg: #0c1e29;
+    --panel: #123040;
+    --shelf: #0f2734;
+    --coastal: #1b4257;
+    --border: #1e4256;
+
+    --text: #e8f0f4; /* 14.8:1 on bg */
+    --muted: #8faab8; /* 7.0:1 on bg */
+
+    --accent: #7ec8e8; /* 9.2:1 on bg */
+    --signal: #f0805b; /* 6.4:1 on bg */
+    --good: #5fd8a2;
+    --bad: #f08a85;
+
     color-scheme: dark;
   }
 }
@@ -42,12 +67,36 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font:
-    15px/1.6 ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Headings are the serif. It is the one editorial note in an otherwise
+ * utilitarian interface, and it is what makes a dive read as an entry in a
+ * logbook rather than a row in a database.
+ */
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+
+/*
+ * Every screen in this product is columns of numbers. Tabular figures keep
+ * them lined up and stop digits shuffling sideways as values change.
+ */
+table,
+.num,
+.facts dd,
+.result-count {
+  font-variant-numeric: tabular-nums;
 }
 
 main.auth {
@@ -362,7 +411,7 @@ th.num {
   line-height: 1.6;
 }
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -620,7 +669,7 @@ main.app section:first-of-type h2 {
   cursor: not-allowed;
 }
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
 }
 
@@ -937,6 +986,7 @@ tbody th {
 .profile-table tr.deepest th,
 .profile-table tr.deepest td {
   font-weight: 600;
+  color: var(--signal);
 }
 
 /* --- Marketing pages ----------------------------------------------------- */
@@ -1285,4 +1335,45 @@ tbody th {
   color: var(--bad);
   border-color: var(--bad);
   margin-left: 0.4rem;
+}
+
+/* --- The mark ------------------------------------------------------------ */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.wordmark-text {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.028em;
+  white-space: nowrap;
+}
+
+/* Set back a weight rather than a colour, so it survives on any ground and in
+   both themes without a second token. */
+.wordmark-my {
+  font-weight: 400;
+  opacity: 0.66;
+}
+
+.mark {
+  flex: none;
+  color: var(--text);
+}
+
+/* The deepest point, in the one warm colour. */
+.mark-dot {
+  fill: var(--signal);
+}
+
+.wordmark:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }

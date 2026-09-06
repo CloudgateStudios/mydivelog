@@ -1,4 +1,5 @@
 import { clearSession } from '../lib/session';
+import { Wordmark } from './Wordmark';
 import { redirect } from 'next/navigation';
 
 export function AppHeader({ user }: { user: { email: string; displayName: string | null } }) {
@@ -10,9 +11,7 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
 
   return (
     <header className="nav">
-      <a className="brand" href="/logbook">
-        MyDiveLog
-      </a>
+      <Wordmark href="/logbook" />
       <nav>
         <a href="/logbook">Logbook</a>
         <a href="/trips">Trips</a>

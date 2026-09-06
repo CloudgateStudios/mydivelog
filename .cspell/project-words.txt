@@ -37,6 +37,7 @@ Deepblu
 Dift
 Diviac
 Dockerfiles   # cspell knows "Dockerfile" but not the plural
+Grotesk
 HSTS
 Kralendijk
 MSIX
@@ -87,4 +88,5 @@ unconfigured
 undoable
 unmetered
 unparseable
+wordmark
 zstd
