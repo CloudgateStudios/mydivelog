@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
 import { currentUser } from '../../lib/api';
 import { listImports, uploadImport } from '../../lib/imports';
 import { AppHeader } from '../../components/AppHeader';
@@ -53,8 +54,9 @@ export default async function Import({
         <DropZone action={upload} />
 
         <p className="muted small">
-          CSV and spreadsheets, UDDF from most dive computers, Subsurface XML, and MyDiveLog
-          exports. If a file is not recognised, the import says so rather than guessing.
+          CSV and spreadsheets, UDDF from most dive computers, and MyDiveLog exports, up to{' '}
+          {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB. If a file is not recognised, the import
+          says so rather than guessing. <a href="/formats">What works, exactly.</a>
         </p>
 
         {history.length > 0 && (

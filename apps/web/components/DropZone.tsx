@@ -1,6 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
+
+const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 /**
  * A file picker that also accepts a drop.
@@ -13,8 +16,31 @@ import { useRef, useState } from 'react';
 export function DropZone({ action }: { action: (formData: FormData) => void }) {
   const [over, setOver] = useState(false);
   const [name, setName] = useState<string | undefined>();
+  const [tooBig, setTooBig] = useState<string | undefined>();
   const input = useRef<HTMLInputElement>(null);
   const form = useRef<HTMLFormElement>(null);
+
+  /*
+   * Checked here, before anything is posted.
+   *
+   * An oversized body is rejected by Next itself, before the Server Action
+   * runs, so there is no server-side code that could turn it into a sentence.
+   * The browser already knows the size — asking it is the only way anyone gets
+   * told what went wrong.
+   */
+  const accept = (file: File | undefined): boolean => {
+    if (!file) return false;
+    setName(file.name);
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setTooBig(
+        `${file.name} is ${megabytes(file.size)}. The limit is ${megabytes(MAX_UPLOAD_BYTES)} — ` +
+          `if it is a whole dive computer export, try splitting it by year.`,
+      );
+      return false;
+    }
+    setTooBig(undefined);
+    return true;
+  };
 
   return (
     <form action={action} ref={form}>
@@ -30,6 +56,7 @@ export function DropZone({ action }: { action: (formData: FormData) => void }) {
           setOver(false);
           const dropped = event.dataTransfer.files?.[0];
           if (!dropped || !input.current) return;
+          if (!accept(dropped)) return;
 
           // Assigning to the input rather than posting the File directly keeps
           // one submission path: what a drop does and what the picker does are
@@ -37,7 +64,6 @@ export function DropZone({ action }: { action: (formData: FormData) => void }) {
           const transfer = new DataTransfer();
           transfer.items.add(dropped);
           input.current.files = transfer.files;
-          setName(dropped.name);
           form.current?.requestSubmit();
         }}
       >
@@ -51,12 +77,16 @@ export function DropZone({ action }: { action: (formData: FormData) => void }) {
           name="file"
           type="file"
           onChange={(event) => {
-            setName(event.target.files?.[0]?.name);
-            if (event.target.files?.length) form.current?.requestSubmit();
+            if (accept(event.target.files?.[0])) form.current?.requestSubmit();
           }}
         />
-        {name && <p className="muted small">{name}</p>}
+        {name && !tooBig && <p className="muted small">{name}</p>}
       </div>
+      {tooBig && (
+        <p className="notice bad" role="alert">
+          {tooBig}
+        </p>
+      )}
       {/* Visible only without JavaScript, where the change handler cannot
           submit for you. */}
       <noscript>

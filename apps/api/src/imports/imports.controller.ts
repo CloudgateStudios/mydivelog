@@ -10,7 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UpdateImportRow } from '@mydivelog/contracts';
+import { MAX_UPLOAD_BYTES, UpdateImportRow } from '@mydivelog/contracts';
 import { userScope } from '@mydivelog/db';
 import { badRequest } from '../common/problem-details.ts';
 import { Throttle } from '../common/rate-limit.guard.ts';
@@ -21,7 +21,6 @@ import { ImportsService } from './imports.service.ts';
 import { toBatchDetail, toBatchSummary } from './presenters.ts';
 
 /** A dive log is not a large file, and a 50 MB XML is not one either. */
-const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 
 /**
  * Only what this controller reads.
