@@ -211,6 +211,41 @@ test.describe('keyboard', () => {
   });
 });
 
+/*
+ * The staff panel.
+ *
+ * docs/08-clients.md has asked for AA here since Phase 0 and it was listed as a
+ * known gap for exactly as long — the panel was dark-only and outside this
+ * suite. It now wears the same tokens as the product, so it can be held to the
+ * same bar. Absolute URLs because it is a different origin to the baseURL.
+ */
+const ADMIN_URL = process.env['ADMIN_URL'] ?? 'http://localhost:53002';
+
+const ADMIN_PAGES = [
+  ['the overview', '/'],
+  ['imports', '/imports'],
+  ['format health', '/health'],
+  ['dives', '/dives'],
+  ['sites', '/sites'],
+] as const;
+
+test.describe('the admin panel', () => {
+  for (const [name, path] of ADMIN_PAGES) {
+    test(`${name} has no WCAG 2.2 AA violations`, async ({ page }) => {
+      await page.goto(`${ADMIN_URL}${path}`);
+      const { violations } = await scan(page).analyze();
+      expect(report(violations), report(violations)).toBe('');
+    });
+  }
+
+  test('says it is the staff panel, not the product', async ({ page }) => {
+    // Someone glancing at a screenshot should never have to work out which
+    // side of the login it came from.
+    await page.goto(`${ADMIN_URL}/imports`);
+    await expect(page.locator('.wordmark-staff')).toHaveText(/staff/i);
+  });
+});
+
 test.describe('charts', () => {
   test.beforeEach(async ({ context }) => {
     await signIn(context, 'demo@mydivelog.invalid');

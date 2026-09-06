@@ -26,6 +26,7 @@ argued about while they are still cheap to change.
 | 10 | [Security, Privacy & Compliance](./10-security-privacy.md) | Auth, data protection, billing, liability |
 | 11 | [Roadmap](./11-roadmap.md) | Phased build order with acceptance criteria |
 | 12 | [Cost Model](./12-cost-model.md) | What this costs to run at launch and at scale |
+- [Design System](./13-design-system.md) — Descent: palette, type, the mark
 
 Architecture Decision Records live in [`docs/decisions/`](./decisions/).
 

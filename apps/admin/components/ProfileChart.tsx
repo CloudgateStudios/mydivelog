@@ -64,35 +64,40 @@ export function ProfileChart({ series }: { series: ProfileSeries }) {
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      style={{ width: '100%', height: 'auto', background: '#0b0d11', borderRadius: 4 }}
+      /*
+        Every colour here comes from a token. Nine of them were literals, which
+        is why this chart stayed dark whatever the reader's theme was — a
+        hard-coded colour is a colour that cannot follow one.
+       */
+      style={{ width: '100%', height: 'auto', background: 'var(--shelf)', borderRadius: 4 }}
       role="img"
       aria-label={`Depth profile, ${timeS.length} samples, maximum ${maxDepth.toFixed(1)} metres`}
     >
       {depthTicks.map((d) => (
         <g key={d}>
-          <line x1={pad.left} x2={width - pad.right} y1={y(d)} y2={y(d)} stroke="#262b36" />
-          <text x={pad.left - 6} y={y(d) + 4} fill="#8b93a7" fontSize="10" textAnchor="end">
+          <line x1={pad.left} x2={width - pad.right} y1={y(d)} y2={y(d)} stroke="var(--border)" />
+          <text x={pad.left - 6} y={y(d) + 4} fill="var(--muted)" fontSize="10" textAnchor="end">
             {d.toFixed(0)}m
           </text>
         </g>
       ))}
       {timeTicks.map((t) => (
-        <text key={t} x={x(t)} y={height - 8} fill="#8b93a7" fontSize="10" textAnchor="middle">
+        <text key={t} x={x(t)} y={height - 8} fill="var(--muted)" fontSize="10" textAnchor="middle">
           {Math.round(t / 60)}min
         </text>
       ))}
 
-      <path d={area} fill="#5aa9e6" fillOpacity="0.16" />
-      <path d={path} fill="none" stroke="#5aa9e6" strokeWidth="1.6" />
+      <path d={area} fill="var(--accent)" fillOpacity="0.16" />
+      <path d={path} fill="none" stroke="var(--accent)" strokeWidth="1.6" />
       {tempPath && (
-        <path d={tempPath} fill="none" stroke="#e2b341" strokeWidth="1" strokeDasharray="3 3" />
+        <path d={tempPath} fill="none" stroke="var(--warn)" strokeWidth="1" strokeDasharray="3 3" />
       )}
 
-      <text x={width - pad.right + 6} y={y(maxDepth) + 4} fill="#5aa9e6" fontSize="10">
+      <text x={width - pad.right + 6} y={y(maxDepth) + 4} fill="var(--signal)" fontSize="10">
         {maxDepth.toFixed(1)}m
       </text>
       {tempC && (
-        <text x={width - pad.right + 6} y={16} fill="#e2b341" fontSize="10">
+        <text x={width - pad.right + 6} y={16} fill="var(--warn)" fontSize="10">
           temp
         </text>
       )}

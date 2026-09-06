@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Wordmark } from './Wordmark';
 
 /**
  * The public site's frame.
@@ -16,9 +17,7 @@ export function MarketingShell({
   return (
     <>
       <header className="nav">
-        <a className="brand" href="/">
-          MyDiveLog
-        </a>
+        <Wordmark href="/" />
         <nav>
           <a href="/formats">Formats</a>
           <a href="/docs">How it works</a>
@@ -34,7 +33,7 @@ export function MarketingShell({
       </main>
 
       <footer className="site-footer">
-        <span>MyDiveLog</span>
+        <Wordmark href="/" size={18} />
         <nav aria-label="Legal and reference">
           <a href="/formats">Supported formats</a>
           <a href="/docs">Documentation</a>

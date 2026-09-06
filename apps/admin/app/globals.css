@@ -1,19 +1,72 @@
 /*
- * Deliberately plain. This is a staff tool for reading rows and understanding
- * why an import decided what it did — density and legibility matter, styling
- * does not.
+ * Descent, as the staff tool wears it. See docs/13-design-system.md.
+ *
+ * Same tokens and the same two accents as the product, so a colour means the
+ * same thing on both sides of the login. This panel was dark-only, which was a
+ * reasonable default for a tool people open at night and a bad one for anyone
+ * using it beside a window — it now follows the reader like everything else.
+ *
+ * Density still matters more than styling here. What changed is that it is now
+ * legible in either light, and that nothing is a literal: a hard-coded colour
+ * is a colour that cannot follow a theme.
  */
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --border: #262b36;
-  --text: #e6e9ef;
-  --muted: #8b93a7;
-  --accent: #5aa9e6;
-  --good: #4ec9a0;
-  --warn: #e2b341;
-  --bad: #e06c75;
-  color-scheme: dark;
+  --bg: #f4f8fa;
+  --panel: #ffffff;
+  --shelf: #e7f0f5;
+  --border: #d5e3ea;
+
+  --text: #12303f;
+  --muted: #4e6e7e;
+
+  --accent: #0e5c7a;
+  /* What goes *on* the accent. It has to be a token: --accent is dark in
+     light theme and light in dark theme, so a hard-coded #fff here reads at
+     7.4:1 by day and 1.9:1 by night. It did, until the suite ran in both. */
+  --on-accent: #ffffff;
+  --signal: #ae4121;
+  --good: #186043;
+  --warn: #8a5a06;
+  --bad: #961b22;
+
+  /* Tinted edges for state chips, so a tag reads as a state at a glance
+     without a fill loud enough to compete with the row it sits in. */
+  --good-edge: #a9cdb9;
+  --warn-edge: #ddc48a;
+  --bad-edge: #dfb0ac;
+  --row-hover: #eef5f8;
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1e29;
+    --panel: #123040;
+    --shelf: #0f2734;
+    --border: #1e4256;
+
+    --text: #e8f0f4;
+    --muted: #8faab8;
+
+    --accent: #7ec8e8;
+    --on-accent: #0c1e29; /* 9.2:1 on the accent */
+    --signal: #f0805b;
+    --good: #5fd8a2;
+    --warn: #e2b341;
+    --bad: #f08a85;
+
+    --good-edge: #235c46;
+    --warn-edge: #5c4a1c;
+    --bad-edge: #63302e;
+    --row-hover: #16394b;
+
+    color-scheme: dark;
+  }
 }
 
 * {
@@ -24,19 +77,52 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font:
-    14px/1.5 ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
+  /* A point smaller than the product side. This is a tool for reading a lot of
+     rows at once, and density is the feature. */
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+/* Staff read columns of depths, counts and scores all day. */
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Links keep their underline.
+ *
+ * The accent is only 1.9:1 against body text in light and 1.6:1 in dark, so
+ * colour alone does not distinguish a link inside a sentence — which is both a
+ * WCAG failure and a real problem for anyone who cannot separate those two
+ * blues. The underline is the distinction; the colour is a bonus.
+ *
+ * Navigation and the wordmark opt out below: they are not inside a text block,
+ * so nothing has to tell them apart from prose.
+ */
 a {
   color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+header.top nav a,
+.wordmark {
   text-decoration: none;
 }
-a:hover {
+
+header.top nav a:hover {
   text-decoration: underline;
 }
 
@@ -134,11 +220,11 @@ th.num {
   font-variant-numeric: tabular-nums;
 }
 tbody tr:hover {
-  background: #1c202a;
+  background: var(--row-hover);
 }
 code,
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
@@ -153,15 +239,15 @@ code,
 }
 .tag.good {
   color: var(--good);
-  border-color: #24493d;
+  border-color: var(--good-edge);
 }
 .tag.warn {
   color: var(--warn);
-  border-color: #4a3f1e;
+  border-color: var(--warn-edge);
 }
 .tag.bad {
   color: var(--bad);
-  border-color: #4d2a2d;
+  border-color: var(--bad-edge);
 }
 
 .panel {
@@ -175,7 +261,7 @@ code,
 }
 
 pre {
-  background: #0b0d11;
+  background: var(--shelf);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.7rem;
@@ -200,4 +286,54 @@ details summary {
   cursor: pointer;
   color: var(--muted);
   font-size: 12px;
+}
+
+/* --- The mark ------------------------------------------------------------ */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.wordmark-text {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.028em;
+  white-space: nowrap;
+}
+
+.wordmark-my {
+  font-weight: 400;
+  opacity: 0.66;
+}
+
+.mark {
+  flex: none;
+  color: var(--text);
+}
+
+.mark-dot {
+  fill: var(--signal);
+}
+
+.wordmark:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Staff-facing, and it should never be mistaken for the product. */
+.wordmark-staff {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal);
+  border: 1px solid var(--signal);
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
 }

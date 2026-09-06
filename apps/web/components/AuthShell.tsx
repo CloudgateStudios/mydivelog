@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Wordmark } from './Wordmark';
 
 /** The frame every sign-in message shares, so none of them is a bare error. */
 export function AuthShell({ title, children }: { title: string; children: ReactNode }) {
@@ -18,7 +19,7 @@ export function AuthShell({ title, children }: { title: string; children: ReactN
         within reach of the button that creates the account.
       */}
       <footer className="site-footer">
-        <span>MyDiveLog</span>
+        <Wordmark href="/" size={18} />
         <nav aria-label="Legal and reference">
           <a href="/formats">Supported formats</a>
           <a href="/legal/privacy">Privacy</a>
