@@ -43,6 +43,13 @@ is, that a skip link exists, and that the depth chart has a table equivalent.
 Every one of the defects this suite found on its first run was in that second
 group or in color contrast, not in a missing attribute.
 
+## When it runs
+
+On every push to `main`, and on pull requests that touch the web app, the API,
+the packages either is built from, or the test configuration — see
+[the CI cost runbook](./ci-cost.md) for why some jobs sit out a pull request
+and why they never sit out `main`.
+
 ## Known gaps
 
 - **The admin panel is not covered.** `docs/08-clients.md` asks for WCAG 2.2 AA
