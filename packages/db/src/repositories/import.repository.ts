@@ -103,6 +103,23 @@ const DIVE_COLUMNS = {
 
 const INT_COLUMNS = new Set(['tzOffsetMinutes', 'durationS', 'rating']);
 
+/**
+ * How long a whole-batch write is allowed to take.
+ *
+ * Prisma's default is five seconds. Committing ninety-six dives took just
+ * under that against a database on localhost and comfortably over it against
+ * a managed one, so the import died with P2028 in production and worked
+ * everywhere it was tested.
+ *
+ * Two minutes is generous rather than arbitrary: this is one atomic write of a
+ * diver's whole import, and the alternative to waiting is a half-imported
+ * logbook. The cost of the ceiling being too low is the failure above; the
+ * cost of it being too high is one slow request, which is visible and
+ * recoverable. `maxWait` is the time spent trying to get a connection at all,
+ * which is a queue problem rather than a size one.
+ */
+const BATCH_TRANSACTION = { timeout: 120_000, maxWait: 15_000 } as const;
+
 export function createImportRepository(prisma: PrismaClient) {
   return {
     /**
@@ -119,6 +136,8 @@ export function createImportRepository(prisma: PrismaClient) {
       rows: readonly CommitRow[],
     ): Promise<CommitResult> {
       return prisma.$transaction(async (tx) => {
+        const tags = await loadTags(tx, scope);
+        const sites = await loadSites(tx, scope);
         const result: CommitResult = { batchId, created: [], merged: [], skipped: 0, replayed: 0 };
 
         // Numbers are assigned here because sources frequently carry none —
@@ -198,7 +217,7 @@ export function createImportRepository(prisma: PrismaClient) {
             ...(row.profile ? { profile: { sampleCount: row.profile.sampleCount } } : {}),
           });
           if (row.profile) await writeProfile(tx, diveId, row.profile);
-          await resolve(tx, scope, diveId);
+          await resolve(tx, scope, diveId, tags, sites);
         }
 
         await tx.importBatch.update({
@@ -207,7 +226,7 @@ export function createImportRepository(prisma: PrismaClient) {
         });
 
         return result;
-      });
+      }, BATCH_TRANSACTION);
     },
 
     /**
@@ -224,6 +243,9 @@ export function createImportRepository(prisma: PrismaClient) {
       batchId: string,
     ): Promise<{ deleted: string[]; restored: string[] }> {
       return prisma.$transaction(async (tx) => {
+        // Revert re-resolves every touched dive, which resolves tags too.
+        const tags = await loadTags(tx, scope);
+        const sites = await loadSites(tx, scope);
         const batch = await tx.importBatch.findFirst({
           where: { id: batchId, userId: scope.userId },
         });
@@ -249,7 +271,7 @@ export function createImportRepository(prisma: PrismaClient) {
             deleted.push(diveId);
             continue;
           }
-          await resolve(tx, scope, diveId);
+          await resolve(tx, scope, diveId, tags, sites);
           restored.push(diveId);
         }
 
@@ -259,7 +281,7 @@ export function createImportRepository(prisma: PrismaClient) {
         });
 
         return { deleted, restored };
-      });
+      }, BATCH_TRANSACTION);
     },
   };
 }
@@ -329,7 +351,13 @@ async function writeProfile(tx: Tx, diveId: string, profile: ProfileToStore): Pr
  * wrong: after a revert the dive keeps whatever the removed source had
  * contributed alone, so the record still claims a duration nothing measured.
  */
-async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> {
+async function resolve(
+  tx: Tx,
+  scope: UserScope,
+  diveId: string,
+  tags: Map<string, string>,
+  sites: ExistingSite[],
+): Promise<void> {
   const sources = await tx.diveSource.findMany({
     where: { diveId },
     include: { provenance: true },
@@ -367,9 +395,9 @@ async function resolve(tx: Tx, scope: UserScope, diveId: string): Promise<void> 
   // Sites and tags are shared, deduplicated entities rather than columns, so
   // they resolve here too — inside the same recomputation, which is what makes
   // revert undo them as exactly as it undoes a scalar.
-  data['siteId'] = await resolveSite(tx, scope, values);
+  data['siteId'] = await resolveSite(tx, scope, values, sites);
   await tx.dive.update({ where: { id: diveId }, data: data as never });
-  await resolveTags(tx, scope, diveId, values['tags']);
+  await resolveTags(tx, scope, diveId, values['tags'], tags);
 
   // Mark which assertion each field is currently showing, so the UI can say
   // where a value came from without recomputing the merge.
@@ -474,21 +502,24 @@ function deserialize(_fieldPath: string, value: unknown): unknown {
  * person's import silently attach to a stranger's record — a name like
  * `Blue Hole` would otherwise merge four continents into one place.
  */
-async function resolveSite(
-  tx: Tx,
-  scope: UserScope,
-  values: Record<string, unknown>,
-): Promise<string | null> {
-  const name = typeof values['site.name'] === 'string' ? values['site.name'] : undefined;
-  const lat = typeof values['site.lat'] === 'number' ? values['site.lat'] : undefined;
-  const lon = typeof values['site.lon'] === 'number' ? values['site.lon'] : undefined;
-  if (name === undefined && lat === undefined) return null;
-
+/**
+ * Every site this diver owns, read once for the whole batch.
+ *
+ * This was a findMany with its aliases joined, executed once per dive — a full
+ * scan of the diver's sites ninety-six times over for one import, and growing
+ * as the import created more. Together with the same mistake in tag lookup it
+ * is most of what pushed a commit past its transaction budget.
+ *
+ * The list is kept current in memory as sites are created, located and
+ * aliased, so matching sees exactly what a re-read would have shown. Nothing
+ * outside this transaction can change it while it is open.
+ */
+async function loadSites(tx: Tx, scope: UserScope): Promise<ExistingSite[]> {
   const owned = await tx.site.findMany({
     where: { ownerUserId: scope.userId, deletedAt: null },
     include: { aliases: true },
   });
-  const candidates: ExistingSite[] = owned.map((site) => ({
+  return owned.map((site) => ({
     id: site.id,
     name: site.name,
     ...(site.latitude === null ? {} : { lat: site.latitude }),
@@ -496,6 +527,20 @@ async function resolveSite(
     ...(site.regionId === null ? {} : { regionId: site.regionId }),
     aliases: site.aliases.map((a) => a.name),
   }));
+}
+
+async function resolveSite(
+  tx: Tx,
+  scope: UserScope,
+  values: Record<string, unknown>,
+  sites: ExistingSite[],
+): Promise<string | null> {
+  const name = typeof values['site.name'] === 'string' ? values['site.name'] : undefined;
+  const lat = typeof values['site.lat'] === 'number' ? values['site.lat'] : undefined;
+  const lon = typeof values['site.lon'] === 'number' ? values['site.lon'] : undefined;
+  if (name === undefined && lat === undefined) return null;
+
+  const candidates: ExistingSite[] = sites;
 
   const match = matchSite(
     {
@@ -507,14 +552,14 @@ async function resolveSite(
   );
 
   if (match) {
-    const existing = owned.find((s) => s.id === match.siteId);
+    const existing = sites.find((site) => site.id === match.siteId);
     if (existing) {
       // A site the spreadsheet named gains the watch's coordinates here. This
       // is the moment a site becomes both named and located.
       const coords = siteCoordinateUpdate(
         {
-          ...(existing.latitude === null ? {} : { lat: existing.latitude }),
-          ...(existing.longitude === null ? {} : { lon: existing.longitude }),
+          ...(existing.lat === undefined ? {} : { lat: existing.lat }),
+          ...(existing.lon === undefined ? {} : { lon: existing.lon }),
         },
         { ...(lat === undefined ? {} : { lat }), ...(lon === undefined ? {} : { lon }) },
       );
@@ -523,6 +568,10 @@ async function resolveSite(
           where: { id: existing.id },
           data: { latitude: coords.lat, longitude: coords.lon },
         });
+        // Kept in step, so the next dive in this batch matches against the
+        // coordinates this one just gave it.
+        existing.lat = coords.lat;
+        existing.lon = coords.lon;
       }
       // Every spelling seen becomes an alias, which is how `1,000 Steps`,
       // `Thousand Steps` and `1000 Steps` converge instead of being guessed
@@ -533,23 +582,31 @@ async function resolveSite(
           create: { id: randomUUID(), siteId: existing.id, name, source: 'import' },
           update: {},
         });
+        if (!existing.aliases?.includes(name))
+          existing.aliases = [...(existing.aliases ?? []), name];
       }
     }
     return match.siteId;
   }
 
   const id = randomUUID();
-  await tx.site.create({
-    data: {
-      id,
-      // A dive computer's site has coordinates and no name worth keeping, so
-      // it gets a placeholder a human can rename rather than an opaque id.
-      name: name ?? 'Unnamed site',
-      ownerUserId: scope.userId,
-      isPublic: false,
-      latitude: lat ?? null,
-      longitude: lon ?? null,
-    },
+  const created = {
+    id,
+    // A dive computer's site has coordinates and no name worth keeping, so it
+    // gets a placeholder a human can rename rather than an opaque id.
+    name: name ?? 'Unnamed site',
+    ownerUserId: scope.userId,
+    isPublic: false,
+    latitude: lat ?? null,
+    longitude: lon ?? null,
+  };
+  await tx.site.create({ data: created });
+  sites.push({
+    id,
+    name: created.name,
+    ...(lat === undefined ? {} : { lat }),
+    ...(lon === undefined ? {} : { lon }),
+    aliases: [],
   });
   return id;
 }
@@ -562,11 +619,40 @@ async function resolveSite(
  * function of its surviving sources, so a revert removes the ones that batch
  * contributed without touching the rest.
  */
+/**
+ * Every tag this commit could possibly match, read once.
+ *
+ * The taxonomy is the same twenty-six rows for every dive in a batch, and it
+ * was being looked up once per tag per dive — around five hundred sequential
+ * queries for a ninety-six dive import, inside a transaction with a five
+ * second budget. Against a database on localhost that fit; against a managed
+ * one it did not, and the commit died with P2028 while the button quietly
+ * went back to how it started.
+ *
+ * System tags are shared and a diver's own are theirs, so both are safe to
+ * hold for the length of one transaction: nothing else can add to either set
+ * while it is open.
+ */
+async function loadTags(tx: Tx, scope: UserScope): Promise<Map<string, string>> {
+  const rows = await tx.tag.findMany({
+    where: { OR: [{ isSystem: true }, { userId: scope.userId }] },
+    select: { id: true, slug: true, isSystem: true },
+  });
+
+  const bySlug = new Map<string, string>();
+  // The diver's own first, then let a system tag win: `resolveTags` preferred
+  // the shared taxonomy, and this has to keep preferring it.
+  for (const tag of rows.filter((t) => !t.isSystem)) bySlug.set(tag.slug, tag.id);
+  for (const tag of rows.filter((t) => t.isSystem)) bySlug.set(tag.slug, tag.id);
+  return bySlug;
+}
+
 async function resolveTags(
   tx: Tx,
   scope: UserScope,
   diveId: string,
   value: unknown,
+  tags: Map<string, string>,
 ): Promise<void> {
   const names = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 
@@ -575,16 +661,14 @@ async function resolveTags(
     const slug = slugify(name);
     if (slug === '') continue;
 
-    const system = await tx.tag.findFirst({ where: { slug, isSystem: true } });
-    if (system) {
-      tagIds.push(system.id);
+    const known = tags.get(slug);
+    if (known) {
+      tagIds.push(known);
       continue;
     }
-    const own = await tx.tag.findUnique({ where: { userId_slug: { userId: scope.userId, slug } } });
-    if (own) {
-      tagIds.push(own.id);
-      continue;
-    }
+
+    // Genuinely new. Created once and remembered, so the next dive in the same
+    // batch that mentions it costs nothing.
     const created = await tx.tag.create({
       data: {
         id: randomUUID(),
@@ -595,6 +679,7 @@ async function resolveTags(
         userId: scope.userId,
       },
     });
+    tags.set(slug, created.id);
     tagIds.push(created.id);
   }
 

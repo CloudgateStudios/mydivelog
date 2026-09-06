@@ -20,11 +20,20 @@ export const dynamic = 'force-dynamic';
  * agree within 0.08 m" beats a confidence score. A diver learns to trust the
  * matcher by watching it be right, and it has to show its work to be watched.
  */
-export default async function Review({ params }: { params: Promise<{ id: string }> }) {
+export default async function Review({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await currentUser();
   if (!user) redirect('/signin');
 
   const { id } = await params;
+  // This page redirected to itself with ?error=commit and then never read it,
+  // so a failed commit looked exactly like a button that did nothing.
+  const { error } = await searchParams;
   const batch = await getImport(id).catch(() => undefined);
   if (!batch) notFound();
 
@@ -43,7 +52,13 @@ export default async function Review({ params }: { params: Promise<{ id: string 
   async function commit(): Promise<void> {
     'use server';
     const response = await apiFetch(`/v1/imports/${id}/commit`, { method: 'POST' });
-    if (!response.ok) redirect(`/import/${id}?error=commit`);
+    if (!response.ok) {
+      // The API's own words where it has them. It knows whether this was a
+      // timeout, an already-committed batch, or something it cannot name, and
+      // any of those is more use than "it failed".
+      const problem = (await response.json().catch(() => ({}))) as { detail?: string };
+      redirect(`/import/${id}?error=${encodeURIComponent(problem.detail ?? 'commit')}`);
+    }
     redirect(`/import/${id}`);
   }
 
@@ -156,6 +171,15 @@ export default async function Review({ params }: { params: Promise<{ id: string 
               ))}
             </ul>
           </Group>
+        )}
+
+        {error && (
+          <p className="notice bad" role="alert">
+            {error === 'commit'
+              ? 'That import could not be added. Nothing was written — your logbook is unchanged, and you can try again.'
+              : error}{' '}
+            Nothing was written, so trying again is safe.
+          </p>
         )}
 
         <form action={commit} className="commit">
