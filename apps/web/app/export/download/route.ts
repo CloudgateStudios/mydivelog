@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { redirectTo } from '../../../lib/redirect';
 import { apiFetch } from '../../../lib/api';
 
 /**
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest): Promise<NextResponse | Response
   );
 
   if (!response.ok) {
-    return NextResponse.redirect(new URL('/export?error=1', request.nextUrl.origin));
+    return redirectTo('/export?error=1');
   }
 
   // Content-disposition is carried through from the API, which already names
