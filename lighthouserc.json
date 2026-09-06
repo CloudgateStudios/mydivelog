@@ -1,8 +1,16 @@
 {
   "ci": {
     "collect": {
-      "url": ["http://localhost:53000/", "http://localhost:53000/signin"],
-      "numberOfRuns": 3,
+      "url": [
+        "http://localhost:53000/",
+        "http://localhost:53000/signin",
+        "http://localhost:53000/formats",
+        "http://localhost:53000/pricing",
+        "http://localhost:53000/docs",
+        "http://localhost:53000/legal/privacy",
+        "http://localhost:53000/legal/terms"
+      ],
+      "numberOfRuns": 2,
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--no-sandbox --headless=new"
@@ -10,12 +18,35 @@
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", { "minScore": 0.9 }],
-        "categories:accessibility": ["error", { "minScore": 0.95 }],
-        "categories:best-practices": ["warn", { "minScore": 0.9 }],
-        "categories:seo": ["warn", { "minScore": 0.9 }]
+        "categories:performance": [
+          "error",
+          {
+            "minScore": 0.9
+          }
+        ],
+        "categories:accessibility": [
+          "error",
+          {
+            "minScore": 0.95
+          }
+        ],
+        "categories:best-practices": [
+          "warn",
+          {
+            "minScore": 0.9
+          }
+        ],
+        "categories:seo": [
+          "warn",
+          {
+            "minScore": 0.9
+          }
+        ]
       }
     },
-    "upload": { "target": "filesystem", "outputDir": ".lighthouseci" }
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
+    }
   }
 }
