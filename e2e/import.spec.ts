@@ -83,3 +83,39 @@ test('says so before posting a file that is too big', async ({ page, context }) 
   // And it never left the browser.
   await expect(page).toHaveURL(/\/import$/);
 });
+
+test('shows that a commit is running, and locks the button while it is', async ({
+  page,
+  context,
+}) => {
+  /*
+   * Committing writes one depth profile per dive to object storage. On a
+   * laptop that is fast; from a Fly machine to R2 it was twenty seconds of a
+   * page that looked broken, and the only honest reading of a button that
+   * does nothing is that it is dead.
+   *
+   * The delay is injected rather than waited for, so this asserts the pending
+   * state deterministically instead of racing a fast local commit.
+   */
+  await signIn(context, 'demo@mydivelog.invalid');
+  await page.goto('/import');
+  await page.setInputFiles('input[type=file]', {
+    name: 'commit-me.uddf',
+    mimeType: 'application/xml',
+    buffer: Buffer.from(bigUddf(20_000)),
+  });
+  await page.waitForURL(/\/import\/[0-9a-f-]{36}/, { timeout: 120_000 });
+
+  await page.route('**/import/**', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    return route.continue();
+  });
+
+  const button = page.locator('form.commit button');
+  await button.click();
+
+  await expect(button).toBeDisabled();
+  await expect(button).toContainText(/Adding \d+ dives/);
+  await expect(button).toHaveAttribute('aria-busy', 'true');
+});
