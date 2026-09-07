@@ -238,9 +238,19 @@ export function createImportRepository(prisma: PrismaClient) {
      * rather than to a default — which is why provenance records every
      * assertion rather than only the winning one.
      */
+    /**
+     * `hooks.inTransaction` runs after the revert and before the commit.
+     *
+     * It exists for the staff path: `docs/11-roadmap.md` requires every staff
+     * action to appear in the audit log, and a revert that owns a two-minute
+     * transaction cannot have its audit row written outside it without a
+     * window where the change has landed and the record of it has not. Passing
+     * the writer in is the only way both land together.
+     */
     async revert(
       scope: UserScope,
       batchId: string,
+      hooks?: { inTransaction?: (tx: Tx) => Promise<void> },
     ): Promise<{ deleted: string[]; restored: string[] }> {
       return prisma.$transaction(async (tx) => {
         // Revert re-resolves every touched dive, which resolves tags too.
@@ -279,6 +289,8 @@ export function createImportRepository(prisma: PrismaClient) {
           where: { id: batchId },
           data: { status: 'reverted', revertedAt: new Date() },
         });
+
+        await hooks?.inTransaction?.(tx);
 
         return { deleted, restored };
       }, BATCH_TRANSACTION);

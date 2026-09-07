@@ -30,7 +30,8 @@
     "prepare": "husky",
     "demo": "node scripts/demo.mjs",
     "test:a11y": "playwright test",
-    "test:lighthouse": "lhci autorun"
+    "test:lighthouse": "lhci autorun",
+    "staff": "pnpm --filter @mydivelog/db db:staff"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

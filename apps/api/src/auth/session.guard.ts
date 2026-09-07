@@ -2,6 +2,7 @@ import { type CanActivate, type ExecutionContext, Injectable, SetMetadata } from
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { unauthorized } from '../common/problem-details.ts';
+import { STAFF_ONLY } from '../admin/staff.guard.ts';
 import { AuthConfig } from './auth.config.ts';
 import { verifyAccessToken } from './tokens.ts';
 
@@ -29,6 +30,17 @@ export class SessionGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) return true;
+
+    // Staff routes authenticate with a Cloudflare Access token instead of a
+    // bearer session, and StaffGuard — registered before this one — has
+    // already required and verified it. Reading the same metadata key from
+    // both guards is what keeps this from being a hole: a route marked
+    // @StaffOnly is not unguarded, it is guarded by the other one.
+    const isStaffRoute = this.reflector.getAllAndOverride<boolean>(STAFF_ONLY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isStaffRoute) return true;
 
     const req = context.switchToHttp().getRequest<Request & { user?: AuthedUser }>();
     const header = req.header('authorization');

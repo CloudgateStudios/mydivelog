@@ -1,5 +1,6 @@
 export * from './scope.ts';
 export * from './client.ts';
+export * from './repositories/admin.repository.ts';
 export * from './repositories/dive.repository.ts';
 export * from './repositories/import.repository.ts';
 export * from './repositories/saved-view.repository.ts';

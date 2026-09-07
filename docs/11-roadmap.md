@@ -110,6 +110,16 @@ Built before the user-facing app, because Phase 3's failures need a debugging su
 - Staff cannot see dive notes anywhere in the UI
 - Every staff action appears in the audit log
 
+> The last two are mechanisms rather than habits. Notes are kept out by an allowlist
+> (`DIVE_SELECT`, `AUDITABLE_DIVE_FIELDS`, and their absence from `AdminUpdateDive`),
+> each with a test that fails if either field is added. The audit row is written by the
+> same transaction as the change it records, so an unaudited staff mutation would have to
+> be a new code path rather than a forgotten line — and `admin.itest.ts` walks the whole
+> surface counting rows.
+>
+> Still outstanding in this phase: metrics, feature flags, and a promotion *queue* for
+> sites rather than a toggle on each one.
+
 ---
 
 ## Phase 5 — Web Portal · ~4 weeks

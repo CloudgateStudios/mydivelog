@@ -1,5 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { db, redactProvenanceValue } from '../../../lib/db';
+import { apiSend, withDone, withError } from '../../../lib/api';
+import { Notice, SubmitButton } from '../../../components/StaffForm';
 import { bytes, dateTime, metres, minutes, offset, shortId } from '../../../lib/format';
 import { StatusTag } from '../../page';
 
@@ -13,8 +15,15 @@ export const dynamic = 'force-dynamic';
  * the file actually say, and why did the engine decide that" — and both
  * answers live here.
  */
-export default async function ImportDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function ImportDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; done?: string }>;
+}) {
   const { id } = await params;
+  const { error, done } = await searchParams;
 
   const batch = await db.importBatch.findUnique({
     where: { id },
@@ -23,6 +32,31 @@ export default async function ImportDetail({ params }: { params: Promise<{ id: s
   if (!batch) notFound();
 
   const stats = batch.stats as Record<string, number> | null;
+  const here = `/imports/${id}`;
+
+  /**
+   * The diver's own undo, triggered on their behalf.
+   *
+   * Same code path as the button on their review screen, scoped to whoever
+   * owns the batch — staff are asking for the diver's action, not performing a
+   * different one that happens to look similar.
+   */
+  async function revert(formData: FormData): Promise<void> {
+    'use server';
+    const result = await apiSend<{ deleted: string[]; restored: string[] }>(
+      `/v1/admin/imports/${id}/revert`,
+      { method: 'POST', body: { reason: String(formData.get('reason') ?? '') } },
+    );
+    if (!result.ok) redirect(withError(here, result.detail));
+    redirect(
+      withDone(
+        here,
+        `Reverted. ${result.data.deleted.length} ${
+          result.data.deleted.length === 1 ? 'dive' : 'dives'
+        } removed, ${result.data.restored.length} restored to what the other sources say.`,
+      ),
+    );
+  }
 
   return (
     <main>
@@ -33,8 +67,38 @@ export default async function ImportDetail({ params }: { params: Promise<{ id: s
         {batch.originalFileName} · {bytes(batch.fileSize)} · {batch.sourceKind} · user{' '}
         <a href={`/dives?user=${batch.userId}`} className="mono">
           {shortId(batch.userId)}
-        </a>
+        </a>{' '}
+        · <a href={`/audit?entityType=import_batch&entityId=${batch.id}`}>staff history</a>
       </p>
+
+      <Notice {...(error ? { error } : {})} {...(done ? { done } : {})} />
+
+      {batch.status === 'committed' && (
+        <div className="panel">
+          <details>
+            <summary>Revert this import</summary>
+            <form action={revert} className="stack">
+              <p className="hint">
+                Removes every source this batch wrote. Dives it created and nothing else touched are
+                deleted; dives it merged into are recomputed from the sources that remain, so a dive
+                that existed before the import goes back to what those sources say rather than
+                disappearing. This can take a minute on a large import.
+              </p>
+              <label>
+                <span>Reason</span>
+                <input
+                  name="reason"
+                  required
+                  minLength={3}
+                  maxLength={200}
+                  placeholder="diver asked by email, ticket 41"
+                />
+              </label>
+              <SubmitButton danger>Revert {batch.originalFileName}</SubmitButton>
+            </form>
+          </details>
+        </div>
+      )}
 
       {batch.error && (
         <div className="panel" style={{ padding: '0.7rem', marginBottom: '1rem' }}>

@@ -1,5 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AdminModule } from './admin/admin.module.ts';
+import { StaffGuard } from './admin/staff.guard.ts';
 import { AuthModule } from './auth/auth.module.ts';
 import { SessionGuard } from './auth/session.guard.ts';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor.ts';
@@ -29,9 +31,16 @@ import { OpenApiController } from './openapi/openapi.controller.ts';
     SitesModule,
     TripsModule,
     GearModule,
+    AdminModule,
   ],
   controllers: [OpenApiController],
   providers: [
+    // Order matters. StaffGuard runs first and is the only thing that
+    // authenticates a @StaffOnly route; SessionGuard then steps aside for
+    // those routes rather than demanding a bearer token they never carry.
+    // Registered the other way round, staff requests would be rejected before
+    // anything verified them — which is safe, but silently breaks the panel.
+    { provide: APP_GUARD, useClass: StaffGuard },
     // Authentication is global: a new controller is guarded unless it opts out
     // with @Public. Guarding controller by controller fails open the first time
     // someone forgets.

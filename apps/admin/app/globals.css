@@ -288,6 +288,197 @@ details summary {
   font-size: 12px;
 }
 
+/* --- Acting on things ----------------------------------------------------- */
+/*
+ * The panel was read-only until staff mutations arrived, so it had no form
+ * controls at all. These follow the product's, at the panel's density: this is
+ * a tool people use for an hour at a time, and generous padding here means
+ * less of the table on screen.
+ */
+
+.button {
+  display: inline-block;
+  font: inherit;
+  font-size: 12px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  /* Buttons sit in table cells next to each other; without this they can be
+     two different heights depending on their text. */
+  line-height: 1.4;
+}
+.button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+/*
+ * Destructive actions use --signal rather than --bad. --bad is the state of a
+ * row that has already gone wrong; this is a button that has not been pressed
+ * yet, and colouring it as an error makes every delete form look like a
+ * failure notice.
+ */
+.button.danger {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: var(--on-accent);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  font-size: 13px;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  max-width: 100%;
+}
+input[type='number'] {
+  /* Digits in a column, so a depth and an offset line up. */
+  font-variant-numeric: tabular-nums;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+form.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem;
+}
+form.inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+/* Inside a table cell there is no room for padding a whole form. */
+td form.inline,
+td form.stack {
+  padding: 0;
+  border-top: 0;
+}
+
+.stack > label,
+.inline > label,
+.row > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 12px;
+  color: var(--muted);
+}
+label.check {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.45rem;
+  max-width: 46rem;
+}
+label.check input {
+  margin-top: 0.15rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.row > label {
+  flex: 1 1 10rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  max-width: 46rem;
+}
+
+/*
+ * What just happened, or just failed to.
+ *
+ * A left rule rather than a fill: these appear above dense tables and a solid
+ * block of colour there reads as a section rather than as a message.
+ */
+.notice {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 4px;
+  background: var(--panel);
+  margin: 0 0 1rem;
+  font-size: 13px;
+  max-width: 60rem;
+}
+.notice.good {
+  border-left-color: var(--good);
+}
+.notice.warn {
+  border-left-color: var(--warn);
+}
+.notice.bad {
+  border-left-color: var(--bad);
+}
+
+/*
+ * A delete form lives inside a <details>. Without this it opens flush against
+ * the summary and the reason field looks like part of the row above it.
+ */
+details > form,
+details > .stack {
+  margin-top: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--shelf);
+  min-width: 18rem;
+}
+
+/*
+ * Present to a screen reader, absent to everything else. Used for the labels
+ * on inline table forms, where a visible label would double the row height and
+ * the column header already says what the field is — to a sighted reader.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --- The mark ------------------------------------------------------------ */
 
 .wordmark {
