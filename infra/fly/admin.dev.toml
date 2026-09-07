@@ -9,6 +9,11 @@ primary_region = "ord"
 
 [env]
   APP_ENV = "dev"
+  # Staff changes go through the API, never straight to the database, so the
+  # panel needs to know where the API is. Internal, over Fly's private network:
+  # this call carries a Cloudflare Access token and has no business leaving the
+  # organisation to come back in.
+  API_URL = "http://mydivelog-api-dev.internal:8080"
 
 [http_service]
   internal_port = 8080

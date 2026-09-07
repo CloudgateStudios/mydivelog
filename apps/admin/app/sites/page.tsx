@@ -19,7 +19,7 @@ export default async function Sites() {
       <p className="lede">
         Sites start private to the diver who imported them. A site with a name and no coordinates is
         waiting for a computer export to locate it — and a site with both is what a merge produces
-        that neither source could.
+        that neither source could. Open one to rename it, locate it, or fold a duplicate into it.
       </p>
 
       <div className="cards">
@@ -53,7 +53,7 @@ export default async function Sites() {
             {sites.map((site) => (
               <tr key={site.id} id={site.id}>
                 <td>
-                  {site.name}
+                  <a href={`/sites/${site.id}`}>{site.name}</a>
                   {site.name === 'Unnamed site' && (
                     // Written by the importer when a computer gave coordinates
                     // and an opaque id instead of a name.

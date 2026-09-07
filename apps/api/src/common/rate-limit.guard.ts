@@ -30,8 +30,13 @@ export class RateLimitGuard implements CanActivate {
     ]);
     if (!rule) return true;
 
-    const req = context.switchToHttp().getRequest<Request & { user?: { id: string } }>();
-    const who = req.user?.id ?? req.ip ?? 'unknown';
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { user?: { id: string }; staff?: { userId: string } }>();
+    // Staff routes have no `user` — they authenticate with a Cloudflare Access
+    // token — so without this every staff member shares the admin container's
+    // IP bucket and the first one to hit a limit throttles the rest.
+    const who = req.user?.id ?? req.staff?.userId ?? req.ip ?? 'unknown';
     const bucketKey = `${who}:${context.getClass().name}.${context.getHandler().name}`;
 
     const now = Date.now();

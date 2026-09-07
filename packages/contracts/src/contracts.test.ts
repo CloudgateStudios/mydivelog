@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { CreateDive, divesDateRange, ListDivesQuery, MAX_DEPTH_M, UpdateDive } from './dives.ts';
 import { ProblemDetails } from './common.ts';
 import { buildOpenApiDocument } from './openapi.ts';
+import {
+  AdminUpdateDive,
+  AdminUpdateSite,
+  AdminUpdateUser,
+  MergeSites,
+  StaffDelete,
+} from './admin.ts';
 
 const valid = {
   startTimeUtc: '2026-03-06T23:07:42.000Z',
@@ -151,5 +158,64 @@ describe('the log date range', () => {
   it('leaves an open end open', () => {
     expect(divesDateRange({ from: '2026-03-01' }).to).toBeUndefined();
     expect(divesDateRange({}).from).toBeUndefined();
+  });
+});
+
+/**
+ * The staff surface. These schemas are the last place a bad staff request is
+ * cheap to stop, and two of them encode policy rather than shape.
+ */
+describe('the staff surface', () => {
+  it('will not write a note staff cannot read', () => {
+    // "Staff cannot see dive notes anywhere in the UI" — docs/11-roadmap.md.
+    // Letting staff write one they cannot read is a worse version of the same
+    // problem, so the fields are absent and Zod strips them.
+    const parsed = AdminUpdateDive.parse({
+      maxDepthM: 18,
+      notes: 'nope',
+      privateNotes: 'also nope',
+    } as never);
+    expect('notes' in parsed).toBe(false);
+    expect('privateNotes' in parsed).toBe(false);
+  });
+
+  it('takes half a coordinate as an error rather than a location', () => {
+    // Accepting one and defaulting the other puts the site at 0°,0° — off the
+    // coast of Ghana, where every zero-defaulted coordinate ends up.
+    expect(AdminUpdateSite.safeParse({ latitude: 12.1 }).success).toBe(false);
+    expect(AdminUpdateSite.safeParse({ latitude: 12.1, longitude: -68.2 }).success).toBe(true);
+    // Clearing both together is how a wrong location is removed.
+    expect(AdminUpdateSite.safeParse({ latitude: null, longitude: null }).success).toBe(true);
+  });
+
+  it('refuses to merge a site into itself', () => {
+    const id = '01930000-0000-7000-8000-000000000001';
+    const other = '01930000-0000-7000-8000-000000000002';
+    // Unchecked, this soft-deletes the site it has just moved everything into.
+    expect(MergeSites.safeParse({ sourceId: id, targetId: id, reason: 'dupe' }).success).toBe(
+      false,
+    );
+    expect(MergeSites.safeParse({ sourceId: id, targetId: other, reason: 'dupe' }).success).toBe(
+      true,
+    );
+  });
+
+  it('requires a typed reason before anything is destroyed', () => {
+    expect(StaffDelete.safeParse({}).success).toBe(false);
+    expect(StaffDelete.safeParse({ reason: '  ' }).success).toBe(false);
+    expect(StaffDelete.safeParse({ reason: 'duplicate of Angel City' }).success).toBe(true);
+  });
+
+  it('has no status that means deleted, because DELETE means deleted', () => {
+    // Two paths to the same state is two implementations that can disagree.
+    expect(AdminUpdateUser.safeParse({ status: 'deleted', reason: 'spam' }).success).toBe(false);
+    expect(AdminUpdateUser.safeParse({ status: 'suspended', reason: 'spam' }).success).toBe(true);
+  });
+
+  it('documents the staff routes as taking an Access token, not a session', () => {
+    const doc = buildOpenApiDocument();
+    const scheme = doc.paths['/admin/audit'].get.security[0];
+    expect(scheme).toEqual({ cfAccess: [] });
+    expect(doc.components.securitySchemes.cfAccess.name).toBe('Cf-Access-Jwt-Assertion');
   });
 });

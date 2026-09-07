@@ -227,6 +227,13 @@ const ADMIN_PAGES = [
   ['format health', '/health'],
   ['dives', '/dives'],
   ['sites', '/sites'],
+  // The pages staff act on rather than only read. Forms are where the
+  // violations are — an input whose only label is a table header, a button
+  // whose colour was picked for a fill rather than for contrast — so these
+  // matter more here than the read-only pages above, not less.
+  ['tags', '/tags'],
+  ['users', '/users'],
+  ['the audit log', '/audit'],
 ] as const;
 
 test.describe('the admin panel', () => {
@@ -237,6 +244,45 @@ test.describe('the admin panel', () => {
       expect(report(violations), report(violations)).toBe('');
     });
   }
+
+  /*
+   * The two record pages carry the biggest forms in the panel, and neither has
+   * a fixed URL. Reached by clicking, the way a person reaches them — which
+   * also means a broken link on the list page fails this test rather than
+   * quietly leaving the form unscanned.
+   */
+  for (const [name, list, rowLink] of [
+    ['a site', '/sites', 'table tbody tr:first-child a'],
+    ['a dive', '/dives', 'table tbody tr:first-child a'],
+  ] as const) {
+    test(`${name} has no WCAG 2.2 AA violations`, async ({ page }) => {
+      await page.goto(`${ADMIN_URL}${list}`);
+      const first = page.locator(rowLink).first();
+      const count = await page.locator(rowLink).count();
+      test.skip(count === 0, `no ${name} in this database to open`);
+
+      await first.click();
+      await expect(page.locator('form')).not.toHaveCount(0);
+
+      const { violations } = await scan(page).analyze();
+      expect(report(violations), report(violations)).toBe('');
+    });
+  }
+
+  test('a delete form asks why before it appears', async ({ page }) => {
+    // The reason field is the confirmation step. A dialog asking "are you
+    // sure?" gets a reflexive yes; typing why you are deleting somebody's
+    // data does not, and it leaves the audit log with a sentence.
+    await page.goto(`${ADMIN_URL}/tags`);
+    const rows = await page.locator('table tbody tr').count();
+    test.skip(rows === 0, 'no tags in this database');
+
+    const disclosure = page.locator('details > summary', { hasText: 'Delete' }).first();
+    await disclosure.click();
+    const reason = page.locator('details form input[name="reason"]').first();
+    await expect(reason).toBeVisible();
+    await expect(reason).toHaveAttribute('required', '');
+  });
 
   test('says it is the staff panel, not the product', async ({ page }) => {
     // Someone glancing at a screenshot should never have to work out which

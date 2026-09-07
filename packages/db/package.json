@@ -24,7 +24,8 @@
     "db:studio": "prisma studio",
     "generate": "prisma generate",
     "db:demo": "node --env-file-if-exists=../../.env --experimental-strip-types prisma/demo.ts",
-    "test:integration": "vitest run .itest.ts"
+    "test:integration": "vitest run .itest.ts",
+    "db:staff": "node --env-file-if-exists=../../.env --experimental-strip-types prisma/staff.ts"
   },
   "dependencies": {
     "@mydivelog/domain": "workspace:*",

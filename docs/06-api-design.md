@@ -182,21 +182,54 @@ POST   /v1/webhooks/stripe        signature-verified, idempotent
 
 ## Admin API
 
-Separate router (`/v1/admin`), separate guard, separate hostname, staff-only, every call
-writes an `AuditEvent`.
+Separate router (`/v1/admin`), separate guard, separate hostname, staff-only, and every
+call that changes anything writes an `AuditEvent` **in the same transaction as the
+change**. That last part is enforced in `@mydivelog/db`'s admin repository rather than by
+convention: the controller has no path to a write that skips it, and
+`apps/api/src/admin/admin.itest.ts` walks the whole surface counting rows.
+
+**Authentication is a Cloudflare Access token, not a session.** The admin panel forwards
+the token it was given and the API verifies it again, independently, against Cloudflare's
+public keys — the two are separate services, and an API that trusts a header from whatever
+claims to be the panel has no staff authentication at all. The token proves identity;
+`users.is_staff` proves staff. Both are required, so removing someone in either place is
+enough.
 
 ```
-GET  /v1/admin/users                    search, filter, paginate
-GET  /v1/admin/users/:id                profile, counts, subscription
-POST /v1/admin/users/:id/suspend
-GET  /v1/admin/imports                  cross-user, filter by status/format
-GET  /v1/admin/imports/:id              full row detail — the debugging surface
-GET  /v1/admin/sites/pending            private→public promotion queue
-POST /v1/admin/sites/:id/promote
-POST /v1/admin/sites/merge              merge duplicate public sites
-GET  /v1/admin/metrics                  signups, imports, failure rates, storage
-GET  /v1/admin/audit
+GET    /v1/admin/audit                        append-only; filter by entity or actor
+
+PATCH  /v1/admin/sites/:id                    name, coordinates, description, promote
+DELETE /v1/admin/sites/:id                    409 if dives are logged there — merge instead
+POST   /v1/admin/sites/:id/aliases
+DELETE /v1/admin/sites/:id/aliases/:aliasId
+POST   /v1/admin/sites/merge                  dives, aliases and the name all move
+
+PATCH  /v1/admin/tags/:id                     label, category, promote into the taxonomy
+DELETE /v1/admin/tags/:id                     records how many dives lost the label
+
+PATCH  /v1/admin/users/:id                    suspend / reactivate; revokes refresh tokens
+DELETE /v1/admin/users/:id                    soft — erasure is the diver's own GDPR path
+
+PATCH  /v1/admin/dives/:id                    the fields an import can get wrong
+DELETE /v1/admin/dives/:id                    soft, so offline clients get a tombstone
+POST   /v1/admin/dives/:id/restore
+
+POST   /v1/admin/imports/:id/revert           the diver's own undo, on their behalf
 ```
+
+Reads are not here. The panel queries the database directly — it is a staff tool behind
+Access, and routing a dozen inspector queries through endpoints only it calls buys
+nothing. Writes are the ones that need the audit transaction, so writes are the ones that
+cross the boundary. `apps/admin/lib/db.write.test.ts` fails the build if a write appears
+on the panel's side of it.
+
+**Notes are absent from `AdminUpdateDive`.** "Staff cannot see dive notes anywhere in the
+UI" is a Phase 4 acceptance criterion, and letting staff write a field they cannot read is
+a worse version of the same problem. Rating, trip, gear and buddies are absent too: those
+are things the diver wrote rather than things a parser produced.
+
+Still to build: `/v1/admin/metrics`, and a site promotion *queue* rather than a per-site
+toggle.
 
 Staff **cannot read dive notes or private notes** through the admin API. Import row detail
 is available because that is the support workload, and it is audit-logged every time.

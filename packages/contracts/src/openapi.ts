@@ -3,6 +3,7 @@ import * as auth from './auth.ts';
 import * as imports from './imports.ts';
 import { PageQuery, ProblemDetails, pageOf } from './common.ts';
 import * as dives from './dives.ts';
+import * as admin from './admin.ts';
 
 /**
  * The OpenAPI document is generated from the same Zod schemas the API
@@ -34,6 +35,13 @@ const body = (schema: z.ZodType) => ({
 });
 
 const bearer = [{ bearerAuth: [] }];
+
+/**
+ * The staff surface authenticates with a Cloudflare Access token, verified
+ * against the team's public keys — not with a session this API issued. Naming
+ * it separately keeps a generated client from attaching the wrong credential.
+ */
+const access = [{ cfAccess: [] }];
 
 /** Every unsafe method takes one; an offline client retries blindly. */
 const idempotencyKey = {
@@ -74,6 +82,14 @@ export function buildOpenApiDocument(version = '0.0.0') {
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        cfAccess: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'Cf-Access-Jwt-Assertion',
+          description:
+            'A Cloudflare Access token. The API verifies it independently of the admin panel, ' +
+            'and additionally requires the matching account to be staff.',
+        },
       },
     },
     paths: {
@@ -541,6 +557,157 @@ export function buildOpenApiDocument(version = '0.0.0') {
           tags: ['stats'],
           security: bearer,
           responses: { '200': ok(dives.LogSummary), '401': problem },
+        },
+      },
+
+      // -----------------------------------------------------------------------
+      // Staff. `security: access` rather than `bearer`: these routes take a
+      // Cloudflare Access token, not a session, so a generated client that
+      // attached a bearer token here would be describing an endpoint that does
+      // not exist.
+      // -----------------------------------------------------------------------
+
+      '/admin/audit': {
+        get: {
+          operationId: 'listAuditEvents',
+          tags: ['admin'],
+          security: access,
+          description:
+            'Append-only. Every staff mutation writes a row here in the same transaction as ' +
+            'the change it records.',
+          parameters: queryParams(admin.AuditQuery),
+          responses: {
+            '200': ok(z.object({ data: z.array(admin.AuditEvent) })),
+            '403': problem,
+          },
+        },
+      },
+      '/admin/sites/merge': {
+        post: {
+          operationId: 'mergeSites',
+          tags: ['admin'],
+          security: access,
+          description:
+            'Folds one site into another: dives move, aliases move, and the source name is ' +
+            'kept as an alias so it still finds the place. The source is soft-deleted.',
+          requestBody: body(admin.MergeSites),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '422': problem },
+        },
+      },
+      '/admin/sites/{id}': {
+        patch: {
+          operationId: 'adminUpdateSite',
+          tags: ['admin'],
+          security: access,
+          parameters: [pathId],
+          requestBody: body(admin.AdminUpdateSite),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem },
+        },
+        delete: {
+          operationId: 'adminDeleteSite',
+          tags: ['admin'],
+          security: access,
+          description:
+            'Refused with 409 when dives are logged at the site — merge it instead, which ' +
+            'keeps those dives and their history.',
+          parameters: [pathId],
+          requestBody: body(admin.StaffDelete),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
+        },
+      },
+      '/admin/sites/{id}/aliases': {
+        post: {
+          operationId: 'addSiteAlias',
+          tags: ['admin'],
+          security: access,
+          parameters: [pathId],
+          requestBody: body(admin.AddSiteAlias),
+          responses: { '201': ok(z.object({}), 'Created'), '403': problem, '404': problem },
+        },
+      },
+      '/admin/tags/{id}': {
+        patch: {
+          operationId: 'adminUpdateTag',
+          tags: ['admin'],
+          security: access,
+          parameters: [pathId],
+          requestBody: body(admin.AdminUpdateTag),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
+        },
+        delete: {
+          operationId: 'adminDeleteTag',
+          tags: ['admin'],
+          security: access,
+          description:
+            'Removes the label from every dive carrying it. How many is recorded in the audit row.',
+          parameters: [pathId],
+          requestBody: body(admin.StaffDelete),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem },
+        },
+      },
+      '/admin/users/{id}': {
+        patch: {
+          operationId: 'adminUpdateUser',
+          tags: ['admin'],
+          security: access,
+          description: 'Suspending also revokes every refresh token the account holds.',
+          parameters: [pathId],
+          requestBody: body(admin.AdminUpdateUser),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem },
+        },
+        delete: {
+          operationId: 'adminDeleteUser',
+          tags: ['admin'],
+          security: access,
+          description:
+            "Soft. The row, the dives and the imports all stay; erasure is the diver's own " +
+            'GDPR path, not a staff button.',
+          parameters: [pathId],
+          requestBody: body(admin.StaffDelete),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
+        },
+      },
+      '/admin/dives/{id}': {
+        patch: {
+          operationId: 'adminUpdateDive',
+          tags: ['admin'],
+          security: access,
+          description:
+            'Notes and private notes are absent from this schema on purpose: staff cannot ' +
+            'read them, so staff cannot write them.',
+          parameters: [pathId],
+          requestBody: body(admin.AdminUpdateDive),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
+        },
+        delete: {
+          operationId: 'adminDeleteDive',
+          tags: ['admin'],
+          security: access,
+          parameters: [pathId],
+          requestBody: body(admin.StaffDelete),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem },
+        },
+      },
+      '/admin/dives/{id}/restore': {
+        post: {
+          operationId: 'adminRestoreDive',
+          tags: ['admin'],
+          security: access,
+          parameters: [pathId],
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
+        },
+      },
+      '/admin/imports/{id}/revert': {
+        post: {
+          operationId: 'adminRevertImport',
+          tags: ['admin'],
+          security: access,
+          description:
+            "Runs the diver's own undo, scoped to whoever owns the batch. The audit row is " +
+            'written inside the same transaction as the revert.',
+          parameters: [pathId],
+          requestBody: body(admin.StaffDelete),
+          responses: { '200': ok(z.object({})), '403': problem, '404': problem, '409': problem },
         },
       },
     },

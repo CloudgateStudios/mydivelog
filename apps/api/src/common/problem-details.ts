@@ -41,6 +41,13 @@ export const unauthorized = (detail?: string) =>
     detail,
   );
 
+/**
+ * Authenticated, and still not allowed. Distinct from 401 on purpose: retrying
+ * with a different token is the fix for one and not the other.
+ */
+export const forbidden = (detail?: string) =>
+  new ProblemException(HttpStatus.FORBIDDEN, `${BASE}/forbidden`, 'Not allowed', detail);
+
 export const badRequest = (detail: string, code = 'bad_request') =>
   new ProblemException(HttpStatus.BAD_REQUEST, `${BASE}/bad-request`, 'Bad request', detail, [
     { code },
