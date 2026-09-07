@@ -19,6 +19,26 @@ import { headers } from 'next/headers';
 const API_URL = process.env['API_URL'] ?? 'http://localhost:53001';
 
 /**
+ * Said once, at startup.
+ *
+ * `API_URL` is a Fly secret rather than an entry in `infra/fly/admin.*.toml` —
+ * this repository is public and the address of an internal service does not
+ * belong in it. The cost of that is a setting nobody can see by reading the
+ * config, so a deployed panel with the secret unset looks exactly like a
+ * correctly configured one right up until somebody presses a button and the
+ * request goes to localhost.
+ *
+ * `APP_ENV` is set on both deployed panels and on neither developer laptop,
+ * which makes it the signal for "this default is wrong here".
+ */
+if (process.env['APP_ENV'] !== undefined && process.env['API_URL'] === undefined) {
+  console.warn(
+    `admin: API_URL is not set, so staff changes will be sent to ${API_URL} and fail. ` +
+      'Set it: fly secrets set --app mydivelog-admin-<env> API_URL=...',
+  );
+}
+
+/**
  * Deliberately not an exception.
  *
  * A server action that throws renders Next's error page, which says nothing
