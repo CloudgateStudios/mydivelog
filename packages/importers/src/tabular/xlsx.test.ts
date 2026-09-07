@@ -3,7 +3,7 @@ import { deflateRawSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { columnIndex, isXlsx, parseXlsx, XlsxError } from './xlsx.ts';
-import { buildWorkbook, zip } from './workbook-builder.ts';
+import { buildWorkbook, zip } from '../export/xlsx.ts';
 import { parseCsv } from './csv.ts';
 import { parseTabular } from './index.ts';
 

@@ -1,15 +1,22 @@
 import { deflateRawSync } from 'node:zlib';
 
 /**
- * Builds .xlsx files, for tests.
+ * Writes .xlsx files.
  *
- * Not part of the importer — nothing here is used at runtime. It exists so the
- * hazards a workbook can carry (a sparse row, a formula, a title above the
- * headings, a second sheet) can be written down exactly rather than hunted for
- * in a binary fixture, and so a test can say what it is testing.
+ * Small on purpose: enough of the format to produce a workbook Excel, Numbers
+ * and Google Sheets all open, and no more. It has two callers and they want
+ * opposite things from it, which is why it takes a grid rather than a document
+ * model:
  *
- * The committed fixture is still a real file reduced from a real workbook; see
- * fixtures/README.md. These are for the cases a real file happens not to have.
+ *   - the blank import template a diver downloads, which must contain exactly
+ *     the columns this importer knows how to read;
+ *   - the tests, which need to write down a hazard — a sparse row, a formula,
+ *     a title above the headings, a second sheet — precisely rather than hunt
+ *     for one in a binary fixture.
+ *
+ * `undefined` in a row omits the cell entirely, which is what Excel itself
+ * does with an empty one and the single most important thing to get right when
+ * reading one back.
  */
 
 export type CellSpec = string | { value: string; formula?: boolean; styleOnly?: boolean };

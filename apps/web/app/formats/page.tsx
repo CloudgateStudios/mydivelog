@@ -122,7 +122,8 @@ export default async function Formats() {
         <p className="lede">
           If your format is not listed, the spreadsheet importer usually still gets it in — most
           tools can write an Excel file or a CSV, and MyDiveLog does not care what the columns are
-          called.
+          called. Starting from nothing, there is a <a href="/import">blank template</a> with the
+          columns already named.
         </p>
       </section>
 

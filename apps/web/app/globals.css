@@ -153,6 +153,46 @@ h1 {
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
+
+/*
+ * An aside on a page that already has a primary action.
+ *
+ * Set on the shelf rather than in a bordered card: the drop zone above it is
+ * the thing to look at, and a second outlined box competes with it. This reads
+ * as "and if you have nothing yet", which is what it is.
+ */
+.panel-note {
+  background: var(--shelf);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  margin: 1.25rem 0;
+}
+.panel-note > :first-child {
+  margin-top: 0;
+}
+.panel-note > :last-child {
+  margin-bottom: 0;
+}
+.small-heading {
+  font-size: 15px;
+  margin-bottom: 0.35rem;
+}
+
+/*
+ * `.button` is full width by default, which is right in a form and wrong for
+ * two downloads sitting side by side. They wrap on a narrow screen rather than
+ * squeezing to nothing.
+ */
+.template-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
+.template-links .button {
+  width: auto;
+  flex: 0 1 auto;
+}
 label {
   font-size: 13px;
   color: var(--muted);
