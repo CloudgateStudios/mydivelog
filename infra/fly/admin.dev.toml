@@ -9,11 +9,23 @@ primary_region = "ord"
 
 [env]
   APP_ENV = "dev"
-  # Staff changes go through the API, never straight to the database, so the
-  # panel needs to know where the API is. Internal, over Fly's private network:
-  # this call carries a Cloudflare Access token and has no business leaving the
-  # organisation to come back in.
-  API_URL = "http://mydivelog-api-dev.internal:8080"
+
+# API_URL is a Fly secret, not an entry above.
+#
+# Staff changes go through the API rather than straight to the database, so the
+# panel does need to know where the API is — but this repository is public, and
+# the address of an internal service is not something to publish just because
+# it is convenient to have it in version control.
+#
+# Keeping it a secret also means the value can move — public hostname today,
+# `http://mydivelog-api-dev.internal:8080` over Fly's private network if that
+# round trip is ever worth removing — without a deploy or a commit.
+#
+#   fly secrets set --app mydivelog-admin-dev API_URL=...
+#
+# `apps/admin/lib/api.ts` warns at startup when it is missing in a deployed
+# environment, because a panel that has quietly fallen back to localhost looks
+# exactly like a working one until somebody presses a button.
 
 [http_service]
   internal_port = 8080
