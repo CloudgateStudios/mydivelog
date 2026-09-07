@@ -6,12 +6,16 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MAX_UPLOAD_BYTES, UpdateImportRow } from '@mydivelog/contracts';
-import { userScope } from '@mydivelog/db';
+import { MAX_UPLOAD_BYTES, TemplateQuery, UpdateImportRow } from '@mydivelog/contracts';
+import { templateCsv, templateXlsx } from '@mydivelog/importers';
+import { getPrismaClient, userScope } from '@mydivelog/db';
 import { badRequest } from '../common/problem-details.ts';
 import { Throttle } from '../common/rate-limit.guard.ts';
 import { zodBody } from '../common/zod-validation.pipe.ts';
@@ -68,6 +72,54 @@ export class ImportsController {
     );
     const batch = await this.imports.get(userScope(user.id), batchId);
     return toBatchDetail(batch);
+  }
+
+  /**
+   * A blank sheet with the columns already named.
+   *
+   * Declared before ':id' — Nest matches in order, and "template" would
+   * otherwise be read as a batch id and answer 404.
+   *
+   * Generated from `IMPORT_FIELDS` on every request rather than served as a
+   * static asset: the template and the mapping have to be the same list, or
+   * this product hands out a file it cannot read.
+   */
+  @Get('template')
+  async template(
+    @CurrentUser() user: AuthedUser,
+    @Query() query: Record<string, string | undefined>,
+    @Res() res: Response,
+  ): Promise<void> {
+    const parsed = TemplateQuery.parse({
+      ...(query['format'] === undefined ? {} : { format: query['format'] }),
+      ...(query['units'] === undefined ? {} : { units: query['units'] }),
+    });
+
+    // Their own units unless asked otherwise, so a template is never a
+    // conversion exercise before it is a logbook.
+    const units = parsed.units ?? (await this.preferredUnits(user.id));
+    const csv = parsed.format === 'csv';
+
+    res.setHeader(
+      'content-type',
+      csv
+        ? 'text/csv; charset=utf-8'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'content-disposition',
+      `attachment; filename="mydivelog-template-${units}.${parsed.format}"`,
+    );
+    res.send(csv ? templateCsv(units) : Buffer.from(templateXlsx(units)));
+  }
+
+  /** Metric unless they have said otherwise; a diver who never opened settings has no row. */
+  private async preferredUnits(userId: string): Promise<'metric' | 'imperial'> {
+    const row = await getPrismaClient().userPreferences.findUnique({
+      where: { userId },
+      select: { unitSystem: true },
+    });
+    return row?.unitSystem === 'imperial' ? 'imperial' : 'metric';
   }
 
   @Get(':id')

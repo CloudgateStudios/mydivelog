@@ -184,9 +184,6 @@ importers:
       '@mydivelog/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@mydivelog/importers':
-        specifier: workspace:*
-        version: link:../../packages/importers
       next:
         specifier: ^16.3.3
         version: 16.3.4(@playwright/test@1.63.0)(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

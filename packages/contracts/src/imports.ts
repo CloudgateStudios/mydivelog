@@ -35,6 +35,22 @@ export const ImportSourceKind = z.enum([
   'unknown',
 ]);
 
+/**
+ * The blank spreadsheet a diver with nothing to import starts from.
+ *
+ * Served by the API rather than built in each client, because it is generated
+ * from the importer's own column list — the same list the parser maps against.
+ * A template assembled anywhere else drifts the first time a column is
+ * renamed, and then the one file this product hands people is the one file it
+ * cannot read.
+ */
+export const TemplateQuery = z.object({
+  format: z.enum(['xlsx', 'csv']).default('xlsx'),
+  /** Omitted, the diver's own preference is used. */
+  units: z.enum(['metric', 'imperial']).optional(),
+});
+export type TemplateQuery = z.infer<typeof TemplateQuery>;
+
 export const ImportStatus = z.enum([
   'uploaded',
   'parsing',

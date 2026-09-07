@@ -551,6 +551,21 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '200': { description: 'The logbook, as a file attachment' } },
         },
       },
+      '/imports/template': {
+        get: {
+          operationId: 'getImportTemplate',
+          tags: ['imports'],
+          security: bearer,
+          description:
+            'A blank spreadsheet with the columns already named, generated from the same list ' +
+            "the importer maps against. Units follow the diver's preference unless given.",
+          parameters: queryParams(imports.TemplateQuery),
+          responses: {
+            '200': { description: 'The template, as a file attachment' },
+            '401': problem,
+          },
+        },
+      },
       '/stats/summary': {
         get: {
           operationId: 'getLogSummary',
