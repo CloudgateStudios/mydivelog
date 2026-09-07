@@ -104,14 +104,46 @@ decides whether the API will act on their behalf. A person removed in either
 place stops being staff, which is the point: revoking access should not depend
 on remembering to do it twice, and neither half should be sufficient alone.
 
-Adding someone is therefore two steps — add them to the Access policy, then:
+**The two addresses have to match.** The guard looks the account up by the
+email in the Access token, so someone whose Access identity is not also their
+MyDiveLog account address gets a 403 that looks exactly like a missing flag.
+
+Adding someone is therefore two steps: add them to the Access policy, then set
+the column.
+
+### Setting it on dev or prod
+
+Over `fly ssh`, so the database URL never leaves Fly. Nothing to copy, nothing
+to paste into a shell that keeps history.
+
+First, see who exists and who is already staff:
+
+```bash
+fly ssh console --app mydivelog-api-dev -C 'node --input-type=module -e "const {createPrismaClient} = await import(`/app/node_modules/@mydivelog/db/dist/index.js`); const p = createPrismaClient(); console.table(await p.user.findMany({select:{email:true,isStaff:true}})); process.exit(0);"'
+```
+
+Then grant it. `--create` is deliberately absent: against a real environment a
+mistyped address should be an error, not a brand new staff account nobody is
+looking for.
+
+```bash
+fly ssh console --app mydivelog-api-dev \
+  -C 'node node_modules/@mydivelog/db/prisma/staff.ts them@example.com'
+```
+
+Swap `-dev` for `-prod` to do the same there. They are separate databases, so
+staff on one is not staff on the other — which is the right default.
+
+Removing someone is one step, in Access. `--revoke` clears the column as well,
+which is tidy rather than load-bearing.
+
+If `fly ssh` is not an option, the Neon console's SQL editor reaches the same
+database:
 
 ```sql
 UPDATE users SET is_staff = true WHERE email = 'them@example.com';
+-- UPDATE 0 means the address is wrong, not that it worked
 ```
-
-Removing someone is one step, in Access. Clearing the column as well is tidy,
-not load-bearing.
 
 Every change they then make writes an `audit_events` row **in the same
 transaction as the change**, which is what makes "every staff action appears in
@@ -149,8 +181,12 @@ ADMIN_DEV_STAFF_EMAIL=staff@mydivelog.local
 ```
 
 ```bash
-pnpm staff staff@mydivelog.local     # creates the account and sets is_staff
+pnpm staff staff@mydivelog.local --create
 ```
+
+`--create` makes the account as well as setting the flag. Locally that is what
+you want; the alternative is "sign in through the web app first", which is
+three steps to make the panel work on a fresh clone.
 
 Named in the environment rather than read from a header on purpose. A
 development bypass that takes an identity from the request is a production
