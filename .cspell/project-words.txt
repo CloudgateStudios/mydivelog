@@ -68,6 +68,7 @@ freedive
 generatable
 hostable       # as in self-hostable
 hostnames
+itest         # the .itest.ts extension: an integration test
 journaled
 leadquantity
 lighthouseci
