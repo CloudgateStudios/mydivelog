@@ -4,33 +4,33 @@ Lean at launch, container-based so nothing here is a one-way door.
 
 ## Providers
 
-| Concern         | Provider                                | Why                                                                                      |
-| --------------- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Compute         | **Fly.io**                              | Containers, cheap small instances, easy multi-process apps, global if ever needed        |
-| Database        | **Neon** (managed Postgres)             | Branching gives real per-PR preview databases; PITR included; scale-to-zero for non-prod |
-| Object storage  | **Cloudflare R2**                       | S3-compatible, **zero egress fees** — decisive once photos and profile downloads exist   |
-| DNS / CDN / WAF | **Cloudflare**                          | Free tier covers everything needed at launch                                             |
-| Email           | **Resend**                              | Transactional only                                                                       |
-| Payments        | **Stripe**                              | Checkout + Customer Portal, hosted                                                       |
-| Errors          | **Sentry**                              | API, web, admin, Flutter in one org                                                      |
-| Logs / metrics  | **Axiom** or Grafana Cloud free tier    | OpenTelemetry from the API                                                               |
-| Uptime          | **Better Stack**                        | External probes + status page                                                            |
-| Secrets         | Fly secrets, sourced from **1Password** | No secrets in the repo, ever                                                             |
-| CI/CD           | **GitHub Actions**                      |                                                                                          |
+| Concern | Provider | Why |
+|---|---|---|
+| Compute | **Fly.io** | Containers, cheap small instances, easy multi-process apps, global if ever needed |
+| Database | **Neon** (managed Postgres) | Branching gives real per-PR preview databases; PITR included; scale-to-zero for non-prod |
+| Object storage | **Cloudflare R2** | S3-compatible, **zero egress fees** — decisive once photos and profile downloads exist |
+| DNS / CDN / WAF | **Cloudflare** | Free tier covers everything needed at launch |
+| Email | **Resend** | Transactional only |
+| Payments | **Stripe** | Checkout + Customer Portal, hosted |
+| Errors | **Sentry** | API, web, admin, Flutter in one org |
+| Logs / metrics | **Axiom** or Grafana Cloud free tier | OpenTelemetry from the API |
+| Uptime | **Better Stack** | External probes + status page |
+| Secrets | Fly secrets, sourced from **1Password** | No secrets in the repo, ever |
+| CI/CD | **GitHub Actions** | |
 
 Everything above is replaceable. The two with real switching cost are Postgres (data
 gravity) and Stripe (billing history) — both chosen as boring, portable, standards-based.
 
 ## Domains
 
-| Host                                            | Serves                                                            |
-| ----------------------------------------------- | ----------------------------------------------------------------- |
-| `mydivelog.app`                                 | Web — marketing + authenticated portal                            |
-| `www.mydivelog.app`                             | 301 → apex                                                        |
-| `api.mydivelog.app`                             | API                                                               |
-| `admin.mydivelog.app`                           | Admin panel (Cloudflare Access, IP-restricted)                    |
-| `cdn.mydivelog.app`                             | R2 public bucket for avatars/site photos                          |
-| `status.mydivelog.app`                          | Better Stack status page                                          |
+| Host | Serves |
+|---|---|
+| `mydivelog.app` | Web — marketing + authenticated portal |
+| `www.mydivelog.app` | 301 → apex |
+| `api.mydivelog.app` | API |
+| `admin.mydivelog.app` | Admin panel (Cloudflare Access, IP-restricted) |
+| `cdn.mydivelog.app` | R2 public bucket for avatars/site photos |
+| `status.mydivelog.app` | Better Stack status page |
 | `dev.mydivelog.app`, `api-dev.…`, `admin-dev.…` | Dev — single-level names; Universal SSL covers one wildcard level |
 
 Cloudflare proxied, TLS 1.2+, HSTS with preload once stable.
@@ -40,12 +40,12 @@ lockable at the edge.
 
 ## Environments
 
-| Env         | Compute                           | Database                            | Deploys                     | Purpose                                      |
-| ----------- | --------------------------------- | ----------------------------------- | --------------------------- | -------------------------------------------- |
-| **local**   | docker compose                    | Postgres + MinIO in Docker          | —                           | Everything runs offline, seeded              |
-| **preview** | Fly per-PR app                    | Neon branch from **dev**            | Per PR                      | Every PR gets a real URL and a real database |
-| **dev**     | Fly, scales to zero               | Neon project `mydivelog-dev`        | Automatic on push to `main` | Integration testing, demos                   |
-| **prod**    | Fly, 1 API + 1 web always running | Neon project `mydivelog-prod`, PITR | Manual, with approval       | Real users                                   |
+| Env | Compute | Database | Deploys | Purpose |
+|---|---|---|---|---|
+| **local** | docker compose | Postgres + MinIO in Docker | — | Everything runs offline, seeded |
+| **preview** | Fly per-PR app | Neon branch from **dev** | Per PR | Every PR gets a real URL and a real database |
+| **dev** | Fly, scales to zero | Neon project `mydivelog-dev` | Automatic on push to `main` | Integration testing, demos |
+| **prod** | Fly, 1 API + 1 web always running | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
 
 Two deployed environments, not three. A separate staging tier only earns its keep once
 there are enough people that a shared dev environment becomes contended; until then it is
@@ -56,7 +56,7 @@ best feature and the obvious tool to reach for here, and it is the wrong one for
 boundary: a dev branch cut from prod is a full copy of real divers' logs — sites,
 timestamps, notes — in an environment with weaker access control. Separate projects make
 that mistake impossible rather than merely discouraged. Branching still earns its place
-_inside_ the dev project, where per-PR preview databases branch from data that is entirely
+*inside* the dev project, where per-PR preview databases branch from data that is entirely
 synthetic.
 
 **dev scales to zero.** Idle cost is roughly nothing, which is what makes a permanent dev
@@ -127,17 +127,16 @@ takes an advisory lock and runs DDL, and neither survives Neon's pooler.
 
 **Expand/contract, always.** Deploys are rolling, so old and new code run simultaneously.
 
-1. _Expand_ — add the column/table, nullable, no constraint. Deploy.
-2. _Backfill_ — a job, batched, resumable, monitored.
-3. _Use_ — code writes and reads the new shape. Deploy.
-4. _Contract_ — add constraints, drop the old column. A **separate later release.**
+1. *Expand* — add the column/table, nullable, no constraint. Deploy.
+2. *Backfill* — a job, batched, resumable, monitored.
+3. *Use* — code writes and reads the new shape. Deploy.
+4. *Contract* — add constraints, drop the old column. A **separate later release.**
 
 A migration that would lock `dives` is rejected in review. Index creation is `CONCURRENTLY`.
 Every migration is tested against a dev database restored from a production snapshot
 before it reaches production.
 
 ### Flutter releases
-
 Separate cadence from the server. Fastlane → TestFlight / Play internal track. Desktop:
 signed and notarized macOS build, MSIX for Windows, distributed from the site.
 
@@ -151,13 +150,13 @@ genuinely required.
 Dive logs are irreplaceable. A diver's 200 dives cannot be regenerated from anywhere. This
 section is a product feature, not an ops chore.
 
-| Layer             | Mechanism                                 | Retention                |
-| ----------------- | ----------------------------------------- | ------------------------ |
-| Postgres PITR     | Neon continuous                           | 7 days (30 on paid tier) |
-| Logical dump      | Nightly `pg_dump` → R2, encrypted         | 30 daily, 12 monthly     |
-| Off-provider copy | Weekly sync to a second provider's bucket | 12 weeks                 |
-| Object storage    | R2 versioning + lifecycle                 | 90 days on delete        |
-| User-level        | Self-serve full export, any time, free    | —                        |
+| Layer | Mechanism | Retention |
+|---|---|---|
+| Postgres PITR | Neon continuous | 7 days (30 on paid tier) |
+| Logical dump | Nightly `pg_dump` → R2, encrypted | 30 daily, 12 monthly |
+| Off-provider copy | Weekly sync to a second provider's bucket | 12 weeks |
+| Object storage | R2 versioning + lifecycle | 90 days on delete |
+| User-level | Self-serve full export, any time, free | — |
 
 **Targets:** RPO ≤ 5 minutes, RTO ≤ 4 hours.
 
@@ -179,17 +178,17 @@ scoring, commit transaction, profile blob upload.
 
 **Metrics and the alerts that page:**
 
-| Alert                    | Threshold                          |
-| ------------------------ | ---------------------------------- |
-| API 5xx rate             | > 1% over 5 min                    |
-| p95 latency              | > 1s over 10 min                   |
-| Job queue depth          | > 500 or oldest job > 15 min       |
-| Import failure rate      | > 10% over 1 hour                  |
-| DB connection saturation | > 80%                              |
-| Disk / storage growth    | anomalous daily delta              |
-| Failed logins            | spike detection                    |
-| **Backup job failure**   | any occurrence — pages immediately |
-| Cert expiry              | < 14 days                          |
+| Alert | Threshold |
+|---|---|
+| API 5xx rate | > 1% over 5 min |
+| p95 latency | > 1s over 10 min |
+| Job queue depth | > 500 or oldest job > 15 min |
+| Import failure rate | > 10% over 1 hour |
+| DB connection saturation | > 80% |
+| Disk / storage growth | anomalous daily delta |
+| Failed logins | spike detection |
+| **Backup job failure** | any occurrence — pages immediately |
+| Cert expiry | < 14 days |
 
 Business metrics on a dashboard, not paging: signups, imports started vs committed
 (**activation**), dives per user, revert rate.
@@ -212,13 +211,13 @@ Written before launch, in `docs/runbooks/`:
 
 ## Scaling Steps
 
-| Signal                    | Action                                                            |
-| ------------------------- | ----------------------------------------------------------------- |
-| API CPU > 60% sustained   | Add machines (stateless — no coordination)                        |
-| Import backlog persistent | Add worker machines; consider per-format concurrency limits       |
-| DB CPU high on reads      | Neon read replica; route stats and admin queries to it            |
-| DB write contention       | Partition `dives` and `change_log` by `user_id`                   |
-| Storage egress cost       | Already zero on R2                                                |
+| Signal | Action |
+|---|---|
+| API CPU > 60% sustained | Add machines (stateless — no coordination) |
+| Import backlog persistent | Add worker machines; consider per-format concurrency limits |
+| DB CPU high on reads | Neon read replica; route stats and admin queries to it |
+| DB write contention | Partition `dives` and `change_log` by `user_id` |
+| Storage egress cost | Already zero on R2 |
 | Global latency complaints | Fly regions for API reads; DB stays primary-region until it hurts |
 
 None of these require an architecture change, which is the point of the choices in
@@ -258,6 +257,6 @@ implement explicit wakeup and job-aware lifetime handling: database queue activi
 alone neither wakes the machine nor prevents suspension during background work.
 Do not poll sleeping services with external uptime monitors.
 
-Keep dev admin's `API_URL` Fly secret pointed at the public HTTPS API endpoint
+Keep dev admin’s `API_URL` Fly secret pointed at the public HTTPS API endpoint
 (or a configured private Flycast endpoint) so requests pass through Fly Proxy
 and wake the API. Direct `.internal` connections cannot provide automatic wakeup.
