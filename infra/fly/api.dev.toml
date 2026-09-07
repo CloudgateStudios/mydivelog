@@ -2,7 +2,7 @@
 # as build context:
 #
 #   fly deploy . --config infra/fly/api.dev.toml \
-#     --dockerfile apps/api/Dockerfile --app mydivelog-api-dev
+#     --dockerfile apps/api/Dockerfile --ha=false --app mydivelog-api-dev
 
 app = "mydivelog-api-dev"
 primary_region = "ord"

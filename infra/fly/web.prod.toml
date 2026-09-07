@@ -2,7 +2,7 @@
 # as build context:
 #
 #   fly deploy . --config infra/fly/web.prod.toml \
-#     --dockerfile apps/web/Dockerfile --app mydivelog-web-prod
+#     --dockerfile apps/web/Dockerfile --ha=false --app mydivelog-web-prod
 
 app = "mydivelog-web-prod"
 primary_region = "ord"

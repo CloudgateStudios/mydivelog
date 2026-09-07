@@ -37,6 +37,7 @@ Deepblu
 Dift
 Diviac
 Dockerfiles   # cspell knows "Dockerfile" but not the plural
+Flycast
 Grotesk
 HSTS
 Kralendijk

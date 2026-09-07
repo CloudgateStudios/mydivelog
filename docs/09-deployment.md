@@ -45,7 +45,7 @@ lockable at the edge.
 | **local** | docker compose | Postgres + MinIO in Docker | — | Everything runs offline, seeded |
 | **preview** | Fly per-PR app | Neon branch from **dev** | Per PR | Every PR gets a real URL and a real database |
 | **dev** | Fly, scales to zero | Neon project `mydivelog-dev` | Automatic on push to `main` | Integration testing, demos |
-| **prod** | Fly, ≥2 API machines | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
+| **prod** | Fly, 1 API + 1 web always running | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
 
 Two deployed environments, not three. A separate staging tier only earns its keep once
 there are enough people that a shared dev environment becomes contended; until then it is
@@ -60,8 +60,9 @@ that mistake impossible rather than merely discouraged. Branching still earns it
 synthetic.
 
 **dev scales to zero.** Idle cost is roughly nothing, which is what makes a permanent dev
-environment worth having at this stage. Prod never scales to zero — a cold start on a real
-request is not acceptable.
+environment worth having at this stage. Prod API and web stay running; admin and worker suspend when idle. Each service
+has one machine per environment. Single-machine production accepts interruptions
+during restarts, deployments, or host failures.
 
 Setup is documented step by step in
 [the environment setup runbook](./runbooks/environment-setup.md).
@@ -239,3 +240,23 @@ None of these require an architecture change, which is the point of the choices 
 - [ ] Load test: 100 concurrent imports of a 200-dive file
 - [ ] `docs/runbooks/` complete
 - [ ] Rollback rehearsed at least once
+
+## Minimal machine footprint
+
+Deploy with `--ha=false` (also for manual deployments); this prevents default
+redundant machines but does not remove existing machines. Apply `fly scale count 1`
+per app when reducing an existing deployment. Keep one machine for each of API,
+web, admin, and worker in each environment. Only prod API and web stay running.
+
+Workers use private Flycast HTTP with `force_https = false`, a private IPv6,
+and no public IPs. For an existing app, allocate its address once with
+`fly ips allocate-v6 --private --app mydivelog-worker-<env>`. Deploy workers with `--flycast --no-public-ips`. A request to
+`http://mydivelog-worker-<env>.flycast/health` from the private network wakes them.
+The worker currently only serves health checks. Before adding queue consumers,
+implement explicit startup and job-aware lifetime handling: database queue activity
+alone neither wakes the machine nor prevents suspension during background work.
+Do not poll sleeping services with external uptime monitors.
+
+Keep dev admin’s `API_URL` Fly secret pointed at the public HTTPS API endpoint
+(or a configured private Flycast endpoint) so requests pass through Fly Proxy
+and wake the API. Direct `.internal` connections cannot automatically wake the API.

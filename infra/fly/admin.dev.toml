@@ -2,7 +2,7 @@
 # as build context:
 #
 #   fly deploy . --config infra/fly/admin.dev.toml \
-#     --dockerfile apps/admin/Dockerfile --app mydivelog-admin-dev
+#     --dockerfile apps/admin/Dockerfile --ha=false --app mydivelog-admin-dev
 
 app = "mydivelog-admin-dev"
 primary_region = "ord"
@@ -17,9 +17,9 @@ primary_region = "ord"
 # the address of an internal service is not something to publish just because
 # it is convenient to have it in version control.
 #
-# Keeping it a secret also means the value can move — public hostname today,
-# `http://mydivelog-api-dev.internal:8080` over Fly's private network if that
-# round trip is ever worth removing — without a deploy or a commit.
+# Use the public HTTPS API endpoint (or a configured private Flycast endpoint)
+# so requests pass through Fly Proxy and wake the suspended API. Direct
+# `.internal` connections bypass automatic wakeup.
 #
 #   fly secrets set --app mydivelog-admin-dev API_URL=...
 #

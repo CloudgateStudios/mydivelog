@@ -96,10 +96,17 @@ jobs:
           fi
           # Build context is the repository root: the Dockerfiles need the whole
           # workspace to resolve pnpm workspace dependencies.
+          # Workers are reachable only through private Flycast.
+          extra_flags=()
+          if [ "$SERVICE" = "worker" ]; then
+            extra_flags+=(--flycast --no-public-ips)
+          fi
           flyctl deploy . \
             --config "infra/fly/${SERVICE}.${ENVIRONMENT}.toml" \
             --dockerfile "apps/${SERVICE}/Dockerfile" \
             --app "mydivelog-${SERVICE}-${ENVIRONMENT}" \
+            --ha=false \
+            "${extra_flags[@]}" \
             --strategy rolling \
             --wait-timeout 5m
 
