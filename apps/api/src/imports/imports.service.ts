@@ -16,8 +16,9 @@ import {
   type UserScope,
 } from '@mydivelog/db';
 import {
-  detectFormat,
+  detectUpload,
   parseCsv,
+  parseXlsx,
   parseMydivelog,
   parseTabular,
   parseUddf,
@@ -90,7 +91,9 @@ export class ImportsService {
     });
     if (existing) return existing.id;
 
-    const detection = detectFormat(text, fileName);
+    // From the bytes: an .xlsx is a ZIP archive and has to be recognised
+    // before anything reads it as text.
+    const detection = detectUpload(bytes, fileName);
     const format = override ?? detection.format;
     const batchId = randomUUID();
 
@@ -118,7 +121,7 @@ export class ImportsService {
     });
 
     try {
-      await this.parseAndMatch(scope, batchId, format, text);
+      await this.parseAndMatch(scope, batchId, format, text, bytes);
     } catch (err) {
       // A file that cannot be parsed fails its batch, not the request. The
       // diver gets a review screen that says what went wrong rather than a 500.
@@ -138,8 +141,9 @@ export class ImportsService {
     batchId: string,
     format: DetectedFormat,
     text: string,
+    bytes: Uint8Array,
   ): Promise<void> {
-    const parsed = this.parse(format, text);
+    const parsed = this.parse(format, text, bytes);
     if (parsed.observations.length === 0) {
       await this.prisma.importBatch.update({
         where: { id: batchId },
@@ -197,6 +201,7 @@ export class ImportsService {
   private parse(
     format: DetectedFormat,
     text: string,
+    bytes: Uint8Array,
   ): { observations: DiveObservation[]; fileIssues: { message: string }[] } {
     switch (format) {
       case 'uddf':
@@ -208,6 +213,13 @@ export class ImportsService {
         return parseMydivelog(text);
       case 'spreadsheet': {
         const table = parseCsv(text);
+        const result = parseTabular(table.headers, table.rows);
+        return { observations: result.observations, fileIssues: result.fileIssues };
+      }
+      // The bytes, not the text. A workbook is a ZIP archive, and the decoded
+      // string this method is otherwise given is binary noise.
+      case 'xlsx': {
+        const table = parseXlsx(bytes);
         const result = parseTabular(table.headers, table.rows);
         return { observations: result.observations, fileIssues: result.fileIssues };
       }

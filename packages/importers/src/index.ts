@@ -2,6 +2,8 @@ export * from './uddf/index.ts';
 export * from './uddf/datetime.ts';
 export * from './tabular/index.ts';
 export * from './tabular/csv.ts';
+export * from './tabular/xlsx.ts';
+export * from './tabular/zip.ts';
 export * from './tabular/mapping.ts';
 export * from './pipeline.ts';
 export * from './snapshot.ts';

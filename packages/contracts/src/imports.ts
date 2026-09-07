@@ -26,6 +26,10 @@ export const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 export const ImportSourceKind = z.enum([
   'uddf',
   'spreadsheet',
+  // Kept distinct from `spreadsheet` rather than folded into it. `detectedFormat`
+  // exists to tell a diver what their file was read as, and "spreadsheet" for an
+  // Excel workbook is vague enough to be unhelpful when a parse goes wrong.
+  'xlsx',
   'mydivelog',
   'subsurface',
   'unknown',
