@@ -1,11 +1,12 @@
 # Deploy from the repository root:
 #
 #   fly deploy . --config infra/fly/worker.dev.toml \
-#     --dockerfile apps/worker/Dockerfile --app mydivelog-worker-dev
+#     --dockerfile apps/worker/Dockerfile --ha=false --flycast --no-public-ips --app mydivelog-worker-dev
 #
-# The worker has no [http_service] on purpose: it consumes jobs and must not be
-# publicly routable. A top-level [checks] block health-checks the machine
-# without publishing a port to the internet.
+# Private Flycast service: allocate a private IPv6 and no public IPs.
+# The current worker only serves health checks. Future queue consumers must
+# explicitly wake it and keep requests active while jobs run; queue activity
+# alone does not wake a suspended machine or prevent proxy suspension.
 
 app = "mydivelog-worker-dev"
 primary_region = "ord"
@@ -19,11 +20,16 @@ primary_region = "ord"
   cpu_kind = "shared"
   cpus = 1
 
-[checks]
-  [checks.health]
-    type = "http"
-    port = 8080
+[http_service]
+  internal_port = 8080
+  force_https = false
+  auto_start_machines = true
+  auto_stop_machines = "suspend"
+  min_machines_running = 0
+
+  [[http_service.checks]]
     path = "/health"
+    method = "GET"
     interval = "15s"
     timeout = "5s"
     grace_period = "10s"

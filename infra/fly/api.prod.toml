@@ -2,7 +2,7 @@
 # as build context:
 #
 #   fly deploy . --config infra/fly/api.prod.toml \
-#     --dockerfile apps/api/Dockerfile --app mydivelog-api-prod
+#     --dockerfile apps/api/Dockerfile --ha=false --app mydivelog-api-prod
 
 app = "mydivelog-api-prod"
 primary_region = "ord"
@@ -42,7 +42,7 @@ primary_region = "ord"
   force_https = true
   auto_start_machines = true
   auto_stop_machines = "off"
-  min_machines_running = 2
+  min_machines_running = 1
 
   [[http_service.checks]]
     path = "/health"
