@@ -253,10 +253,10 @@ and no public IPs. For an existing app, allocate its address once with
 `fly ips allocate-v6 --private --app mydivelog-worker-<env>`. Deploy workers with `--flycast --no-public-ips`. A request to
 `http://mydivelog-worker-<env>.flycast/health` from the private network wakes them.
 The worker currently only serves health checks. Before adding queue consumers,
-implement explicit wakeup and job-aware lifetime handling: database queue activity
+implement explicit startup and job-aware lifetime handling: database queue activity
 alone neither wakes the machine nor prevents suspension during background work.
 Do not poll sleeping services with external uptime monitors.
 
 Keep dev admin’s `API_URL` Fly secret pointed at the public HTTPS API endpoint
 (or a configured private Flycast endpoint) so requests pass through Fly Proxy
-and wake the API. Direct `.internal` connections cannot provide automatic wakeup.
+and wake the API. Direct `.internal` connections cannot automatically wake the API.
