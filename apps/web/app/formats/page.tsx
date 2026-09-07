@@ -16,7 +16,7 @@ import { MarketingShell } from '../../components/MarketingShell';
 export const metadata = {
   title: 'Supported formats — MyDiveLog',
   description:
-    'UDDF from any dive computer, CSV and spreadsheet exports in any column layout, and ' +
+    'UDDF from any dive computer, Excel workbooks and CSV exports in any column layout, and ' +
     'MyDiveLog’s own JSON. What imports today, what does not yet, and what to do about it.',
 };
 
@@ -37,7 +37,16 @@ const IMPORT: Row[] = [
       'mixes, temperatures and coordinates all come across.',
   },
   {
-    name: 'CSV and spreadsheet exports',
+    name: 'Excel workbooks',
+    detail: '.xlsx',
+    status: 'yes',
+    note:
+      'Straight from Excel, Google Sheets or Numbers — no saving as CSV first. Formulas are read ' +
+      'as the values they last worked out, and if the workbook has several sheets the one with ' +
+      'the column headings is the one imported.',
+  },
+  {
+    name: 'CSV and other delimited exports',
     detail: '.csv, tab- or semicolon-separated',
     status: 'yes',
     note:
@@ -112,7 +121,9 @@ export default async function Formats() {
         <h1>What MyDiveLog can read</h1>
         <p className="lede">
           If your format is not listed, the spreadsheet importer usually still gets it in — most
-          tools can write a CSV, and MyDiveLog does not care what the columns are called.
+          tools can write an Excel file or a CSV, and MyDiveLog does not care what the columns are
+          called. Starting from nothing, there is a <a href="/import">blank template</a> with the
+          columns already named.
         </p>
       </section>
 

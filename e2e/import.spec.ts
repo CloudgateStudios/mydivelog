@@ -119,3 +119,57 @@ test('shows that a commit is running, and locks the button while it is', async (
   await expect(button).toContainText(/Adding \d+ dives/);
   await expect(button).toHaveAttribute('aria-busy', 'true');
 });
+
+/**
+ * The template a diver with nothing to import starts from.
+ *
+ * The round trip is the whole feature: if what this hands out does not import
+ * cleanly, it is worse than offering nothing. `template.test.ts` proves the
+ * generator; this proves the button, the download, and the file arriving back
+ * through the real upload path.
+ */
+test.describe('the import template', () => {
+  test.beforeEach(async ({ context }) => {
+    await signIn(context, 'demo@mydivelog.invalid');
+  });
+
+  for (const [label, extension] of [
+    ['Excel template', 'xlsx'],
+    ['CSV template', 'csv'],
+  ] as const) {
+    test(`${label} downloads and imports back with nothing unrecognised`, async ({ page }) => {
+      await page.goto('/import');
+
+      const download = await Promise.race([
+        page.waitForEvent('download'),
+        page
+          .getByRole('link', { name: label })
+          .click()
+          .then(() => page.waitForEvent('download')),
+      ]);
+      expect(download.suggestedFilename()).toMatch(new RegExp(`\\.${extension}$`));
+
+      const saved = await download.path();
+      expect(saved).toBeTruthy();
+
+      // Straight back in through the drop zone, the way someone who filled it
+      // in would. Reaching review at all means every column was understood.
+      await page.goto('/import');
+      await page.setInputFiles('#file', saved as string);
+
+      await expect(page).toHaveURL(/\/import\/[0-9a-f-]{36}/, { timeout: 30_000 });
+      await expect(page.locator('main')).not.toContainText('not in a format');
+      // Reaching a review at all means every column was understood. The one
+      // row is the example, and it must arrive as something to add rather than
+      // as a conflict with a dive the diver already has — which is why nothing
+      // in it names a real place.
+      await expect(page.locator('main')).toContainText('Example Reef');
+      await expect(page.locator('main')).not.toContainText('needs your decision');
+    });
+  }
+
+  test('says which units it comes in, because that is a preference', async ({ page }) => {
+    await page.goto('/import');
+    await expect(page.getByText(/metres and Celsius|feet and Fahrenheit/)).toBeVisible();
+  });
+});

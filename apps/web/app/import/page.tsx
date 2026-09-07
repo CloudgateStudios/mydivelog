@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
 import { currentUser } from '../../lib/api';
 import { listImports, uploadImport } from '../../lib/imports';
+import { withUnits } from '../../lib/units';
 import { AppHeader } from '../../components/AppHeader';
 import { DropZone } from '../../components/DropZone';
 
@@ -17,6 +18,8 @@ export default async function Import({
 
   const { error } = await searchParams;
   const { data: history } = await listImports().catch(() => ({ data: [] }));
+  // The template arrives in the diver's own units, so the page has to say which.
+  const u = await withUnits();
 
   async function upload(formData: FormData): Promise<void> {
     'use server';
@@ -54,10 +57,39 @@ export default async function Import({
         <DropZone action={upload} />
 
         <p className="muted small">
-          CSV and spreadsheets, UDDF from most dive computers, and MyDiveLog exports, up to{' '}
-          {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB. If a file is not recognised, the import
-          says so rather than guessing. <a href="/formats">What works, exactly.</a>
+          Excel workbooks, CSV and other spreadsheets, UDDF from most dive computers, and MyDiveLog
+          exports, up to {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB. If a file is not
+          recognised, the import says so rather than guessing.{' '}
+          <a href="/formats">What works, exactly.</a>
         </p>
+
+        {/*
+          Offered after the drop zone, not before it. Most divers arrive with a
+          file already — the template is for the ones who do not, and putting
+          it first would suggest their own spreadsheet is not welcome, which is
+          the opposite of what this importer is for.
+        */}
+        <section className="panel-note">
+          <h2 className="small-heading">Nothing to import yet?</h2>
+          <p className="muted small">
+            Start from a blank sheet with the columns already named. Fill it in, drop it back here,
+            and every column will be recognised. It comes in{' '}
+            {u.prefs.unitSystem === 'imperial' ? 'feet and Fahrenheit' : 'metres and Celsius'},
+            which you can change in <a href="/settings">settings</a>.
+          </p>
+          <p className="template-links">
+            <a className="button primary" href="/import/template?format=xlsx" download>
+              Excel template
+            </a>
+            <a className="button" href="/import/template?format=csv" download>
+              CSV template
+            </a>
+          </p>
+          <p className="muted small">
+            One example row shows the date and time formats. Delete it, or skip it on the review
+            screen.
+          </p>
+        </section>
 
         {history.length > 0 && (
           <>

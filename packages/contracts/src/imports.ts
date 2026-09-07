@@ -26,10 +26,30 @@ export const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 export const ImportSourceKind = z.enum([
   'uddf',
   'spreadsheet',
+  // Kept distinct from `spreadsheet` rather than folded into it. `detectedFormat`
+  // exists to tell a diver what their file was read as, and "spreadsheet" for an
+  // Excel workbook is vague enough to be unhelpful when a parse goes wrong.
+  'xlsx',
   'mydivelog',
   'subsurface',
   'unknown',
 ]);
+
+/**
+ * The blank spreadsheet a diver with nothing to import starts from.
+ *
+ * Served by the API rather than built in each client, because it is generated
+ * from the importer's own column list — the same list the parser maps against.
+ * A template assembled anywhere else drifts the first time a column is
+ * renamed, and then the one file this product hands people is the one file it
+ * cannot read.
+ */
+export const TemplateQuery = z.object({
+  format: z.enum(['xlsx', 'csv']).default('xlsx'),
+  /** Omitted, the diver's own preference is used. */
+  units: z.enum(['metric', 'imperial']).optional(),
+});
+export type TemplateQuery = z.infer<typeof TemplateQuery>;
 
 export const ImportStatus = z.enum([
   'uploaded',

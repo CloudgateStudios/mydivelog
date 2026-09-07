@@ -234,6 +234,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 const SOURCE_NAMES: Record<string, string> = {
   uddf: 'your dive computer',
   spreadsheet: 'your spreadsheet',
+  xlsx: 'your spreadsheet',
   subsurface: 'Subsurface',
   mydivelog: 'a MyDiveLog export',
   manual: 'you, by hand',

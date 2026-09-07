@@ -1,3 +1,5 @@
+import { isXlsx } from './tabular/xlsx.ts';
+
 /**
  * Format detection.
  *
@@ -12,6 +14,7 @@ export const DETECTED_FORMATS = [
   'mydivelog',
   'subsurface',
   'spreadsheet',
+  'xlsx',
   'unknown',
 ] as const;
 export type DetectedFormat = (typeof DETECTED_FORMATS)[number];
@@ -22,8 +25,35 @@ export type Detection = {
   reason: string;
 };
 
+/**
+ * Detection from the raw upload.
+ *
+ * An .xlsx is a ZIP archive, so it has to be recognised before anything tries
+ * to read it as text — decoded as UTF-8 it is binary noise that matches
+ * nothing, which is exactly what it did: every Excel workbook was reported as
+ * "not a format MyDiveLog can read yet" while its contents were perfectly
+ * ordinary. Everything else is text, so this checks the one binary format and
+ * then hands over.
+ */
+export function detectUpload(bytes: Uint8Array, fileName?: string): Detection {
+  if (isXlsx(bytes)) {
+    return { format: 'xlsx', reason: 'The file is an Excel workbook.' };
+  }
+  return detectFormat(new TextDecoder().decode(bytes), fileName);
+}
+
 export function detectFormat(text: string, fileName?: string): Detection {
   const head = text.slice(0, 4096);
+
+  // A workbook that reached the text path — a caller that decoded before
+  // asking. Naming it is better than reporting "unknown" for a file we can
+  // in fact read, since the fix is to call `detectUpload` with the bytes.
+  if (head.startsWith('PK\u0003\u0004')) {
+    return {
+      format: 'xlsx',
+      reason: 'The file is a ZIP archive, which is what an Excel workbook is.',
+    };
+  }
 
   if (/<uddf[\s>]/i.test(head)) {
     return { format: 'uddf', reason: 'The document has a <uddf> root element.' };
@@ -47,6 +77,12 @@ export function detectFormat(text: string, fileName?: string): Detection {
   }
 
   const extension = fileName?.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+  if (extension === 'xlsx') {
+    return {
+      format: 'xlsx',
+      reason: 'Nothing in the content identified it; falling back to the .xlsx extension.',
+    };
+  }
   if (extension === 'uddf' || extension === 'xml') {
     return {
       format: 'uddf',

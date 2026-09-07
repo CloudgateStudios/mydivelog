@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createPrismaClient, userScope, type UserScope } from '@mydivelog/db';
+import { templateCsv, templateXlsx } from '@mydivelog/importers';
 import { ImportsService } from './imports.service.ts';
 import { ExportsService } from './exports.service.ts';
 import { StorageService } from '../storage/storage.service.ts';
@@ -95,6 +96,73 @@ describe('importing the real spreadsheet', () => {
 
     expect(result.created).toHaveLength(24);
     expect(await prisma.dive.count({ where: { userId } })).toBe(24);
+  });
+});
+
+/**
+ * The same log, in the file format it actually arrives in.
+ *
+ * Every Excel workbook was refused with "This file is not in a format
+ * MyDiveLog can read yet" — detection read a decoded string, and an .xlsx is a
+ * ZIP archive, so it was binary noise that matched nothing. The mapping had
+ * always been fine; nothing could get a workbook as far as it.
+ */
+describe('importing the same log as an Excel workbook', () => {
+  it('reads it, and reaches review like any other file', async () => {
+    const batchId = await importFile('spreadsheet-sample.xlsx');
+    const batch = await imports.get(scope, batchId);
+
+    expect(batch.status).toBe('review');
+    expect(batch.sourceKind).toBe('xlsx');
+    expect(batch.rows).toHaveLength(24);
+    expect(batch.rows.every((r) => r.decision === 'create')).toBe(true);
+  });
+
+  it('produces the same logbook the CSV of those rows produces', async () => {
+    // The claim worth making: which file format the diver had changes nothing
+    // about what ends up in their logbook.
+    const fromWorkbook = await commitAll(await importFile('spreadsheet-sample.xlsx'));
+    const workbookDives = await prisma.dive.findMany({
+      where: { userId },
+      orderBy: { startTimeUtc: 'asc' },
+      select: { startTimeUtc: true, maxDepthM: true, durationS: true, diveNumber: true },
+    });
+
+    // A second diver, importing the CSV of the same rows.
+    const otherId = randomUUID();
+    const other = userScope(otherId);
+    await prisma.user.create({
+      data: { id: otherId, email: `itest-${otherId}@mydivelog.invalid` },
+    });
+    await commitAll(
+      await imports.create(other, 'spreadsheet-sample.csv', bytes('spreadsheet-sample.csv')),
+      other,
+    );
+    const csvDives = await prisma.dive.findMany({
+      where: { userId: otherId },
+      orderBy: { startTimeUtc: 'asc' },
+      select: { startTimeUtc: true, maxDepthM: true, durationS: true, diveNumber: true },
+    });
+
+    expect(fromWorkbook.created).toHaveLength(24);
+    expect(workbookDives).toEqual(csvDives);
+  });
+
+  it('is recognised from its content, not its name', async () => {
+    // A diver who saved it as .xls, or whose browser sent no extension at all,
+    // has a file we can read either way.
+    const batchId = await imports.create(scope, 'divelog.xls', bytes('spreadsheet-sample.xlsx'));
+    expect((await imports.get(scope, batchId)).sourceKind).toBe('xlsx');
+  });
+
+  it('fails a workbook with no headings rather than importing nothing quietly', async () => {
+    // A .docx renamed, or a workbook of notes. It has to say which.
+    const notAWorkbook = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const batchId = await imports.create(scope, 'broken.xlsx', notAWorkbook);
+    const batch = await imports.get(scope, batchId);
+    expect(batch.status).toBe('failed');
+    expect(batch.error).toMatch(/workbook/i);
+    expect(batch.error).not.toContain('Exception');
   });
 });
 
@@ -279,6 +347,41 @@ describe('unreadable files', () => {
       new TextEncoder().encode(full.slice(0, full.length / 2)),
     );
     expect((await imports.get(scope, batchId)).status).toBe('failed');
+  });
+});
+
+/**
+ * The blank sheet a diver with nothing to import starts from.
+ *
+ * The generator has its own tests; these are about the endpoint — that it
+ * follows the diver's units, that "template" is not read as a batch id, and
+ * above all that what it hands out comes back in.
+ */
+describe('the import template', () => {
+  it('comes back in, with every column recognised', async () => {
+    for (const format of ['xlsx', 'csv'] as const) {
+      const file = format === 'csv' ? templateCsv('metric') : templateXlsx('metric');
+      const bytes = typeof file === 'string' ? new TextEncoder().encode(file) : file;
+
+      const batchId = await imports.create(scope, `template.${format}`, bytes);
+      const batch = await imports.get(scope, batchId);
+
+      expect(batch.status, format).toBe('review');
+      expect(batch.rows, format).toHaveLength(1);
+      // Reaching a proposal means every heading mapped and the row parsed.
+      expect(batch.rows[0]?.decision, format).toBe('create');
+    }
+  });
+
+  it('names nothing a diver could already have', async () => {
+    // A plausible site on a plausible date is one the matcher will offer to
+    // merge with a real dive, turning a blank template into a conflict to
+    // resolve. It did, the first time this was tested end to end.
+    await commitAll(await importFile('spreadsheet-sample.csv'));
+
+    const batchId = await imports.create(scope, 'template.xlsx', templateXlsx('metric'));
+    const batch = await imports.get(scope, batchId);
+    expect(batch.rows[0]?.decision).toBe('create');
   });
 });
 
