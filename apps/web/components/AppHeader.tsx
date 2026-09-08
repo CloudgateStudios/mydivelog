@@ -1,6 +1,7 @@
-import { clearSession } from '../lib/session';
-import { Wordmark } from './Wordmark';
 import { redirect } from 'next/navigation';
+import { clearSession } from '../lib/session';
+import { AccountMenu } from './AccountMenu';
+import { Wordmark } from './Wordmark';
 
 export function AppHeader({ user }: { user: { email: string; displayName: string | null } }) {
   async function signOut(): Promise<void> {
@@ -23,14 +24,10 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
           <a href="/gear">Gear</a>
           <a href="/stats">Stats</a>
           <a href="/import">Import</a>
-          <a href="/settings">Settings</a>
         </nav>
-        <span className="muted">{user.displayName ?? user.email}</span>
-        <form action={signOut} style={{ marginLeft: 'auto' }}>
-          <button className="link" type="submit">
-            Sign out
-          </button>
-        </form>
+        {/* Settings and sign out live in here now, which is where a person
+            looks for them: under their own name, at the end of the bar. */}
+        <AccountMenu name={user.displayName ?? user.email} signOut={signOut} />
       </div>
     </header>
   );
