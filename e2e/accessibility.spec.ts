@@ -292,6 +292,86 @@ test.describe('the admin panel', () => {
   });
 });
 
+/**
+ * The account menu.
+ *
+ * A disclosure rather than an ARIA menu, and it opens with no JavaScript —
+ * which is the part worth guarding, because the easy version of this feature
+ * is a click handler that leaves a keyboard user with nothing.
+ */
+test.describe('the account menu', () => {
+  test.beforeEach(async ({ context }) => {
+    await signIn(context, 'demo@mydivelog.invalid');
+  });
+
+  test('holds settings and sign out, and opens on a click', async ({ page }) => {
+    await page.goto('/logbook');
+
+    // Closed to begin with: the bar shows a name, not a menu.
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeHidden();
+
+    await page.locator('.account > summary').click();
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+  });
+
+  test('has no WCAG 2.2 AA violations while it is open', async ({ page }) => {
+    // Scanned open as well as closed. A menu that only exists after a click is
+    // a menu the rest of this suite would never look at.
+    await page.goto('/logbook');
+    await page.locator('.account > summary').click();
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
+
+    const { violations } = await scan(page).analyze();
+    expect(report(violations), report(violations)).toBe('');
+  });
+
+  test('opens from the keyboard alone', async ({ page }) => {
+    await page.goto('/logbook');
+    await page.locator('.account > summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
+
+    // And Escape puts you back where you were, rather than at the top of the
+    // document with the menu still covering the page.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeHidden();
+    await expect(page.locator('.account > summary')).toBeFocused();
+  });
+
+  test('closes when you click somewhere else', async ({ page }) => {
+    await page.goto('/logbook');
+    await page.locator('.account > summary').click();
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
+
+    await page.locator('h1').click();
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeHidden();
+  });
+
+  test('still opens with JavaScript turned off', async ({ browser }) => {
+    // The claim the whole shape of this component rests on. A `<details>`
+    // needs no script to open; only the Escape and click-away niceties do.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    await signIn(context, 'demo@mydivelog.invalid');
+    const page = await context.newPage();
+
+    await page.goto('/logbook');
+    await page.locator('.account > summary').click();
+    await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
+    await context.close();
+  });
+
+  test('signs out, which is a form and not a link', async ({ page }) => {
+    // Sign out changes state on the server, so it is a POST. A link here would
+    // be followed by every prefetcher and crawler that met it.
+    await page.goto('/logbook');
+    await page.locator('.account > summary').click();
+    await page.getByRole('button', { name: 'Sign out' }).click();
+
+    await expect(page).toHaveURL(/\/signin/);
+  });
+});
+
 test.describe('charts', () => {
   test.beforeEach(async ({ context }) => {
     await signIn(context, 'demo@mydivelog.invalid');
