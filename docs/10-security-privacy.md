@@ -31,6 +31,32 @@ near a home address reveal roughly where they live. **Everything is private by d
 sharing is always an explicit act.** Optional coordinate fuzzing (round to ~1 km) for shared
 dives.
 
+### The basemap, and what it costs
+
+The sites page draws a real map. The tiles come from OpenStreetMap, which means a diver's
+browser asks a third party for the squares of the world it is about to show — so that
+provider can tell that someone at a given IP looked at a particular stretch of coast.
+
+This was deliberately not the case until Phase 5, and the reversal was an owner's decision
+rather than a drift. What was traded away is worth naming precisely, because "it is only a
+map" is how this kind of thing usually goes unexamined:
+
+- **Given up:** the fact that a diver's rough area of interest never left this system. A
+  tile request is a bounding box, and a sequence of them is a travel pattern.
+- **Kept:** coordinates are never *sent* as data. No dive, date, site name, account or
+  identifier reaches the tile provider — the markers are drawn by the browser on top of
+  images it fetched. A provider learns "someone looked here", not "this person dived here".
+- **Stated, not assumed:** the map carries a caption saying where its tiles come from, and
+  `/legal/privacy` names the provider as a sub-processor with its own section. A privacy
+  claim made by omission was the thing worth avoiding, and it still is.
+
+The server-rendered SVG plot remains as the fallback and fetches nothing, so a diver with
+scripting off — or a slow connection — still sees their sites and still leaks nothing.
+
+Swapping providers is a policy change: it means a new sub-processor on a published page.
+`apps/web/lib/tiles.ts` is the single place the URL and the CSP allowance are decided
+together, so the two cannot disagree. See [the runbook](./runbooks/map-tiles.md).
+
 ## Authentication
 
 - **No passwords are ever stored.** Google OIDC, Apple OIDC, and email magic link.

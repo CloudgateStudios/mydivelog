@@ -1406,6 +1406,67 @@ tbody th {
   margin-bottom: 0;
 }
 
+/* --- The basemap ---------------------------------------------------------- */
+
+/*
+ * Leaflet's own stylesheet is imported by the page that uses it, so it is not
+ * on every route. What follows is only the parts that have to match this
+ * product rather than Leaflet's defaults.
+ */
+.site-map-live {
+  margin: 1.25rem 0;
+}
+.site-map-canvas {
+  height: 26rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  /* Below the sticky bar and the account menu, above the page. Leaflet's own
+     panes start at 400, so this has to sit under the header's z-index rather
+     than fight it. */
+  z-index: 0;
+}
+.site-map-live figcaption {
+  margin-top: 0.6rem;
+  max-width: 46rem;
+}
+
+/* Markers, matching the dots the SVG plot draws. */
+.site-marker {
+  fill: var(--accent);
+  fill-opacity: 0.75;
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+
+/*
+ * Leaflet paints its own chrome white. Left alone, the attribution and the
+ * zoom buttons stay white on a dark page — and the attribution is a licence
+ * condition, so it has to be readable rather than merely present.
+ */
+.site-map-canvas .leaflet-control-attribution {
+  background: var(--panel);
+  color: var(--muted);
+}
+.site-map-canvas .leaflet-control-attribution a {
+  color: var(--accent);
+}
+.site-map-canvas .leaflet-bar a {
+  background: var(--panel);
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+.site-map-canvas .leaflet-bar a:hover {
+  background: var(--shelf);
+}
+.site-map-canvas .leaflet-popup-content-wrapper,
+.site-map-canvas .leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--text);
+}
+.site-map-canvas .leaflet-container {
+  background: var(--shelf);
+}
+
 .site-map {
   margin: 0 0 1.5rem;
 }

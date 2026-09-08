@@ -1,8 +1,11 @@
+import 'leaflet/dist/leaflet.css';
 import { redirect } from 'next/navigation';
 import { buildSiteMap, formatCoordinates } from '@mydivelog/domain';
 import { apiJson, currentUser } from '../../lib/api';
 import { AppHeader } from '../../components/AppHeader';
 import { NoSiteMap, SiteMap } from '../../components/SiteMap';
+import { SiteTileMap } from '../../components/SiteTileMap';
+import { tileSource } from '../../lib/tiles';
 import { withUnits } from '../../lib/units';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +39,7 @@ export default async function Sites() {
       : [{ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, dives: s.dives }],
   );
   const map = buildSiteMap(located);
+  const tiles = tileSource();
   const unlocated = sites.filter((s) => s.latitude === null || s.longitude === null).length;
 
   return (
@@ -57,7 +61,25 @@ export default async function Sites() {
             {/* Either the plot or the reason there isn't one. Rendering
                 neither is how a diver who imported a spreadsheet — which
                 carries no coordinates — got a page that looked broken. */}
-            {map ? <SiteMap map={map} unlocated={unlocated} /> : <NoSiteMap sites={sites.length} />}
+            {/* Either the map or the reason there isn't one. Rendering
+                neither is how a diver who imported a spreadsheet — which
+                carries no coordinates — got a page that looked broken.
+
+                The SVG plot is passed through as the fallback rather than
+                deleted: it is what shows before Leaflet loads, and what a
+                reader keeps if it never does. */}
+            {map ? (
+              <SiteTileMap
+                sites={located}
+                tileUrl={tiles.url}
+                attribution={tiles.attribution}
+                maxZoom={tiles.maxZoom}
+              >
+                <SiteMap map={map} unlocated={unlocated} />
+              </SiteTileMap>
+            ) : (
+              <NoSiteMap sites={sites.length} />
+            )}
 
             <h2>Most dived</h2>
             <div className="table-scroll">

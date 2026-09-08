@@ -4,15 +4,14 @@ import { formatCoordinates } from '@mydivelog/domain';
 /**
  * Where the diver has been, plotted.
  *
- * Not a basemap, and the caption says so rather than letting anyone assume
- * otherwise. A tile server is handed the coordinates of everything it renders,
- * and docs/10-security-privacy.md names dive locations as the most sensitive
- * thing in this product — they say where someone lives and when they are away
- * from it. The app's own Content-Security-Policy would block the tiles anyway.
+ * This is the fallback now, not the whole story. `SiteTileMap` replaces it
+ * with a real basemap once Leaflet has loaded; what stays here is what a
+ * reader gets before that, if the bundle never arrives, or with scripting off.
  *
- * What this gives instead is the part a diver actually uses: which site is
- * where relative to the others, and the exact coordinates to paste into
- * whatever chart or map they already trust.
+ * It draws the diver's own coordinates and fetches nothing, so it is also the
+ * version that reveals a dive site to nobody. That used to be the whole
+ * argument for having only this — see docs/10-security-privacy.md, which now
+ * records the trade that was made instead and why.
  */
 export function SiteMap({ map, unlocated }: { map: Projection; unlocated: number }) {
   const biggest = Math.max(...map.sites.map((s) => s.dives), 1);
@@ -56,8 +55,8 @@ export function SiteMap({ map, unlocated }: { map: Projection; unlocated: number
       </svg>
 
       <figcaption className="muted small">
-        Roughly {Math.round(map.spanKm)} km across. This is a plot of your own coordinates, not a
-        map — MyDiveLog does not send your dive locations to a map service.
+        Roughly {Math.round(map.spanKm)} km across. This is a plot of your own coordinates, drawn
+        here without fetching anything — the map itself loads in a moment.
         {unlocated > 0 && (
           <>
             {' '}

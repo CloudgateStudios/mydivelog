@@ -432,13 +432,30 @@ test.describe('charts', () => {
     await context.close();
   });
 
-  test('the site plot says it is not a map', async ({ page }) => {
-    // It plots the diver's own coordinates and requests nothing from a tile
-    // server. Letting a reader assume otherwise would be a privacy claim made
-    // by omission.
+  test('the map says where its tiles come from', async ({ page }) => {
+    // Two claims a reader is owed. The attribution is a licence condition of
+    // the data; the sentence under it is the one this product used to be able
+    // to make in the negative, and now has to make honestly — panning the map
+    // tells the tile provider which part of the world is being looked at.
     await page.goto('/sites');
-    await expect(page.locator('.site-map figcaption')).toContainText(/not a map/i);
+    await expect(page.locator('.leaflet-control-attribution')).toContainText(/OpenStreetMap/i);
+    // The live map's own caption, not the hidden fallback's underneath it.
+    await expect(page.locator('.site-map-live > figcaption')).toContainText(/tiles are fetched/i);
+  });
+
+  test('plots the sites without a map when scripting is off', async ({ browser }) => {
+    // The map needs Leaflet; this page does not. The server renders the same
+    // coordinates as an SVG, and that is what a reader keeps when the bundle
+    // never arrives — rather than an empty box a script was supposed to fill.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    await signIn(context, 'demo@mydivelog.invalid');
+    const page = await context.newPage();
+
+    await page.goto('/sites');
+    await expect(page.locator('.site-map svg')).toBeVisible();
     await expect(page.locator('.site-map svg')).toHaveAttribute('aria-label', /dive sites/i);
+    await expect(page.locator('.site-map-canvas')).toBeHidden();
+    await context.close();
   });
 });
 

@@ -93,6 +93,11 @@ export default async function Privacy() {
             this site. The only cookies are the ones that keep you signed in, which is why you have
             not been asked to consent to anything.
           </li>
+          <li>
+            We do not send your dive sites to anyone. The map on your sites page is the one place
+            another company is involved at all, and only in the ordinary way a map works — see
+            below.
+          </li>
           <li>We do not email you anything you did not ask for.</li>
         </ul>
 
@@ -132,9 +137,35 @@ export default async function Privacy() {
                 <th scope="row">Google</th>
                 <td>Only if you choose to sign in with Google.</td>
               </tr>
+              <tr>
+                <th scope="row">OpenStreetMap</th>
+                <td>
+                  Supplies the map images on your sites page. It is sent the squares of the world
+                  the map is showing, which is how any map works — never your dives, your account or
+                  your name.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
+
+        <h2>The map on your sites page</h2>
+        <p>
+          Your dive sites are drawn on a real map, and the map images behind them come from
+          OpenStreetMap. That means your browser asks OpenStreetMap for the areas the map is showing
+          — so it can tell that somebody at your address looked at a particular part of the world,
+          in the same way it can for any site with a map on it.
+        </p>
+        <p>
+          What it is never sent: your coordinates as data, your dive dates, your account, or
+          anything identifying you to us. The sites themselves are drawn by your own browser, on top
+          of those images.
+        </p>
+        <p>
+          We think that is a fair trade for a map you can actually read, and we would rather say so
+          plainly than let you assume otherwise. If you would prefer no map at all, tell us and we
+          will make it a setting — it was one until recently and the code for it is still there.
+        </p>
 
         <h2>Getting your data out</h2>
         <p>
