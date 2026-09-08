@@ -59,6 +59,10 @@ export type CommitResult = {
   skipped: number;
   /** Rows whose source was already attached to this batch. */
   replayed: number;
+  /** Dives that kept the number their file gave them. */
+  numberedFromFile: number;
+  /** Dives numbered by date, because the file gave none or it was taken. */
+  numberedAutomatically: number;
 };
 
 /**
@@ -138,15 +142,33 @@ export function createImportRepository(prisma: PrismaClient) {
       return prisma.$transaction(async (tx) => {
         const tags = await loadTags(tx, scope);
         const sites = await loadSites(tx, scope);
-        const result: CommitResult = { batchId, created: [], merged: [], skipped: 0, replayed: 0 };
+        const result: CommitResult = {
+          batchId,
+          created: [],
+          merged: [],
+          skipped: 0,
+          replayed: 0,
+          numberedFromFile: 0,
+          numberedAutomatically: 0,
+        };
 
         // Numbers are assigned here because sources frequently carry none —
         // the seed UDDF has none across all 96 dives.
-        const highest = await tx.dive.aggregate({
+        // Every number this diver is already using, not merely the highest:
+        // a file that asks for 40 has to be told whether 40 is free.
+        const existing = await tx.dive.findMany({
           where: { userId: scope.userId, deletedAt: null },
-          _max: { diveNumber: true },
+          select: { diveNumber: true },
         });
-        const numbers = numberRowsChronologically(rows, (highest._max.diveNumber ?? 0) + 1);
+        const taken = new Set(existing.map((dive) => dive.diveNumber));
+        // A loop rather than `Math.max(...taken)`: spreading a set of numbers
+        // as arguments is bounded by the engine's stack, and a dive
+        // professional's logbook is exactly the case that would find it.
+        let highest = 0;
+        for (const number of taken) if (number > highest) highest = number;
+        const numbering = assignDiveNumbers(rows, taken, highest + 1);
+        result.numberedFromFile = numbering.fromFile;
+        result.numberedAutomatically = numbering.assigned;
 
         for (const row of rows) {
           if (row.decision === 'skip') {
@@ -173,7 +195,7 @@ export function createImportRepository(prisma: PrismaClient) {
               data: {
                 id: diveId,
                 userId: scope.userId,
-                diveNumber: numbers.get(row.rowIndex) ?? 0,
+                diveNumber: numbering.numbers.get(row.rowIndex) ?? 0,
                 // Placeholders: the real values land in the resolution below,
                 // which is the only place that decides what a dive shows.
                 startTimeUtc: (row.fields['startTimeUtc'] as Date | undefined) ?? new Date(0),
@@ -220,9 +242,25 @@ export function createImportRepository(prisma: PrismaClient) {
           await resolve(tx, scope, diveId, tags, sites);
         }
 
+        // Folded into the batch's own stats rather than only returned, because
+        // the page a diver lands on after committing re-reads the batch. A
+        // count that exists only in the response of a request they were
+        // redirected away from is a count nobody sees.
+        const batch = await tx.importBatch.findUnique({
+          where: { id: batchId },
+          select: { stats: true },
+        });
         await tx.importBatch.update({
           where: { id: batchId },
-          data: { status: 'committed', committedAt: new Date() },
+          data: {
+            status: 'committed',
+            committedAt: new Date(),
+            stats: {
+              ...((batch?.stats as Record<string, number> | null) ?? {}),
+              numberedFromFile: result.numberedFromFile,
+              numberedAutomatically: result.numberedAutomatically,
+            },
+          },
         });
 
         return result;
@@ -305,26 +343,30 @@ type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 /**
  * Which number each row's new dive gets.
  *
- * By date, not by the order the rows happen to be in. A dive number means
- * "the nth dive I have done", so the oldest dive in a batch takes the lowest
- * number — and a file's row order is no evidence of that. Plenty of exports
- * are newest-first: the sample UDDF is, and numbering by position gave its
- * most recent dive number 1 and its oldest number 6, precisely backwards.
+ * The diver's own number, where the file gives one. A dive number is not
+ * ours to invent: somebody wrote 1 to 195 in a spreadsheet over fourteen
+ * years, and their paper logbook says the same, so an importer that quietly
+ * replaces those with numbers of its own has thrown away a record it was
+ * asked to preserve. Until now it did exactly that — the number was parsed,
+ * kept as provenance, and never written to the dive.
  *
- * Rows are numbered from the diver's current highest, so an import appends.
- * That is right when the file is newer than everything already logged and
- * wrong when it is not — and nothing here can fix that, because it is a fact
- * about the whole logbook rather than about this batch.
- * `numberingIsChronological` in @mydivelog/domain detects it afterwards, and
- * the diver is offered a renumbering rather than given one.
+ * Where the file is silent, by date. Plenty of exports carry no number at all
+ * (the sample UDDF has none across 96 dives) and plenty are newest-first, so
+ * numbering by row position gave the most recent dive number 1 and the oldest
+ * the highest — precisely backwards.
  *
- * A row with no start time sorts last and keeps its relative position, which
- * is the only stable answer when there is nothing to sort on.
+ * Numbers already in use are never taken twice. The uniqueness index is
+ * partial and real, so a collision is a failed transaction rather than a
+ * cosmetic problem; a row whose number is claimed falls back to being assigned
+ * one, exactly as if the file had not said. Which numbers came from where is
+ * counted and returned, because "12 of your dives kept the number your file
+ * gave them" is the only way a diver knows this happened at all.
  */
-function numberRowsChronologically(
+function assignDiveNumbers(
   rows: readonly CommitRow[],
+  taken: ReadonlySet<number>,
   startAt: number,
-): Map<number, number> {
+): { numbers: Map<number, number>; fromFile: number; assigned: number } {
   const creating = rows.filter((row) => row.decision === 'create' || row.diveId === undefined);
 
   const ordered = [...creating].sort((a, b) => {
@@ -338,7 +380,36 @@ function numberRowsChronologically(
     return at !== bt ? at - bt : a.rowIndex - b.rowIndex;
   });
 
-  return new Map(ordered.map((row, index) => [row.rowIndex, startAt + index]));
+  const claimed = new Set(taken);
+  const numbers = new Map<number, number>();
+
+  // Two passes, and the order matters. Every number the file asks for is
+  // claimed before any is handed out, so a row the file numbered 40 keeps it
+  // even when an earlier row would otherwise have been given 40.
+  for (const row of ordered) {
+    const wanted = row.fields['diveNumber'];
+    if (typeof wanted !== 'number' || !Number.isInteger(wanted) || wanted < 1) continue;
+    if (claimed.has(wanted)) continue;
+    claimed.add(wanted);
+    numbers.set(row.rowIndex, wanted);
+  }
+  const fromFile = numbers.size;
+
+  // Assignment starts above everything, claimed numbers included — never in
+  // the gaps between them. A gap in somebody's numbering is almost always a
+  // dive that is not in this file: the redacted fixture jumps 3, 10, 13
+  // because dives 4 to 9 exist and were left out. Filling those would give a
+  // dive somebody else's number, and would do it silently.
+  let next = startAt;
+  for (const number of numbers.values()) if (number >= next) next = number + 1;
+  for (const row of ordered) {
+    if (numbers.has(row.rowIndex)) continue;
+    while (claimed.has(next)) next += 1;
+    claimed.add(next);
+    numbers.set(row.rowIndex, next);
+  }
+
+  return { numbers, fromFile, assigned: numbers.size - fromFile };
 }
 
 async function writeProvenance(

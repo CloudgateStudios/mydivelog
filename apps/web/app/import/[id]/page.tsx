@@ -348,6 +348,14 @@ async function Done({
               already had.
               {profiles > 0 && ` ${profiles} gained a depth profile.`} Nothing was duplicated.
             </p>
+
+            {/*
+              Said out loud because it is the diver's own record. A file that
+              numbers fourteen years of diving by hand keeps those numbers, and
+              somebody whose paper logbook says 147 should be able to see that
+              147 survived rather than take it on trust.
+            */}
+            {numberingNote(stats) && <p className="muted small">{numberingNote(stats)}</p>}
             <div className="actions">
               <a className="button primary" href="/logbook">
                 See your logbook
@@ -399,6 +407,23 @@ async function Done({
       </main>
     </>
   );
+}
+
+/**
+ * What happened to the dive numbers, as a sentence.
+ *
+ * Built here rather than inline: JSX inserts a space at every line break, so
+ * the same words assembled in the markup arrive as "them , and ... say ." —
+ * and the sentence is long enough that it has to break somewhere.
+ */
+function numberingNote(stats: Record<string, number>): string | undefined {
+  const kept = stats['numberedFromFile'] ?? 0;
+  const assigned = stats['numberedAutomatically'] ?? 0;
+  if (kept === 0) return undefined;
+
+  const first = `${kept} kept the dive number your file gave ${kept === 1 ? 'it' : 'them'}`;
+  if (assigned === 0) return `${first}.`;
+  return `${first}, and ${assigned} ${assigned === 1 ? 'was' : 'were'} numbered by date because the file did not say.`;
 }
 
 function Failed({
