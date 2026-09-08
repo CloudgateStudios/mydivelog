@@ -11,22 +11,27 @@ export function AppHeader({ user }: { user: { email: string; displayName: string
 
   return (
     <header className="nav">
-      <Wordmark href="/logbook" />
-      <nav>
-        <a href="/logbook">Logbook</a>
-        <a href="/trips">Trips</a>
-        <a href="/sites">Sites</a>
-        <a href="/gear">Gear</a>
-        <a href="/stats">Stats</a>
-        <a href="/import">Import</a>
-        <a href="/settings">Settings</a>
-      </nav>
-      <span className="muted">{user.displayName ?? user.email}</span>
-      <form action={signOut} style={{ marginLeft: 'auto' }}>
-        <button className="link" type="submit">
-          Sign out
-        </button>
-      </form>
+      {/* The bar is full bleed; its contents sit in the same shell as the page,
+          so the brand lines up with the first heading rather than with the
+          window's edge. */}
+      <div className="nav-inner">
+        <Wordmark href="/logbook" />
+        <nav>
+          <a href="/logbook">Logbook</a>
+          <a href="/trips">Trips</a>
+          <a href="/sites">Sites</a>
+          <a href="/gear">Gear</a>
+          <a href="/stats">Stats</a>
+          <a href="/import">Import</a>
+          <a href="/settings">Settings</a>
+        </nav>
+        <span className="muted">{user.displayName ?? user.email}</span>
+        <form action={signOut} style={{ marginLeft: 'auto' }}>
+          <button className="link" type="submit">
+            Sign out
+          </button>
+        </form>
+      </div>
     </header>
   );
 }

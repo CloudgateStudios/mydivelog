@@ -84,6 +84,8 @@ export const Dive = z.object({
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   version: z.number().int(),
+  /** Resolved for lists, so a log can show where each dive was. */
+  site: z.object({ name: z.string() }).nullish(),
 });
 export type Dive = z.infer<typeof Dive>;
 
