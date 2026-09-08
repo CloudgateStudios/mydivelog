@@ -287,6 +287,25 @@ export const RenumberResult = z.object({
   changes: z.array(z.object({ id: Uuid, from: z.number().int(), to: z.number().int() })),
 });
 
+/**
+ * Whether the numbering still means what a dive number means.
+ *
+ * An import numbers its batch from the diver's current highest, which is right
+ * when the file is newer than everything already logged and wrong when it is
+ * not — and that is a fact about the whole logbook rather than about a batch,
+ * so it can only be answered afterwards. Answered rather than acted on: mass
+ * renumbering somebody's history is their decision.
+ */
+export const NumberingState = z.object({
+  chronological: z.boolean(),
+  /** How many dives are numbered out of step with their dates. */
+  outOfOrder: z.number().int(),
+  /** How many numbers a renumbering would change. Always ≥ outOfOrder. */
+  wouldChange: z.number().int(),
+  diveCount: z.number().int(),
+});
+export type NumberingState = z.infer<typeof NumberingState>;
+
 export const LogSummary = z.object({
   diveCount: z.number().int(),
   totalBottomTimeS: Seconds,

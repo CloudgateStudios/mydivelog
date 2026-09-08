@@ -166,6 +166,122 @@ describe('importing the same log as an Excel workbook', () => {
   });
 });
 
+/**
+ * A dive number means "the nth dive I have done".
+ *
+ * It was assigned in the order rows appeared in the file, and the sample UDDF
+ * is newest-first — so the most recent dive became number 1 and the oldest
+ * became the highest, which is exactly backwards and is what a diver sees
+ * first when they open their logbook.
+ */
+describe('dive numbering', () => {
+  const inDateOrder = async () => {
+    const dives = await prisma.dive.findMany({
+      where: { userId, deletedAt: null },
+      orderBy: { startTimeUtc: 'asc' },
+      select: { diveNumber: true, startTimeUtc: true },
+    });
+    return dives;
+  };
+
+  it('numbers a newest-first file oldest-first', async () => {
+    await commitAll(await importFile('uddf-sample.uddf'));
+    const dives = await inDateOrder();
+
+    expect(dives.length).toBeGreaterThan(1);
+    expect(dives[0]?.diveNumber).toBe(1);
+    expect(dives.at(-1)?.diveNumber).toBe(dives.length);
+    // Every step forwards in time is a step up in number.
+    expect(dives.every((d, i) => i === 0 || d.diveNumber > (dives[i - 1]?.diveNumber ?? 0))).toBe(
+      true,
+    );
+  });
+
+  it('keeps the numbers the diver wrote in their own spreadsheet', async () => {
+    // A dive number is not ours to invent. Somebody numbered fourteen years of
+    // diving by hand and their paper logbook says the same; replacing that
+    // with numbers of our own throws away a record we were asked to preserve.
+    //
+    // The fixture's own numbers are 1 2 3 10 13 15 x x 96 97 182 … 195 — with
+    // gaps, because dives were left out of the redaction. The gaps have to
+    // survive too: a number that is not 1..N is not a defect.
+    const result = await commitAll(await importFile('spreadsheet-sample.csv'));
+
+    const numbers = (
+      await prisma.dive.findMany({
+        where: { userId },
+        select: { diveNumber: true },
+        orderBy: { diveNumber: 'asc' },
+      })
+    ).map((d) => d.diveNumber);
+
+    expect(numbers).toContain(1);
+    expect(numbers).toContain(195);
+    // 1, 2, 3, 10 — not renumbered into a run.
+    expect(numbers.slice(0, 4)).toEqual([1, 2, 3, 10]);
+    expect(result.numberedFromFile).toBe(22);
+  });
+
+  it('numbers by date only the rows the file left blank', async () => {
+    // Two of the fixture's rows have the letter x where a number should be.
+    // Those cannot be honoured, and must not stop the other 22 from being.
+    const result = await commitAll(await importFile('spreadsheet-sample.csv'));
+
+    expect(result.numberedAutomatically).toBe(2);
+    expect(result.numberedFromFile + result.numberedAutomatically).toBe(result.created.length);
+    // Assigned above everything the file claimed, so nothing collides.
+    const numbers = (
+      await prisma.dive.findMany({ where: { userId }, select: { diveNumber: true } })
+    ).map((d) => d.diveNumber);
+    expect(numbers).toContain(196);
+    expect(numbers).toContain(197);
+  });
+
+  it('never takes a number the diver is already using', async () => {
+    // The uniqueness index is partial and real, so a collision is a failed
+    // transaction rather than a cosmetic problem.
+    //
+    // The workbook holds the same 24 dives as the CSV, with the same numbers,
+    // in a different file — so importing it after the CSV and forcing every
+    // row to create asks for 24 numbers that are all already taken. An
+    // identical *re-upload* cannot be used here: it short-circuits to the
+    // batch that already exists, which is its own correct behaviour.
+    await commitAll(await importFile('spreadsheet-sample.csv'));
+    const before = await prisma.dive.count({ where: { userId } });
+
+    const second = await imports.create(scope, 'same-dives.xlsx', bytes('spreadsheet-sample.xlsx'));
+    for (const row of (await imports.get(scope, second)).rows) {
+      await imports.updateRow(scope, second, row.rowIndex, 'create');
+    }
+    const result = await imports.commit(scope, second);
+
+    const numbers = (
+      await prisma.dive.findMany({ where: { userId }, select: { diveNumber: true } })
+    ).map((d) => d.diveNumber);
+
+    expect(numbers).toHaveLength(before + result.created.length);
+    // Every number distinct — the property the index enforces, and the one a
+    // second import is most likely to break.
+    expect(new Set(numbers).size).toBe(numbers.length);
+    // Not one of them could keep its number; all were already in use.
+    expect(result.numberedFromFile).toBe(0);
+  });
+
+  it('appends a second import after the first, without renumbering it', async () => {
+    await commitAll(await importFile('spreadsheet-sample.csv'));
+    const before = await inDateOrder();
+
+    await commitAll(await importFile('uddf-sample.uddf'));
+    const after = await inDateOrder();
+
+    // Nothing already in the logbook is touched by an import. The UDDF
+    // overlaps the spreadsheet, so most of its dives merge rather than being
+    // created, and the ones that are new are numbered above what was there.
+    expect(after.length).toBeGreaterThanOrEqual(before.length);
+    expect(new Set(after.map((d) => d.diveNumber)).size).toBe(after.length);
+  });
+});
+
 describe('importing the computer export onto an existing logbook', () => {
   it('merges the overlap instead of duplicating it', async () => {
     // The whole product, through the API: 24 rows and 6 computer dives make

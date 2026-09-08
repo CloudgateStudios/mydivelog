@@ -9,6 +9,7 @@ import {
   divesByYear,
   longestStreak,
   nextMilestone,
+  outOfOrderDives,
   renumberDives,
   renumberPlan,
   summarizeLog,
@@ -176,6 +177,29 @@ export class DivesService {
     const changes = renumberDives(all, startAt);
     const changed = await this.repo.applyRenumbering(scope, renumberPlan(changes));
     return { changed, changes };
+  }
+
+  /**
+   * Whether dive numbers still run with the dates, and what fixing it costs.
+   *
+   * Read on the page a diver lands on after an import, so it is one query and
+   * two pure functions rather than anything clever.
+   */
+  async numbering(scope: UserScope) {
+    const all = await this.prisma.dive.findMany({
+      where: { userId: scope.userId, deletedAt: null },
+      select: { id: true, startTimeUtc: true, diveNumber: true },
+    });
+    const outOfOrder = outOfOrderDives(all);
+    return {
+      chronological: outOfOrder.length === 0,
+      outOfOrder: outOfOrder.length,
+      // Renumbering closes gaps as well as fixing order, so it touches more
+      // dives than are strictly wrong. Saying so is the difference between an
+      // honest button and a surprising one.
+      wouldChange: renumberDives(all).length,
+      diveCount: all.length,
+    };
   }
 
   async summary(scope: UserScope) {

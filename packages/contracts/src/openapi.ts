@@ -447,6 +447,17 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '200': ok(dives.Dive), '401': problem, '404': problem },
         },
       },
+      '/dives/numbering': {
+        get: {
+          operationId: 'getNumberingState',
+          tags: ['dives'],
+          security: bearer,
+          description:
+            'Whether dive numbers still run in the same direction as the dates, and how many ' +
+            'would change if the logbook were renumbered.',
+          responses: { '200': ok(dives.NumberingState), '401': problem },
+        },
+      },
       '/dives/renumber': {
         post: {
           operationId: 'renumberDives',

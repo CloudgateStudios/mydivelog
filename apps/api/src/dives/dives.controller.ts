@@ -27,6 +27,12 @@ export class DivesController {
     return this.dives.renumber(scope, body.startAt);
   }
 
+  /** Declared before ':id' for the same reason as "renumber". */
+  @Get('numbering')
+  numbering(@Scope() scope: UserScope) {
+    return this.dives.numbering(scope);
+  }
+
   /**
    * What this diver can filter by. Declared before ':id' for the same reason
    * as "renumber".

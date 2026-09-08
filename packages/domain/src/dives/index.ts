@@ -73,6 +73,78 @@ export function renumberPlan(changes: readonly Renumbering[]): {
   };
 }
 
+/**
+ * Whether the numbers run in the same direction as the dates.
+ *
+ * Not "are they 1..N" — a diver may have gaps, may start at 100 because their
+ * paper logbook does, and neither is wrong. What is wrong is a dive numbered
+ * higher than one that happened after it, because then the number has stopped
+ * meaning "the nth dive I have done" and there is nothing else it could mean.
+ *
+ * This is what an import cannot get right on its own: a batch is numbered from
+ * the diver's current highest, which is correct when the file is newer than
+ * everything already logged and wrong when it is not. Detecting it afterwards
+ * is how the diver gets offered a renumbering instead of silently given one.
+ */
+export function numberingIsChronological(dives: readonly NumberableDive[]): boolean {
+  return outOfOrderDives(dives).length === 0;
+}
+
+/**
+ * The dives whose number disagrees with their place in time.
+ *
+ * "Fewest" is the whole difficulty. Comparing each dive to the one before it
+ * blames the wrong ones: with numbers 1, 9, 2, 3 in date order the mistake is
+ * plainly the 9, and pairwise comparison reports the 2 and the 3 instead —
+ * telling a diver two correct dives are wrong and leaving the wrong one
+ * unmentioned.
+ *
+ * So: keep the longest run of dives whose numbers already ascend with their
+ * dates, and report everything else. That is the smallest set of dives that
+ * could be changed to make the numbering consistent, which is also the honest
+ * answer to "what is wrong here".
+ *
+ * Equal numbers count as in order. A duplicate number is a real problem but a
+ * different one, and `findDuplicateDiveNumbers` is where it is named.
+ */
+export function outOfOrderDives(dives: readonly NumberableDive[]): NumberableDive[] {
+  const ordered = [...dives].sort((a, b) => {
+    const d = a.startTimeUtc.getTime() - b.startTimeUtc.getTime();
+    // Two dives at the same instant are a repetitive dive logged with only a
+    // date. Ordering them by number means neither is ever blamed for the other.
+    return d !== 0 ? d : a.diveNumber - b.diveNumber;
+  });
+  if (ordered.length < 2) return [];
+
+  // Patience sorting. `tails[k]` is the smallest number that can end an
+  // ascending run of length k + 1, and `at[k]` is where that dive sits.
+  const tails: number[] = [];
+  const at: number[] = [];
+  const cameFrom = new Array<number>(ordered.length).fill(-1);
+
+  ordered.forEach((dive, index) => {
+    // The first run this dive cannot extend — so it replaces that run's tail,
+    // or starts a longer one. Binary search, since a logbook can be long.
+    let low = 0;
+    let high = tails.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if ((tails[mid] as number) <= dive.diveNumber) low = mid + 1;
+      else high = mid;
+    }
+    cameFrom[index] = low > 0 ? (at[low - 1] as number) : -1;
+    tails[low] = dive.diveNumber;
+    at[low] = index;
+  });
+
+  const keep = new Set<number>();
+  for (let index = at[at.length - 1] ?? -1; index !== -1; index = cameFrom[index] as number) {
+    keep.add(index);
+  }
+
+  return ordered.filter((_, index) => !keep.has(index));
+}
+
 /** Numbers that appear more than once. Import surfaces these for review. */
 export function findDuplicateDiveNumbers(dives: readonly NumberableDive[]): number[] {
   const seen = new Map<number, number>();

@@ -155,6 +155,8 @@ export class ImportsController {
       merged: result.merged.length,
       skipped: result.skipped,
       replayed: result.replayed,
+      numberedFromFile: result.numberedFromFile,
+      numberedAutomatically: result.numberedAutomatically,
     };
   }
 

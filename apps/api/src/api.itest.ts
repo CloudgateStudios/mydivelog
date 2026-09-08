@@ -351,6 +351,82 @@ beforeAll(async () => {
   }
 }, 60_000);
 
+/**
+ * A dive number means "the nth dive I have done", and an import cannot keep
+ * that true on its own: it numbers a batch from the diver's current highest,
+ * which is right when the file is newer than everything already logged and
+ * wrong when it is not. This is the endpoint that notices.
+ */
+describe('dive numbering', () => {
+  let token = '';
+
+  beforeAll(async () => {
+    token = await login(`numbering-${randomUUID()}@itest.invalid`);
+  });
+
+  const state = async () => {
+    const res = await http.get('/v1/dives/numbering').set('authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    return res.body as {
+      chronological: boolean;
+      outOfOrder: number;
+      wouldChange: number;
+      diveCount: number;
+    };
+  };
+
+  const addDive = async (utc: string, local: string) =>
+    http
+      .post('/v1/dives')
+      .set('authorization', `Bearer ${token}`)
+      .send(newDive({ startTimeUtc: utc, startTimeLocal: local }));
+
+  it('says an empty logbook is in order', async () => {
+    expect(await state()).toMatchObject({ chronological: true, diveCount: 0 });
+  });
+
+  it('stays in order while dives are added newest last', async () => {
+    await addDive('2020-01-01T10:00:00.000Z', '2020-01-01T10:00:00');
+    await addDive('2021-01-01T10:00:00.000Z', '2021-01-01T10:00:00');
+    expect(await state()).toMatchObject({ chronological: true, outOfOrder: 0, diveCount: 2 });
+  });
+
+  it('notices when a dive older than the others is added afterwards', async () => {
+    // The case this exists for: a forgotten logbook found in a drawer. The new
+    // dive is the oldest and gets the highest number, so the numbering no
+    // longer means what a dive number means.
+    await addDive('2019-01-01T10:00:00.000Z', '2019-01-01T10:00:00');
+
+    const drifted = await state();
+    expect(drifted.chronological).toBe(false);
+    expect(drifted.outOfOrder).toBeGreaterThan(0);
+    // Renumbering closes gaps too, so it always touches at least as many.
+    expect(drifted.wouldChange).toBeGreaterThanOrEqual(drifted.outOfOrder);
+  });
+
+  it('is in order again after renumbering, oldest first', async () => {
+    const res = await http
+      .post('/v1/dives/renumber')
+      .set('authorization', `Bearer ${token}`)
+      .send({ startAt: 1 });
+    expect(res.status).toBe(200);
+    expect(res.body.changed).toBeGreaterThan(0);
+
+    expect(await state()).toMatchObject({ chronological: true, outOfOrder: 0, wouldChange: 0 });
+
+    const dives = await http.get('/v1/dives?limit=100').set('authorization', `Bearer ${token}`);
+    const byDate = [...dives.body.data].sort((a, b) =>
+      a.startTimeLocal.localeCompare(b.startTimeLocal),
+    );
+    expect(byDate[0].diveNumber).toBe(1);
+    expect(byDate.at(-1).diveNumber).toBe(byDate.length);
+  });
+
+  it('is not reachable without a session', async () => {
+    expect((await http.get('/v1/dives/numbering')).status).toBe(401);
+  });
+});
+
 describe('filtering the log', () => {
   const list = async (query: string) => {
     const res = await http

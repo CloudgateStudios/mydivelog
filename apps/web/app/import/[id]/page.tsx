@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { SubmitButton } from '../../../components/SubmitButton';
-import { apiFetch, currentUser } from '../../../lib/api';
+import { apiFetch, apiJson, currentUser } from '../../../lib/api';
+import type { NumberingState } from '@mydivelog/contracts';
 import { getImport, type ImportBatch, type ImportRow } from '../../../lib/imports';
 import { AppHeader } from '../../../components/AppHeader';
 
@@ -39,7 +40,13 @@ export default async function Review({
 
   if (batch.status === 'failed') return <Failed user={user} batch={batch} />;
   if (batch.status === 'committed' || batch.status === 'reverted') {
-    return <Done user={user} batch={batch} />;
+    // Asked only here, because this is the one page where a diver has just
+    // changed their logbook and might want to put the numbering right.
+    const numbering =
+      batch.status === 'committed'
+        ? await apiJson<NumberingState>('/v1/dives/numbering').catch(() => undefined)
+        : undefined;
+    return <Done user={user} batch={batch} numbering={numbering} />;
   }
 
   const merging = batch.rows.filter((r) => r.decision === 'merge');
@@ -295,9 +302,11 @@ function Undecided({ row, decide }: { row: ImportRow; decide: (formData: FormDat
 async function Done({
   user,
   batch,
+  numbering,
 }: {
   user: { email: string; displayName: string | null };
   batch: ImportBatch;
+  numbering?: NumberingState | undefined;
 }) {
   const stats = batch.stats ?? {};
   const profiles = batch.rows.filter((r) => r.preview.hasProfile && r.decision === 'merge').length;
@@ -306,6 +315,15 @@ async function Done({
     'use server';
     await apiFetch(`/v1/imports/${batch.id}/revert`, { method: 'POST' });
     redirect('/import');
+  }
+
+  async function renumber(): Promise<void> {
+    'use server';
+    await apiFetch('/v1/dives/renumber', {
+      method: 'POST',
+      body: JSON.stringify({ startAt: 1 }),
+    });
+    redirect('/logbook');
   }
 
   const reverted = batch.status === 'reverted';
@@ -330,6 +348,14 @@ async function Done({
               already had.
               {profiles > 0 && ` ${profiles} gained a depth profile.`} Nothing was duplicated.
             </p>
+
+            {/*
+              Said out loud because it is the diver's own record. A file that
+              numbers fourteen years of diving by hand keeps those numbers, and
+              somebody whose paper logbook says 147 should be able to see that
+              147 survived rather than take it on trust.
+            */}
+            {numberingNote(stats) && <p className="muted small">{numberingNote(stats)}</p>}
             <div className="actions">
               <a className="button primary" href="/logbook">
                 See your logbook
@@ -344,11 +370,60 @@ async function Done({
               Undo stays available forever. Dives this import created are removed; dives it only
               added to go back to exactly what they were.
             </p>
+
+            {/*
+              An import numbers what it adds from your highest number down —
+              which is right when the file is newer than everything you had,
+              and wrong when it is not. Offered rather than done: renumbering
+              rewrites the number on dives this import never touched, and that
+              is not a thing to do to somebody's logbook without asking.
+            */}
+            {numbering && !numbering.chronological && (
+              <div className="notice">
+                <p>
+                  <strong>Your dive numbers are out of order.</strong>{' '}
+                  {numbering.outOfOrder === 1
+                    ? 'One dive is numbered'
+                    : `${numbering.outOfOrder} dives are numbered`}{' '}
+                  out of step with when {numbering.outOfOrder === 1 ? 'it' : 'they'} happened —
+                  usually because this file held dives older than ones you already had. Renumbering
+                  puts your whole logbook in date order, oldest as number 1.
+                </p>
+                <div className="actions">
+                  <form action={renumber}>
+                    <SubmitButton className="button" pendingLabel="Renumbering…">
+                      Renumber {numbering.wouldChange} of {numbering.diveCount} dives
+                    </SubmitButton>
+                  </form>
+                </div>
+                <p className="muted small" style={{ marginBottom: 0 }}>
+                  Only the numbers change; no dive is added, removed or altered. You can renumber
+                  again at any time from <a href="/settings">settings</a>.
+                </p>
+              </div>
+            )}
           </>
         )}
       </main>
     </>
   );
+}
+
+/**
+ * What happened to the dive numbers, as a sentence.
+ *
+ * Built here rather than inline: JSX inserts a space at every line break, so
+ * the same words assembled in the markup arrive as "them , and ... say ." —
+ * and the sentence is long enough that it has to break somewhere.
+ */
+function numberingNote(stats: Record<string, number>): string | undefined {
+  const kept = stats['numberedFromFile'] ?? 0;
+  const assigned = stats['numberedAutomatically'] ?? 0;
+  if (kept === 0) return undefined;
+
+  const first = `${kept} kept the dive number your file gave ${kept === 1 ? 'it' : 'them'}`;
+  if (assigned === 0) return `${first}.`;
+  return `${first}, and ${assigned} ${assigned === 1 ? 'was' : 'were'} numbered by date because the file did not say.`;
 }
 
 function Failed({
