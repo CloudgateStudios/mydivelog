@@ -1387,6 +1387,25 @@ tbody th {
   outline-offset: 2px;
 }
 
+/*
+ * Stands where the plot would be. Bordered like the figure it replaces, so the
+ * page keeps its shape whether or not a diver's sources carried coordinates.
+ */
+.site-map-empty {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 1.25rem 1.4rem;
+  margin: 1.25rem 0;
+  max-width: 46rem;
+}
+.site-map-empty p {
+  margin: 0 0 0.5rem;
+}
+.site-map-empty p:last-child {
+  margin-bottom: 0;
+}
+
 .site-map {
   margin: 0 0 1.5rem;
 }

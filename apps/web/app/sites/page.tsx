@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { buildSiteMap, formatCoordinates } from '@mydivelog/domain';
 import { apiJson, currentUser } from '../../lib/api';
 import { AppHeader } from '../../components/AppHeader';
-import { SiteMap } from '../../components/SiteMap';
+import { NoSiteMap, SiteMap } from '../../components/SiteMap';
 import { withUnits } from '../../lib/units';
 
 export const dynamic = 'force-dynamic';
@@ -54,7 +54,10 @@ export default async function Sites() {
               {sites.length} {sites.length === 1 ? 'site' : 'sites'} across {total(sites)} dives.
             </p>
 
-            {map && <SiteMap map={map} unlocated={unlocated} />}
+            {/* Either the plot or the reason there isn't one. Rendering
+                neither is how a diver who imported a spreadsheet — which
+                carries no coordinates — got a page that looked broken. */}
+            {map ? <SiteMap map={map} unlocated={unlocated} /> : <NoSiteMap sites={sites.length} />}
 
             <h2>Most dived</h2>
             <div className="table-scroll">

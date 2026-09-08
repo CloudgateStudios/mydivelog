@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { BrowserContext } from '@playwright/test';
 
 const API_URL = process.env['API_URL'] ?? 'http://localhost:53001';
@@ -42,6 +44,46 @@ async function tokensFor(email: string) {
 
   sessions.set(email, pending);
   return pending;
+}
+
+/**
+ * A logbook built through the API, for a test that needs a particular shape of
+ * data rather than the demo diver's.
+ *
+ * Over HTTP rather than by touching the database: a test that seeds rows
+ * directly can create a logbook the import engine would never produce, and
+ * then proves something about a state no diver can reach.
+ */
+export async function importFixtureFor(email: string, fileName: string): Promise<void> {
+  const { accessToken } = await tokensFor(email);
+  const auth = { authorization: `Bearer ${accessToken}` };
+
+  // `__dirname`, not `import.meta`: Playwright compiles these specs to
+  // CommonJS, where the latter is a syntax error rather than a wrong path.
+  const bytes = await readFile(join(__dirname, '..', 'fixtures', fileName));
+  const form = new FormData();
+  form.set('file', new Blob([new Uint8Array(bytes)]), fileName);
+
+  const created = await fetch(`${API_URL}/v1/imports`, {
+    method: 'POST',
+    headers: auth,
+    body: form,
+  });
+  if (!created.ok) throw new Error(`import of ${fileName} failed: ${created.status}`);
+  const batch = (await created.json()) as {
+    id: string;
+    rows: { rowIndex: number; decision: string }[];
+  };
+
+  for (const row of batch.rows) {
+    if (row.decision !== 'pending') continue;
+    await fetch(`${API_URL}/v1/imports/${batch.id}/rows/${row.rowIndex}`, {
+      method: 'POST',
+      headers: { ...auth, 'content-type': 'application/json' },
+      body: JSON.stringify({ decision: 'create' }),
+    });
+  }
+  await fetch(`${API_URL}/v1/imports/${batch.id}/commit`, { method: 'POST', headers: auth });
 }
 
 export async function signIn(context: BrowserContext, email: string): Promise<void> {
