@@ -241,6 +241,30 @@ None of these require an architecture change, which is the point of the choices 
 - [ ] `docs/runbooks/` complete
 - [ ] Rollback rehearsed at least once
 
+## When a deploy fails but nothing is wrong
+
+The release command runs `prisma migrate deploy` before any machine serves the
+new image, and a failure aborts the deploy. That is the right default, and it
+means the most common deploy failure has nothing to do with the code being
+deployed: **dev's Neon compute suspends when idle, and Prisma's default connect
+timeout is five seconds.**
+
+`prisma migrate status` from a running dev machine takes 4.1 seconds warm. A
+cold start goes over, and the deploy stops with:
+
+```
+Error: P1001: Can't reach database server at ep-….aws.neon.tech:5432
+```
+
+The image is fine; the migration was never attempted. The release command
+retries five times, five seconds apart, which covers it. If a deploy still
+fails this way, the database is genuinely unreachable — check the Neon project
+before looking at anything in this repository.
+
+Raising `connect_timeout` in `DIRECT_DATABASE_URL` would help too and is not
+mutually exclusive; the retry is here because it also survives a blip, a
+failover and a short maintenance window, none of which a longer timeout does.
+
 ## Minimal machine footprint
 
 Deploy with `--ha=false` (also for manual deployments); this prevents default
