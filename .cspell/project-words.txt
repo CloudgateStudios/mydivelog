@@ -29,6 +29,7 @@ ASVS
 BSAC
 Bonaire
 CCPA
+Carto         # basemap provider
 CMAS
 DKIM
 DMARC          # OWASP Application Security Verification Standard
@@ -54,6 +55,7 @@ Suunto
 TRAK          # Scubapro LogTRAK
 UDDF          # Universal Dive Data Format
 WCAG
+basemap
 autoincrement
 checkpointing
 checksummed

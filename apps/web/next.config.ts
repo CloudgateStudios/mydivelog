@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import { MAX_UPLOAD_BYTES } from '@mydivelog/contracts';
+import { tileSource } from './lib/tiles';
 
 // One .env at the repo root, which every other package already reads and Next
 // does not look for.
@@ -15,16 +16,26 @@ if (existsSync(envPath)) process.loadEnvFile(envPath);
  * sending them. The privacy page makes claims about how this site behaves in a
  * browser; these are what make some of those claims true rather than intended.
  *
- * The CSP is deliberately strict because this app has no third-party scripts,
- * no analytics SDK and no embedded widgets — there is nothing to allowlist, so
- * the policy costs nothing to keep tight. `'unsafe-inline'` for styles is
- * Next's inline critical CSS; scripts do not get it.
+ * The CSP is strict because this app has no third-party scripts, no analytics
+ * SDK and no embedded widgets. `'unsafe-inline'` for styles is Next's inline
+ * critical CSS; scripts do not get it.
+ *
+ * One exception, and it is the only one: the basemap's tiles. They are images
+ * from another origin, so `img-src` has to admit that origin or the map is a
+ * grey grid — and a blocked image reports nothing to anyone. The host comes
+ * from `lib/tiles.ts` rather than being written out here, because a policy
+ * that disagrees with the map it is meant to permit fails silently and looks
+ * like a bug in the map.
+ *
+ * Tiles are `<img>` requests, so `connect-src` stays closed.
  */
+const tiles = tileSource();
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${tiles.hosts.join(' ')}`,
   "font-src 'self' data:",
   // The API is called from the server, never the browser, so the browser needs
   // to reach nothing but this origin.
