@@ -166,6 +166,60 @@ describe('importing the same log as an Excel workbook', () => {
   });
 });
 
+/**
+ * A dive number means "the nth dive I have done".
+ *
+ * It was assigned in the order rows appeared in the file, and the sample UDDF
+ * is newest-first — so the most recent dive became number 1 and the oldest
+ * became the highest, which is exactly backwards and is what a diver sees
+ * first when they open their logbook.
+ */
+describe('dive numbering', () => {
+  const inDateOrder = async () => {
+    const dives = await prisma.dive.findMany({
+      where: { userId, deletedAt: null },
+      orderBy: { startTimeUtc: 'asc' },
+      select: { diveNumber: true, startTimeUtc: true },
+    });
+    return dives;
+  };
+
+  it('numbers a newest-first file oldest-first', async () => {
+    await commitAll(await importFile('uddf-sample.uddf'));
+    const dives = await inDateOrder();
+
+    expect(dives.length).toBeGreaterThan(1);
+    expect(dives[0]?.diveNumber).toBe(1);
+    expect(dives.at(-1)?.diveNumber).toBe(dives.length);
+    // Every step forwards in time is a step up in number.
+    expect(dives.every((d, i) => i === 0 || d.diveNumber > (dives[i - 1]?.diveNumber ?? 0))).toBe(
+      true,
+    );
+  });
+
+  it('numbers an oldest-first file the same way', async () => {
+    // The file's order must stop mattering, not merely happen to be right.
+    await commitAll(await importFile('spreadsheet-sample.csv'));
+    const dives = await inDateOrder();
+    expect(dives[0]?.diveNumber).toBe(1);
+    expect(dives.at(-1)?.diveNumber).toBe(dives.length);
+  });
+
+  it('appends a second import after the first, without renumbering it', async () => {
+    await commitAll(await importFile('spreadsheet-sample.csv'));
+    const before = await inDateOrder();
+
+    await commitAll(await importFile('uddf-sample.uddf'));
+    const after = await inDateOrder();
+
+    // Nothing already in the logbook is touched by an import. The UDDF
+    // overlaps the spreadsheet, so most of its dives merge rather than being
+    // created, and the ones that are new are numbered from the top.
+    expect(after.length).toBeGreaterThanOrEqual(before.length);
+    expect(Math.max(...after.map((d) => d.diveNumber))).toBe(after.length);
+  });
+});
+
 describe('importing the computer export onto an existing logbook', () => {
   it('merges the overlap instead of duplicating it', async () => {
     // The whole product, through the API: 24 rows and 6 computer dives make

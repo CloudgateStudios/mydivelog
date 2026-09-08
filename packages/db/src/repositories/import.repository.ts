@@ -146,7 +146,7 @@ export function createImportRepository(prisma: PrismaClient) {
           where: { userId: scope.userId, deletedAt: null },
           _max: { diveNumber: true },
         });
-        let nextNumber = (highest._max.diveNumber ?? 0) + 1;
+        const numbers = numberRowsChronologically(rows, (highest._max.diveNumber ?? 0) + 1);
 
         for (const row of rows) {
           if (row.decision === 'skip') {
@@ -173,7 +173,7 @@ export function createImportRepository(prisma: PrismaClient) {
               data: {
                 id: diveId,
                 userId: scope.userId,
-                diveNumber: nextNumber++,
+                diveNumber: numbers.get(row.rowIndex) ?? 0,
                 // Placeholders: the real values land in the resolution below,
                 // which is the only place that decides what a dive shows.
                 startTimeUtc: (row.fields['startTimeUtc'] as Date | undefined) ?? new Date(0),
@@ -301,6 +301,45 @@ export function createImportRepository(prisma: PrismaClient) {
 export type ImportRepository = ReturnType<typeof createImportRepository>;
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
+
+/**
+ * Which number each row's new dive gets.
+ *
+ * By date, not by the order the rows happen to be in. A dive number means
+ * "the nth dive I have done", so the oldest dive in a batch takes the lowest
+ * number — and a file's row order is no evidence of that. Plenty of exports
+ * are newest-first: the sample UDDF is, and numbering by position gave its
+ * most recent dive number 1 and its oldest number 6, precisely backwards.
+ *
+ * Rows are numbered from the diver's current highest, so an import appends.
+ * That is right when the file is newer than everything already logged and
+ * wrong when it is not — and nothing here can fix that, because it is a fact
+ * about the whole logbook rather than about this batch.
+ * `numberingIsChronological` in @mydivelog/domain detects it afterwards, and
+ * the diver is offered a renumbering rather than given one.
+ *
+ * A row with no start time sorts last and keeps its relative position, which
+ * is the only stable answer when there is nothing to sort on.
+ */
+function numberRowsChronologically(
+  rows: readonly CommitRow[],
+  startAt: number,
+): Map<number, number> {
+  const creating = rows.filter((row) => row.decision === 'create' || row.diveId === undefined);
+
+  const ordered = [...creating].sort((a, b) => {
+    const at = (a.fields['startTimeUtc'] as Date | undefined)?.getTime();
+    const bt = (b.fields['startTimeUtc'] as Date | undefined)?.getTime();
+    if (at === undefined && bt === undefined) return a.rowIndex - b.rowIndex;
+    if (at === undefined) return 1;
+    if (bt === undefined) return -1;
+    // The same instant twice is a repetitive dive logged with only a date;
+    // row order is then the diver's own sequence and the best evidence there is.
+    return at !== bt ? at - bt : a.rowIndex - b.rowIndex;
+  });
+
+  return new Map(ordered.map((row, index) => [row.rowIndex, startAt + index]));
+}
 
 async function writeProvenance(
   tx: Tx,
