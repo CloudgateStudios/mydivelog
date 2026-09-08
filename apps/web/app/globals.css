@@ -40,6 +40,20 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   color-scheme: light;
+
+  /*
+   * How wide the page is allowed to get, and how much air it keeps at the
+   * edges. Both the sticky bar and the content below it use these, which is
+   * the only way the brand ever lines up with the first heading — the bar was
+   * full-bleed while the content sat in a 60rem column, so on a wide screen
+   * they started 300px apart and the page read as squeezed into the middle.
+   *
+   * A cap rather than no limit: a line of prose 1600px wide is unreadable, and
+   * so is a table whose five columns are spread over the same distance. The
+   * cap is generous and the measure is kept separately, below.
+   */
+  --shell: 100rem;
+  --gutter: clamp(1rem, 3vw, 2.5rem);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -261,9 +275,9 @@ input[type='date']::-webkit-calendar-picker-indicator:focus-visible {
 }
 
 main.app {
-  max-width: 60rem;
+  max-width: var(--shell);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem var(--gutter) 3rem;
 }
 main.app header {
   display: flex;
@@ -289,6 +303,21 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+
+/*
+ * A table with a handful of short columns does not want a wide page.
+ *
+ * The log is five columns — number, date, depth, duration, whether there is a
+ * profile — and stretched across a full-width shell they drift into three
+ * clusters with a lane of nothing after the last one. Reading across a row
+ * stops being possible, which is the only thing the table is for.
+ *
+ * So the page is wide and this table is not. The filters above it and the
+ * charts elsewhere use the room; the rows stay close enough to scan.
+ */
+.log-table {
+  max-width: 78rem;
+}
 th,
 td {
   text-align: left;
@@ -311,18 +340,25 @@ th.num {
 /* --- Marketing ----------------------------------------------------------- */
 
 .nav {
-  display: flex;
-  align-items: center;
-  /* Seven destinations now. A smaller gap keeps them on one line down to a
-     tablet, and the wrap below handles narrower than that. */
-  gap: 0.5rem 1rem;
-  padding: 1rem 1.5rem;
+  /* Full bleed, so the rule and the panel colour reach both edges. */
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   position: sticky;
   top: 0;
   z-index: 10;
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  /* Seven destinations now. A smaller gap keeps them on one line down to a
+     tablet, and the wrap below handles narrower than that. */
+  gap: 0.5rem 1rem;
   flex-wrap: wrap;
+  /* The same shell as the content, so the brand sits directly above the
+     first heading rather than out at the window's edge. */
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 1rem var(--gutter);
 }
 .brand {
   font-weight: 650;
@@ -330,20 +366,20 @@ th.num {
   text-decoration: none;
   letter-spacing: -0.01em;
 }
-.nav nav {
+.nav-inner nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 0.9rem;
 }
-.nav nav a {
+.nav-inner nav a {
   color: var(--muted);
   text-decoration: none;
   font-size: 14px;
 }
-.nav nav a:hover {
+.nav-inner nav a:hover {
   color: var(--text);
 }
-.nav > .button {
+.nav-inner > .button {
   margin-left: auto;
 }
 .button.small {
@@ -352,10 +388,19 @@ th.num {
   font-size: 14px;
 }
 
+/*
+ * The marketing pages keep a narrower column than the app on purpose: they are
+ * mostly prose, and prose has a measure. Their header carries `.nav-marketing`
+ * so the bar above narrows to match — otherwise the brand sits 200px left of
+ * the headline it is supposed to introduce.
+ */
+.nav-marketing {
+  max-width: 68rem;
+}
 .landing {
-  max-width: 62rem;
+  max-width: 68rem;
   margin: 0 auto;
-  padding: 0 1.5rem 4rem;
+  padding: 0 var(--gutter) 4rem;
 }
 
 .hero {

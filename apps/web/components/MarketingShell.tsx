@@ -17,15 +17,19 @@ export function MarketingShell({
   return (
     <>
       <header className="nav">
-        <Wordmark href="/" />
-        <nav>
-          <a href="/formats">Formats</a>
-          <a href="/docs">How it works</a>
-          <a href="/pricing">Pricing</a>
-        </nav>
-        <a className="button small" href={user ? '/logbook' : '/signin'}>
-          {user ? 'Your logbook' : 'Sign in'}
-        </a>
+        {/* Same shell as the page below, so the brand sits above the headline
+            rather than out at the window's edge. See `.nav-inner`. */}
+        <div className="nav-inner nav-marketing">
+          <Wordmark href="/" />
+          <nav>
+            <a href="/formats">Formats</a>
+            <a href="/docs">How it works</a>
+            <a href="/pricing">Pricing</a>
+          </nav>
+          <a className="button small" href={user ? '/logbook' : '/signin'}>
+            {user ? 'Your logbook' : 'Sign in'}
+          </a>
+        </div>
       </header>
 
       <main id="main" tabIndex={-1} className="landing">

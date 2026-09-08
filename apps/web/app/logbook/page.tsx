@@ -17,6 +17,7 @@ type Dive = {
   maxDepthM: number | null;
   durationS: number | null;
   hasProfile: boolean;
+  site: { name: string } | null;
 };
 
 type Facets = {
@@ -105,53 +106,60 @@ export default async function Logbook({
           <Empty filtered={isFiltered(filters)} />
         ) : (
           <>
-            <table>
-              <caption className="visually-hidden">
-                Your dives{sentence ? `, ${sentence}` : ''}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Date</th>
-                  <th scope="col" className="num">
-                    Depth
-                  </th>
-                  <th scope="col" className="num">
-                    Duration
-                  </th>
-                  <th scope="col">Profile</th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((dive) => (
-                  <tr key={dive.id}>
-                    <th scope="row">
-                      <a href={`/dives/${dive.id}`}>{dive.diveNumber}</a>
+            {/* Six columns is one more than a phone has room for, so the
+                scroll stays inside the table rather than taking the page
+                sideways with it. */}
+            <div className="table-scroll">
+              <table className="log-table">
+                <caption className="visually-hidden">
+                  Your dives{sentence ? `, ${sentence}` : ''}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Site</th>
+                    <th scope="col" className="num">
+                      Depth
                     </th>
-                    <td>{dive.startTimeLocal.slice(0, 10)}</td>
-                    <td className="num">{u.depth(dive.maxDepthM)}</td>
-                    <td className="num">{u.duration(dive.durationS)}</td>
-                    <td>
-                      {/* The tick is decoration; the text is what a screen
-                          reader reads, so the column is not a row of "check". */}
-                      {dive.hasProfile ? (
-                        <>
-                          <span aria-hidden="true">✓</span>
-                          <span className="visually-hidden">Has a depth profile</span>
-                        </>
-                      ) : (
-                        <>
-                          <span aria-hidden="true" className="muted">
-                            —
-                          </span>
-                          <span className="visually-hidden">No depth profile</span>
-                        </>
-                      )}
-                    </td>
+                    <th scope="col" className="num">
+                      Duration
+                    </th>
+                    <th scope="col">Profile</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {page.data.map((dive) => (
+                    <tr key={dive.id}>
+                      <th scope="row">
+                        <a href={`/dives/${dive.id}`}>{dive.diveNumber}</a>
+                      </th>
+                      <td>{dive.startTimeLocal.slice(0, 10)}</td>
+                      <td>{dive.site?.name ?? <span className="muted">—</span>}</td>
+                      <td className="num">{u.depth(dive.maxDepthM)}</td>
+                      <td className="num">{u.duration(dive.durationS)}</td>
+                      <td>
+                        {/* The tick is decoration; the text is what a screen
+                          reader reads, so the column is not a row of "check". */}
+                        {dive.hasProfile ? (
+                          <>
+                            <span aria-hidden="true">✓</span>
+                            <span className="visually-hidden">Has a depth profile</span>
+                          </>
+                        ) : (
+                          <>
+                            <span aria-hidden="true" className="muted">
+                              —
+                            </span>
+                            <span className="visually-hidden">No depth profile</span>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {page.nextCursor && (
               <p className="pager">

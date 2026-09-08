@@ -10,7 +10,10 @@
     ".git/**",
     "fixtures/**",
     "**/CHANGELOG.md",
-    "packages/db/src/generated/**"
+    "packages/db/src/generated/**",
+    "test-results/**",
+    "playwright-report/**",
+    ".turbo/**"
   ],
   "dictionaryDefinitions": [
     {

@@ -127,6 +127,10 @@ export function createDiveRepository(prisma: PrismaClient) {
         orderBy: orderFor(filters.sort),
         take: take + 1, // one extra row tells the caller whether more exist
         ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+        // The name, not just the id. A log that says where each dive was is
+        // the difference between a list of numbers and a logbook, and the
+        // alternative is every caller resolving ids against the facets.
+        include: { site: { select: { name: true } } },
       });
     },
 
