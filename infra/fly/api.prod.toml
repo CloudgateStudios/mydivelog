@@ -34,8 +34,23 @@ primary_region = "ord"
 # It runs from `dist`, not from `prisma/seed.ts`: the package lands under
 # node_modules in the image and Node will not strip types from TypeScript
 # there.
+#
+# The migration is retried, because reaching the database is the step most
+# likely to fail for a reason that has nothing to do with the deploy. Neon's
+# compute suspends when idle, and Prisma's default connect timeout is five
+# seconds — `migrate status` from a running machine takes 4.1s warm, so a cold
+# start goes over and the deploy aborts with P1001 on a perfectly good image.
+# That is what happened on 2026-09-08.
+#
+# Five attempts, five seconds apart: about fifty seconds of tolerance, which is
+# far more than a cold start needs and still short enough that a genuinely
+# unreachable database fails the deploy rather than hanging it. It does still
+# fail — `exit 1` after the last attempt, so a real problem aborts as before
+# and the seed never runs against a schema that was not migrated. A retry that
+# swallowed the failure would be worse than no retry, so both paths are
+# exercised in the pull request that added this.
 [deploy]
-  release_command = "sh -c 'cd node_modules/@mydivelog/db && node_modules/.bin/prisma migrate deploy && node dist/seed-cli.js'"
+  release_command = "sh -c 'cd node_modules/@mydivelog/db && n=0; until node_modules/.bin/prisma migrate deploy; do n=$((n+1)); [ $n -ge 5 ] && echo \"migrate failed $n times\" && exit 1; echo \"database unreachable, retry $n in 5s\"; sleep 5; done && node dist/seed-cli.js'"
 
 [http_service]
   internal_port = 8080
