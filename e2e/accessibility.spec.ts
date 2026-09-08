@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { signIn } from './session';
+import { importFixtureFor, signIn } from './session';
 
 /**
  * WCAG 2.2 AA on the primary flows, measured rather than claimed.
@@ -396,6 +396,40 @@ test.describe('charts', () => {
       await summary.press('Enter');
       await expect(chart.locator('table tbody tr').first()).toBeVisible();
     }
+  });
+
+  /**
+   * The case a spreadsheet produces.
+   *
+   * A spreadsheet records where you were by name and not in degrees — the
+   * reference workbook has a Location column and no latitude anywhere — so
+   * every site of a diver who imported one is unlocated. The page used to
+   * render the map section not at all: no plot, no placeholder, nothing
+   * between the dive count and the table. Silence reads as breakage, and the
+   * fix is one import away, which is exactly what it now says.
+   */
+  test('says why there is no plot when nothing has coordinates', async ({ browser }) => {
+    // Unique per run *and* per project: the suite runs every test twice, once
+    // per colour scheme, and two workers landing in the same millisecond would
+    // share a logbook and race each other's import.
+    const email = `nomap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@mydivelog.invalid`;
+    await importFixtureFor(email, 'spreadsheet-sample.csv');
+
+    const context = await browser.newContext();
+    await signIn(context, email);
+    const page = await context.newPage();
+    await page.goto('/sites');
+
+    await expect(page.locator('.site-map')).toHaveCount(0);
+    await expect(page.locator('main')).toContainText(/coordinates yet/i);
+    // And says where coordinates come from, rather than only that they are
+    // absent. "Nothing to plot" on its own is a dead end.
+    await expect(page.locator('main')).toContainText(/dive computer/i);
+    await expect(page.getByRole('link', { name: /import a computer export/i })).toBeVisible();
+
+    const { violations } = await scan(page).analyze();
+    expect(report(violations), report(violations)).toBe('');
+    await context.close();
   });
 
   test('the site plot says it is not a map', async ({ page }) => {

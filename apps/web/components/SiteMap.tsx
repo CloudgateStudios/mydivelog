@@ -69,3 +69,34 @@ export function SiteMap({ map, unlocated }: { map: Projection; unlocated: number
     </figure>
   );
 }
+
+/**
+ * What stands where the plot would be when nothing can be plotted.
+ *
+ * A spreadsheet almost never carries coordinates — the reference workbook has
+ * a Location and a Dive Site column and no latitude anywhere — so a diver who
+ * imported one has every site unlocated and had, until now, a page that simply
+ * skipped the map with no word about why. Silence reads as breakage, and the
+ * fix for it is one import away, which makes saying nothing the worst of the
+ * available options.
+ */
+export function NoSiteMap({ sites }: { sites: number }) {
+  return (
+    <div className="site-map-empty">
+      <p>
+        <strong>
+          {sites === 1 ? 'Your site has' : `None of your ${sites} sites have`} coordinates yet
+        </strong>
+        , so there is nothing to plot.
+      </p>
+      <p className="muted small">
+        Coordinates come from dive computers. A spreadsheet records where you were by name; a UDDF
+        export records it in degrees. Import one and the sites you already have gain their locations
+        — the same site, located, rather than a second copy of it.
+      </p>
+      <p className="muted small">
+        <a href="/import">Import a computer export</a> · <a href="/formats">What works</a>
+      </p>
+    </div>
+  );
+}
