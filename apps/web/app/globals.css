@@ -379,6 +379,116 @@ th.num {
 .nav-inner nav a:hover {
   color: var(--text);
 }
+/* --- The account menu ----------------------------------------------------- */
+
+/*
+ * A disclosure, not a state flag. See components/AccountMenu.tsx: the browser
+ * handles the keyboard and the `aria-expanded`, and it opens with no
+ * JavaScript at all.
+ */
+.account {
+  /* Pushed to the end of the bar, which is where a person looks for their own
+     name. `position: relative` is what the panel below hangs from. */
+  margin-left: auto;
+  position: relative;
+}
+
+.account > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  /* 24px minimum, so the target is not smaller than WCAG 2.2 asks for. */
+  min-height: 24px;
+}
+.account > summary::-webkit-details-marker {
+  display: none;
+}
+.account > summary:hover {
+  color: var(--text);
+  background: var(--shelf);
+}
+.account > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.account[open] > summary {
+  color: var(--text);
+  background: var(--shelf);
+}
+.account-caret {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  /* Anchored to the right edge: the trigger is the last thing in the bar, so
+     a menu growing rightwards would leave the window. */
+  right: 0;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem;
+  gap: 0.15rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  /* The one shadow in the app. It is the only thing that floats over content,
+     and without it the panel and the page beneath it are the same colour. */
+  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
+  z-index: 20;
+}
+
+.account-menu a,
+.account-signout {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-radius: 5px;
+  color: var(--text);
+  text-decoration: none;
+  font: inherit;
+  font-size: 14px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.account-menu a:hover,
+.account-signout:hover {
+  background: var(--shelf);
+}
+.account-menu a:focus-visible,
+.account-signout:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.account-menu form {
+  margin: 0;
+}
+
+/*
+ * Wrapped onto its own line, the bar is no longer a row and `margin-left: auto`
+ * has nothing to push against. Anchoring the panel to the right of a
+ * full-width trigger would then put it off the left of a phone.
+ */
+@media (max-width: 640px) {
+  .account {
+    margin-left: 0;
+  }
+  .account-menu {
+    right: auto;
+    left: 0;
+  }
+}
+
 .nav-inner > .button {
   margin-left: auto;
 }
