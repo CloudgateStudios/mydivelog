@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { importFixtureFor, signIn } from './session';
+import { importFixtureFor, shareASiteOf, signIn } from './session';
 
 /**
  * WCAG 2.2 AA on the primary flows, measured rather than claimed.
@@ -499,6 +499,68 @@ test.describe('charts', () => {
     await expect(page.locator('.site-map svg')).toBeVisible();
     await expect(page.locator('.site-map svg')).toHaveAttribute('aria-label', /dive sites/i);
     await expect(page.locator('.site-map-canvas')).toBeHidden();
+    await context.close();
+  });
+});
+
+test.describe('suggesting a name for a shared site', () => {
+  /**
+   * A diver of its own per test, not the demo account.
+   *
+   * A suggestion is durable and a diver may only have one open per site, so
+   * two tests sharing a logbook means the second finds no form — and the first
+   * run of the suite passes while every run after it fails. Unique per run and
+   * per project, because the suite runs each test in both colour schemes.
+   */
+  async function aDiverWithASharedSite(what: string): Promise<{ email: string; siteId: string }> {
+    const email = `${what}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@mydivelog.invalid`;
+    await importFixtureFor(email, 'uddf-sample.uddf');
+    return { email, siteId: await shareASiteOf(email) };
+  }
+
+  test('offers a form, and says what happens to it', async ({ browser }) => {
+    const { email, siteId } = await aDiverWithASharedSite('suggest');
+    const context = await browser.newContext();
+    await signIn(context, email);
+    const page = await context.newPage();
+    await page.goto(`/sites/${siteId}`);
+
+    // A shared site is not editable — the whole point is that its name is not
+    // one diver's to change — so what a diver gets here is a request.
+    await expect(page.locator('.site-edit summary', { hasText: /edit this site/i })).toHaveCount(0);
+    await page.getByText(/suggest a different name/i).click();
+    await page.getByLabel(/what is this site called/i).fill('A name from the e2e run');
+    await page.getByRole('button', { name: /send for review/i }).click();
+
+    // Not "Saved." — nothing was. Saying so would be the page claiming a
+    // rename that a moderator has not agreed to.
+    await expect(page.locator('.notice')).toContainText(/moderator will look at it/i);
+    await expect(page.locator('.name-suggestions .pill')).toContainText(/waiting for review/i);
+
+    // And no second form while one is open, so the queue is not one diver
+    // changing their mind five times.
+    await expect(page.getByText(/suggest a different name/i)).toHaveCount(0);
+    await context.close();
+  });
+
+  test('has no accessibility violations', async ({ browser }) => {
+    const { email, siteId } = await aDiverWithASharedSite('suggest-a11y');
+    const context = await browser.newContext();
+    await signIn(context, email);
+    const page = await context.newPage();
+    await page.goto(`/sites/${siteId}`);
+
+    // Opened, because a closed <details> hides its contents from axe as well
+    // as from the reader — and the form is the part that is new here. Asserted
+    // rather than skipped if absent: a scan of a page without the form is a
+    // pass that proves nothing, which is how this test passed on a second run
+    // while the form was gone.
+    const disclosure = page.getByText(/suggest a different name/i);
+    await expect(disclosure).toBeVisible();
+    await disclosure.click();
+
+    const { violations } = await scan(page).analyze();
+    expect(report(violations), report(violations)).toBe('');
     await context.close();
   });
 });

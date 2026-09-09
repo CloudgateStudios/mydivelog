@@ -313,6 +313,13 @@ jobs:
       - name: Load the sample logbook
         run: pnpm demo
 
+      # A staff account, so the accessibility run can reach the parts of the
+      # site that only exist once staff have acted — a shared site, and the
+      # form for suggesting what it should be called. The email is the one
+      # `.env.example` names as ADMIN_DEV_STAFF_EMAIL.
+      - name: Make a staff account for the panel
+        run: pnpm staff staff@mydivelog.local --create
+
       # Both apps, both colour schemes. The palette is defined in two themes,
       # and until this ran twice only one of them was ever exercised — which
       # is how a primary button shipped at 1.9:1 against its own background

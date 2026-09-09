@@ -211,6 +211,22 @@ model SiteAlias {
   source  String            // import | user | staff
 }
 
+model SiteNameSuggestion {  // a diver's proposal for what a shared site is called
+  id       String  @id @db.Uuid
+  siteId   String  @db.Uuid
+  userId   String  @db.Uuid
+  proposed String
+  reason   String?
+
+  status       String    @default("pending")  // pending | approved | rejected
+  decidedById  String?   @db.Uuid
+  decidedAt    DateTime?
+  decisionNote String?                        // required on a rejection; shown to the diver
+
+  @@index([status, createdAt])
+  @@index([userId, status])
+}
+
 model Region {              // hierarchical: Caribbean > Bonaire > Kralendijk
   id        String  @id @db.Uuid
   parentId  String? @db.Uuid
@@ -220,9 +236,30 @@ model Region {              // hierarchical: Caribbean > Bonaire > Kralendijk
 }
 ```
 
-Sites imported from a user's file start **private**. A staff/automated promotion path moves
-well-attested sites into the public database. This avoids polluting a shared namespace with
+Sites imported from a user's file start **private**. Promotion into the public database is
+**staff-initiated**, which is what keeps a shared namespace free of
 `site_69ab7a96dce6e40c7d3abe65`.
+
+Naming follows from that split, and the line is *whose name it is*:
+
+- **Private site** — the diver's own record, and they rename it directly (`PATCH /v1/sites/:id`).
+  Nobody else can see it, so there is nobody to ask.
+- **Shared site** — the name belongs to everyone who dives there, so a rename becomes a request:
+  `POST /v1/sites/:id/name-suggestions`, decided by staff at `/site-names` in the admin panel.
+  Only a diver who has logged a dive at the site may suggest one, and only one open suggestion per
+  diver per site, so the queue stays readable.
+
+An **import never creates a suggestion.** A file is evidence of where somebody dived, not an
+argument about what a place is called, and a queue fed by imports would be a queue nobody reads.
+
+Approving renames the site, keeps the previous name as a `SiteAlias` so a re-import of an older
+file still matches this site — except the `Unnamed site` placeholder, which as an alias would match
+every coordinates-only site a dive computer ever produced — and auto-rejects the other pending
+suggestions for that site, which were made against a name that has now moved.
+
+Rejecting keeps the name and **requires a reason**, which is emailed to the diver. The reason is
+also stored on the row and shown on the site page: mail delivery can fail, and a decision the diver
+cannot read is indistinguishable from the suggestion having been lost.
 
 Deduplication is **geographic clustering within ~200 m plus name similarity** — never exact
 match. The sample data has sites 200 m apart that are the same site logged twice.

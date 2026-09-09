@@ -423,6 +423,34 @@ label.check input {
 }
 
 /*
+ * One suggested site name, in a queue of them.
+ *
+ * Not a table row: the reason a diver gives is prose and the decision needs a
+ * reason of its own, and both of those in a cell would make every other row
+ * in the queue taller than the thing it says.
+ */
+.suggestion {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.suggestion:last-child {
+  border-bottom: 0;
+}
+.suggestion h2 {
+  font-size: 15px;
+  margin: 0 0 0.15rem;
+}
+.suggestion .notes {
+  /* The diver's own words for why. Prose, so give it a measure. */
+  margin: 0.4rem 0;
+  max-width: 46rem;
+  white-space: pre-wrap;
+}
+.suggestion .actions {
+  margin-top: 0.6rem;
+}
+
+/*
  * What just happened, or just failed to.
  *
  * A left rule rather than a fill: these appear above dense tables and a solid

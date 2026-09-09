@@ -1773,3 +1773,46 @@ a:visited {
 button[aria-busy='true'] {
   cursor: progress;
 }
+
+/* --- Suggested names for a shared site ----------------------------------- */
+
+.site-shared {
+  margin: 1.5rem 0;
+}
+
+.name-suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+/*
+ * The state of a proposal, said in a word as well as a colour — colour alone
+ * would leave "used" and "not used" identical to anyone who cannot tell these
+ * two apart, and they are opposites.
+ */
+.pill {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.05rem 0.55rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pill.good {
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.pill.bad {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.name-suggestions p {
+  margin: 0.25rem 0 0;
+}

@@ -64,6 +64,8 @@ model User {
   refreshTokens  RefreshToken[]
   idempotencyKeys IdempotencyKey[]
   savedViews     SavedView[]
+  siteSuggestions SiteNameSuggestion[]
+  suggestionsDecided SiteNameSuggestion[] @relation("SuggestionDecider")
 
   @@index([deletedAt])
   @@map("users")
@@ -216,13 +218,56 @@ model Site {
 
   owner   User?       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   region  Region?     @relation(fields: [regionId], references: [id])
-  aliases SiteAlias[]
-  dives   Dive[]
+  aliases     SiteAlias[]
+  dives       Dive[]
+  suggestions SiteNameSuggestion[]
 
   @@index([ownerUserId, deletedAt])
   @@index([regionId])
   @@index([latitude, longitude])
   @@map("sites")
+}
+
+/**
+ * A diver's proposal for what a shared site should be called.
+ *
+ * Only shared sites need this. A site nobody else can see is the diver's own
+ * record and they edit it directly; once a site is promoted into the shared
+ * database its name belongs to everyone who dives there, and changing it is a
+ * request rather than an edit.
+ *
+ * The row outlives the decision on purpose. A rejection the diver can still
+ * read is the difference between "they said no and why" and a name that
+ * quietly never changed — and the emailed notice can fail without the answer
+ * being lost, because the record is where the answer actually lives.
+ */
+model SiteNameSuggestion {
+  id     String @id @db.Uuid
+  siteId String @db.Uuid
+  userId String @db.Uuid
+
+  proposed String
+  /** Why, in the diver's words. What makes a queue readable. */
+  reason   String?
+
+  status       String    @default("pending") // pending | approved | rejected
+  decidedById  String?   @db.Uuid
+  decidedAt    DateTime?
+  /** Shown to the diver, so a refusal is answerable rather than silent. */
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+
+  site      Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy User? @relation("SuggestionDecider", fields: [decidedById], references: [id])
+
+  // The queue is read by status, oldest first, which is the only query that
+  // has to be fast.
+  @@index([status, createdAt])
+  @@index([siteId])
+  @@index([userId, status])
+  @@map("site_name_suggestions")
 }
 
 model SiteAlias {
