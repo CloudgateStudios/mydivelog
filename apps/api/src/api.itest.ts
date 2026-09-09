@@ -547,6 +547,117 @@ describe('stats and sites', () => {
   });
 });
 
+/**
+ * A diver correcting a site of their own.
+ *
+ * A dive computer names a site `Unnamed site` because it had coordinates and
+ * an opaque id and nothing else. Until now only staff could fix that, on a
+ * record belonging to one diver and visible to nobody else.
+ */
+describe('editing your own site', () => {
+  let siteId = '';
+
+  beforeAll(async () => {
+    // Created the way real ones are: by importing a dive that names a place.
+    const created = await http
+      .post('/v1/dives')
+      .set('authorization', `Bearer ${tokenA}`)
+      .send(
+        newDive({
+          startTimeUtc: '2026-05-01T10:00:00.000Z',
+          startTimeLocal: '2026-05-01T10:00:00',
+        }),
+      );
+    expect(created.status).toBe(201);
+
+    const site = await prisma.site.create({
+      data: {
+        id: randomUUID(),
+        name: 'Unnamed site',
+        ownerUserId: (await prisma.user.findUniqueOrThrow({ where: { email: emailA } })).id,
+        latitude: 12.0388,
+        longitude: -68.2649,
+      },
+    });
+    siteId = site.id;
+    await prisma.dive.update({ where: { id: created.body.id }, data: { siteId } });
+  });
+
+  it('renames it', async () => {
+    const res = await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ name: 'Vista Blue' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Vista Blue');
+  });
+
+  it('does not keep the placeholder as an alias', async () => {
+    // `Unnamed site` as an alias would match every coordinates-only site a
+    // dive computer ever produces, quietly folding unrelated places into this
+    // one. An alias exists to help matching, and that one would poison it.
+    const aliases = await prisma.siteAlias.findMany({ where: { siteId } });
+    expect(aliases.map((a) => a.name)).not.toContain('Unnamed site');
+  });
+
+  it('keeps a real previous name as an alias, so old files still match', async () => {
+    await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ name: 'Vista Blue North' });
+
+    const aliases = await prisma.siteAlias.findMany({ where: { siteId } });
+    expect(aliases.map((a) => a.name)).toContain('Vista Blue');
+    // And not an alias of its own current name.
+    expect(aliases.map((a) => a.name)).not.toContain('Vista Blue North');
+  });
+
+  it('sets coordinates, and refuses half of a pair', async () => {
+    const half = await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ latitude: 12.5 });
+    expect(half.status).toBe(422);
+
+    const both = await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ latitude: 12.5, longitude: -68.1 });
+    expect(both.status).toBe(200);
+    expect(both.body.latitude).toBeCloseTo(12.5, 4);
+  });
+
+  it('refuses another diver, and does not confirm the site exists', async () => {
+    const res = await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenB}`)
+      .send({ name: 'Not yours' });
+
+    // 404 rather than 403: whether a site exists is not something one diver
+    // should be able to learn about another's logbook.
+    expect(res.status).toBe(404);
+    expect(await prisma.site.findUniqueOrThrow({ where: { id: siteId } })).toMatchObject({
+      name: 'Vista Blue North',
+    });
+  });
+
+  it('refuses a site in the shared database, and says what to do instead', async () => {
+    await prisma.site.update({ where: { id: siteId }, data: { isPublic: true } });
+
+    const res = await http
+      .patch(`/v1/sites/${siteId}`)
+      .set('authorization', `Bearer ${tokenA}`)
+      .send({ name: "Everyone's now" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.detail).toMatch(/shared database/i);
+    expect(res.body.detail).toMatch(/moderator/i);
+
+    await prisma.site.update({ where: { id: siteId }, data: { isPublic: false } });
+  });
+});
+
 describe('saved views', () => {
   it('round-trips a filter set and reopens it', async () => {
     const name = `Deep wrecks ${randomUUID()}`;
