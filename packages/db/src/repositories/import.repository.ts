@@ -124,6 +124,16 @@ const INT_COLUMNS = new Set(['tzOffsetMinutes', 'durationS', 'rating']);
  */
 const BATCH_TRANSACTION = { timeout: 120_000, maxWait: 15_000 } as const;
 
+/**
+ * What a site is called before anything has named it.
+ *
+ * A constant because it is load-bearing in two places that have to agree: the
+ * name given to a site a dive computer located but did not name, and the test
+ * in `resolveSite` for whether a real name may replace it. A second literal
+ * that drifted by one character would leave placeholders that never resolve.
+ */
+export const UNNAMED_SITE = 'Unnamed site';
+
 export function createImportRepository(prisma: PrismaClient) {
   return {
     /**
@@ -695,6 +705,32 @@ async function resolveSite(
         existing.lat = coords.lat;
         existing.lon = coords.lon;
       }
+      /*
+       * A placeholder yields to a real name.
+       *
+       * The site above may have been created by a dive computer, which gives
+       * coordinates and an opaque id rather than a name — so it was called
+       * `Unnamed site` and waited for one. When a later source supplies a real
+       * name for the same place, that is the name; the placeholder was never
+       * anybody's answer to "where was this dive".
+       *
+       * This is the same promotion the coordinates just had, and it was
+       * missing: a site would gain a location from a second source but keep
+       * `Unnamed site` forever, with the real name filed underneath it as an
+       * alias. Nothing surfaced that, and until sites are editable there was
+       * no way to correct it either.
+       *
+       * Only the placeholder yields. Two real names disagreeing is the
+       * `1,000 Steps` / `Thousand Steps` case, and there the first one wins
+       * and the second becomes an alias — a later import must not rename a
+       * site the diver has been reading for a year.
+       */
+      if (name !== undefined && existing.name === UNNAMED_SITE) {
+        await tx.site.update({ where: { id: existing.id }, data: { name } });
+        // Kept in step, so the rest of this batch matches on the real name.
+        existing.name = name;
+      }
+
       // Every spelling seen becomes an alias, which is how `1,000 Steps`,
       // `Thousand Steps` and `1000 Steps` converge instead of being guessed
       // at again on every import.
@@ -715,8 +751,9 @@ async function resolveSite(
   const created = {
     id,
     // A dive computer's site has coordinates and no name worth keeping, so it
-    // gets a placeholder a human can rename rather than an opaque id.
-    name: name ?? 'Unnamed site',
+    // gets a placeholder rather than an opaque id. The first source to supply
+    // a real name replaces it — see the match branch above.
+    name: name ?? UNNAMED_SITE,
     ownerUserId: scope.userId,
     isPublic: false,
     latitude: lat ?? null,

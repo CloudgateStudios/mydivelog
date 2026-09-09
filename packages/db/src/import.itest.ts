@@ -385,6 +385,79 @@ describe('sites and tags', () => {
     expect(site.name).not.toMatch(/^site_/);
   });
 
+  it('lets a real name replace the placeholder when a later source has one', async () => {
+    // The sequence a diver actually produces: a watch locates a site and does
+    // not name it, then a spreadsheet names the same place. The site kept
+    // `Unnamed site` and filed the real name underneath as an alias, so a
+    // logbook ended up with sites called nothing at coordinates it knew
+    // perfectly well.
+    const first = await batch('uddf');
+    const { created } = await repo.commit(scope, first, [
+      sheetRow({ fields: { ...sheetRow().fields, 'site.lat': 12.0388, 'site.lon': -68.2649 } }),
+    ]);
+    const located = await prisma.site.findUniqueOrThrow({
+      where: { id: (await diveOf(created[0] as string)).siteId as string },
+    });
+    expect(located.name).toBe('Unnamed site');
+
+    const second = await batch('spreadsheet');
+    await repo.commit(scope, second, [
+      sheetRow({
+        rowIndex: 1,
+        fields: {
+          ...sheetRow().fields,
+          'site.name': 'Vista Blue',
+          'site.lat': 12.0388,
+          'site.lon': -68.2649,
+        },
+      }),
+    ]);
+
+    const renamed = await prisma.site.findUniqueOrThrow({ where: { id: located.id } });
+    expect(renamed.name).toBe('Vista Blue');
+    // The same site, renamed — not a second one beside it.
+    expect(await prisma.site.count({ where: { ownerUserId: userId } })).toBe(1);
+  });
+
+  it('does not let a later import rename a site that already has a name', async () => {
+    // The other half, and the reason the promotion is narrow. `1,000 Steps`
+    // and `Thousand Steps` are the same place under two spellings: the first
+    // real name stays and the second becomes an alias. A site a diver has
+    // been reading for a year must not be renamed by an import.
+    const first = await batch('spreadsheet');
+    const { created } = await repo.commit(scope, first, [
+      sheetRow({
+        fields: {
+          ...sheetRow().fields,
+          'site.name': '1,000 Steps',
+          'site.lat': 12.2,
+          'site.lon': -68.4,
+        },
+      }),
+    ]);
+    const site = await prisma.site.findUniqueOrThrow({
+      where: { id: (await diveOf(created[0] as string)).siteId as string },
+    });
+
+    const second = await batch('uddf');
+    await repo.commit(scope, second, [
+      sheetRow({
+        rowIndex: 1,
+        fields: {
+          ...sheetRow().fields,
+          'site.name': 'Thousand Steps',
+          'site.lat': 12.2,
+          'site.lon': -68.4,
+        },
+      }),
+    ]);
+
+    const after = await prisma.site.findUniqueOrThrow({ where: { id: site.id } });
+    expect(after.name).toBe('1,000 Steps');
+    const aliases = await prisma.siteAlias.findMany({ where: { siteId: site.id } });
+    expect(aliases.map((a) => a.name)).toContain('Thousand Steps');
+  });
+
   it('attaches the seeded taxonomy rather than duplicating it per user', async () => {
     // Creating a private copy of `shore` for every diver is how a shared
     // vocabulary stops being shared.
