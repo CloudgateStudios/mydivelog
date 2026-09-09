@@ -81,6 +81,44 @@ export class MailService {
     });
   }
 
+  /**
+   * Tells a diver their suggested site name was turned down, and why.
+   *
+   * The reason is required by the contract, not merely encouraged: a refusal
+   * with no reason reads as the system losing the suggestion, and the diver
+   * has no way to tell the difference. Delivery is best-effort — the decision
+   * is already on the suggestion row, which the site page shows, so a provider
+   * outage costs the notice and never the answer.
+   */
+  async sendNameSuggestionRejected(
+    to: string,
+    suggestion: { proposed: string; siteName: string; note: string; siteUrl: string },
+  ): Promise<void> {
+    const { proposed, siteName, note, siteUrl } = suggestion;
+    await this.send({
+      to,
+      subject: `About the name you suggested for ${siteName}`,
+      text: [
+        `You suggested calling this site "${proposed}". We have kept it as "${siteName}".`,
+        '',
+        `Why: ${note}`,
+        '',
+        'You can suggest another name if you think this one is still wrong:',
+        siteUrl,
+        '',
+        'Thanks for helping keep the shared site list accurate.',
+      ].join('\n'),
+      html: [
+        `<p>You suggested calling this site <strong>${escapeHtml(proposed)}</strong>. ` +
+          `We have kept it as <strong>${escapeHtml(siteName)}</strong>.</p>`,
+        `<p>Why: ${escapeHtml(note)}</p>`,
+        `<p>You can <a href="${escapeHtml(siteUrl)}">suggest another name</a> if you think ` +
+          'this one is still wrong.</p>',
+        '<p>Thanks for helping keep the shared site list accurate.</p>',
+      ].join('\n'),
+    });
+  }
+
   get configured(): boolean {
     return this.config.configured;
   }

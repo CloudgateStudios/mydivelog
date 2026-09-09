@@ -398,6 +398,42 @@ export const UpdateDiverSite = z
 export type UpdateDiverSite = z.infer<typeof UpdateDiverSite>;
 
 /**
+ * A proposal for what a shared site should be called.
+ *
+ * Only for sites in the shared database. A site of one's own is edited, not
+ * suggested about — there is nobody to ask.
+ */
+export const SuggestSiteName = z.object({
+  proposed: z.string().trim().min(1).max(160),
+  /** Why, in the diver's words. What makes the queue readable. */
+  reason: z.string().trim().max(500).optional(),
+});
+export type SuggestSiteName = z.infer<typeof SuggestSiteName>;
+
+export const SiteNameSuggestion = z.object({
+  id: Uuid,
+  proposed: z.string(),
+  reason: z.string().nullable(),
+  status: z.enum(['pending', 'approved', 'rejected']),
+  decisionNote: z.string().nullable(),
+  decidedAt: IsoDateTime.nullable(),
+  createdAt: IsoDateTime,
+});
+export type SiteNameSuggestion = z.infer<typeof SiteNameSuggestion>;
+
+/** A moderator's answer. A rejection without a reason is not an answer. */
+export const DecideSiteName = z
+  .object({
+    outcome: z.enum(['approved', 'rejected']),
+    note: z.string().trim().max(500).optional(),
+  })
+  .refine((v) => v.outcome !== 'rejected' || (v.note !== undefined && v.note.length >= 3), {
+    error: 'Say why, so the diver who suggested it can read the reason.',
+    path: ['note'],
+  });
+export type DecideSiteName = z.infer<typeof DecideSiteName>;
+
+/**
  * A dive with the context a detail view needs.
  *
  * `provenance` is the part that matters: every value any source asserted, and

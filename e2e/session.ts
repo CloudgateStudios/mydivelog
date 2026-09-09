@@ -86,6 +86,40 @@ export async function importFixtureFor(email: string, fileName: string): Promise
   await fetch(`${API_URL}/v1/imports/${batch.id}/commit`, { method: 'POST', headers: auth });
 }
 
+/**
+ * Promotes a site into the shared database, the way staff would.
+ *
+ * There is no diver-facing route to this: promotion is staff-initiated, which
+ * is the whole reason renaming a shared site is a request rather than an edit.
+ * So the test does what a moderator does — the same `/v1/admin` endpoint the
+ * panel calls, authenticated by the development staff identity CI configures.
+ *
+ * Returns the site's id, so a test can go straight to its page.
+ */
+export async function shareASiteOf(email: string): Promise<string> {
+  const { accessToken } = await tokensFor(email);
+  const sites = await fetch(`${API_URL}/v1/sites`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  const body = (await sites.json()) as { data: { id: string }[] };
+  const site = body.data[0];
+  if (!site) throw new Error(`${email} has no sites; import a logbook first.`);
+
+  const promoted = await fetch(`${API_URL}/v1/admin/sites/${site.id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ isPublic: true, reason: 'e2e: a site everyone can see' }),
+  });
+  if (!promoted.ok) {
+    throw new Error(
+      `could not promote a site (${promoted.status}). Is the API running with ` +
+        'ADMIN_ACCESS_CHECK_DISABLED=true and a staff account for ADMIN_DEV_STAFF_EMAIL? ' +
+        'See `pnpm staff <email> --create`.',
+    );
+  }
+  return site.id;
+}
+
 export async function signIn(context: BrowserContext, email: string): Promise<void> {
   const tokens = await tokensFor(email);
   const { hostname } = new URL(WEB_URL);

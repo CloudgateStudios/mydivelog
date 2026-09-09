@@ -18,6 +18,7 @@ const NAV = [
   ['/health', 'Format health'],
   ['/dives', 'Dives'],
   ['/sites', 'Sites'],
+  ['/site-names', 'Site names'],
   ['/tags', 'Tags'],
   ['/users', 'Users'],
   ['/audit', 'Audit'],

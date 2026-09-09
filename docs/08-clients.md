@@ -75,6 +75,7 @@ predicted and staring at the database by hand does not scale past week one.
 | Import inspector | **The most important screen.** Any batch, any row: raw source, normalized observation, match candidates with scores, normalizations applied, issues. Replay a parse against current engine code without touching user data. |
 | Users | Search, status, dive counts, subscription, support context |
 | Site moderation | Promote private→public, merge duplicates, fix names/coords |
+| Suggested names | Decide the names divers propose for shared sites; a rejection must say why |
 | Format health | Success/failure rates per format and per generator — surfaces "Oceanic+ 0.0.1 exports have broken offsets" as a *pattern*, not an anecdote |
 | Metrics | Signups, activation (imported >10 dives), storage, job queue depth |
 | Audit log | Every staff action |

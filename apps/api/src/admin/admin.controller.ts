@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   AddSiteAlias,
   AdminUpdateDive,
@@ -6,17 +17,22 @@ import {
   AdminUpdateTag,
   AdminUpdateUser,
   AuditQuery,
+  DecideSiteName,
   MergeSites,
   StaffDelete,
 } from '@mydivelog/contracts';
 import {
   createAdminRepository,
   createImportRepository,
+  createSuggestionRepository,
   getPrismaClient,
   StaffRefusal,
+  SuggestionRefusal,
   userScope,
   type StaffScope,
 } from '@mydivelog/db';
+import { AuthConfig } from '../auth/auth.config.ts';
+import { MailService } from '../mail/mail.service.ts';
 import { zodBody } from '../common/zod-validation.pipe.ts';
 import { conflict, notFound } from '../common/problem-details.ts';
 import { Throttle } from '../common/rate-limit.guard.ts';
@@ -44,6 +60,13 @@ import { Staff } from './staff.decorator.ts';
 export class AdminController {
   private readonly repo = createAdminRepository(getPrismaClient());
   private readonly imports = createImportRepository(getPrismaClient());
+  private readonly suggestions = createSuggestionRepository(getPrismaClient());
+  private readonly logger = new Logger(AdminController.name);
+
+  constructor(
+    private readonly mail: MailService,
+    private readonly authConfig: AuthConfig,
+  ) {}
 
   // -------------------------------------------------------------------------
   // The log
@@ -128,6 +151,73 @@ export class AdminController {
     );
     if (!result) throw notFound('Site');
     return result;
+  }
+
+  // -------------------------------------------------------------------------
+  // Suggested site names
+  // -------------------------------------------------------------------------
+
+  @Get('site-name-suggestions')
+  async siteNameSuggestions() {
+    return { data: await this.suggestions.pending() };
+  }
+
+  @Post('site-name-suggestions/:id/decide')
+  // 200: deciding creates nothing. It answers a request that already exists.
+  @HttpCode(200)
+  async decideSiteName(
+    @Staff('decided a suggested site name') scope: StaffScope,
+    @Param('id') id: string,
+    @Body(zodBody(DecideSiteName)) body: DecideSiteName,
+  ) {
+    const result = await refuseCleanly(() =>
+      this.suggestions.decide(scope, id, body.outcome, body.note, this.repo.writeAuditIn),
+    );
+    if (!result) throw notFound('Suggestion');
+
+    if (result.outcome !== 'rejected' || !result.note) return { ...result, notified: false };
+
+    // After the transaction, and deliberately not inside it: an email provider
+    // being down must not roll back a decision staff already made. The answer
+    // lives on the suggestion row, which the diver's site page shows, so the
+    // worst case is a notice that never arrives rather than a decision that
+    // never happened.
+    //
+    // Reported rather than assumed, so the panel can say what actually
+    // happened. "The diver has been told why" printed over a send that never
+    // left the building is the failure this whole feature exists to avoid.
+    const notified = await this.notifyRejected(result.diverEmail, {
+      proposed: result.proposed,
+      siteName: result.previousName,
+      note: result.note,
+      siteId: result.siteId,
+    });
+    return { ...result, notified };
+  }
+
+  /** True only if the message actually went out. */
+  private async notifyRejected(
+    email: string,
+    detail: { proposed: string; siteName: string; note: string; siteId: string },
+  ): Promise<boolean> {
+    if (!this.mail.configured) {
+      this.mail.logUnconfigured(email);
+      return false;
+    }
+    try {
+      await this.mail.sendNameSuggestionRejected(email, {
+        proposed: detail.proposed,
+        siteName: detail.siteName,
+        note: detail.note,
+        siteUrl: `${this.authConfig.appUrl}/sites/${detail.siteId}`,
+      });
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `could not tell ${email} their suggested site name was declined: ${String(err)}`,
+      );
+      return false;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -292,7 +382,11 @@ async function refuseCleanly<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    if (err instanceof StaffRefusal) throw conflict(err.message, err.code);
+    // Both refusals mean the same thing to a caller: the request was
+    // understood and the state of the world says no.
+    if (err instanceof StaffRefusal || err instanceof SuggestionRefusal) {
+      throw conflict(err.message, err.code);
+    }
     throw err;
   }
 }

@@ -31,6 +31,18 @@ const WRITES = [
   '$transaction',
 ];
 
+/**
+ * Comments are not code.
+ *
+ * Both rules below grep source text, and a comment explaining a rule names the
+ * very pattern the rule forbids — which failed this suite the first time one
+ * was written. Stripping comments keeps the rules enforcing what the program
+ * does rather than what it says about itself.
+ */
+function code(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+}
+
 function sources(dir: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -43,11 +55,29 @@ function sources(dir: string): string[] {
 }
 
 describe('the admin panel', () => {
+  /**
+   * The rule above greps for `db.<model>.<verb>(`, which a repository hides.
+   * `createSuggestionRepository(db).pending()` is a read — and the object it
+   * returns also has `decide()`, which renames a site. Handing this app a
+   * client wrapped in something that can write puts the whole boundary one
+   * autocomplete away from gone, with nothing to notice.
+   */
+  it('never hands the database to a repository that can write', () => {
+    const offenders: string[] = [];
+    for (const file of sources(ROOT)) {
+      const text = code(readFileSync(file, 'utf8'));
+      if (/\bcreate[A-Za-z]*Repository\s*\(\s*db\s*\)/.test(text)) {
+        offenders.push(`${file.replace(ROOT, 'apps/admin')}: create…Repository(db)`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('never writes to the database directly', () => {
     const offenders: string[] = [];
 
     for (const file of sources(ROOT)) {
-      const text = readFileSync(file, 'utf8');
+      const text = code(readFileSync(file, 'utf8'));
       for (const verb of WRITES) {
         // `db.<model>.<verb>(` — the shape every Prisma write takes through
         // the client this app exports.

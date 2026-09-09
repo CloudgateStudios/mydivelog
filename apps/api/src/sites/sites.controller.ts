@@ -1,8 +1,15 @@
-import { Body, Controller, Get, HttpCode, Param, Patch } from '@nestjs/common';
-import { UpdateDiverSite } from '@mydivelog/contracts';
-import { createSiteRepository, getPrismaClient, type UserScope } from '@mydivelog/db';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { SuggestSiteName, UpdateDiverSite } from '@mydivelog/contracts';
+import {
+  createSiteRepository,
+  createSuggestionRepository,
+  getPrismaClient,
+  SuggestionRefusal,
+  type UserScope,
+} from '@mydivelog/db';
 import { Scope } from '../auth/current-user.decorator.ts';
 import { conflict, notFound } from '../common/problem-details.ts';
+import { Throttle } from '../common/rate-limit.guard.ts';
 import { zodBody } from '../common/zod-validation.pipe.ts';
 
 /**
@@ -23,6 +30,7 @@ import { zodBody } from '../common/zod-validation.pipe.ts';
 @Controller('sites')
 export class SitesController {
   private readonly repo = createSiteRepository(getPrismaClient());
+  private readonly suggestions = createSuggestionRepository(getPrismaClient());
 
   @Get()
   async list(@Scope() scope: UserScope) {
@@ -33,7 +41,36 @@ export class SitesController {
   async get(@Scope() scope: UserScope, @Param('id') id: string) {
     const found = await this.repo.findForDiver(scope, id);
     if (!found) throw notFound('Site');
-    return found;
+    // Their own proposals, so a decision is visible where they made it. The
+    // emailed notice can fail; this cannot.
+    return { ...found, suggestions: await this.suggestions.mineFor(scope, id) };
+  }
+
+  /**
+   * Propose a name for a shared site.
+   *
+   * Deliberately not an edit. Once a site is in the shared database its name
+   * is everyone's, so this records a request and staff answer it — and the
+   * answer is kept on the row so a diver can read a refusal rather than watch
+   * a name silently not change.
+   */
+  @Post(':id/name-suggestions')
+  @HttpCode(201)
+  // A moderation queue is only readable if it is not a place to shout into.
+  @Throttle(10, 60 * 60_000)
+  async suggestName(
+    @Scope() scope: UserScope,
+    @Param('id') id: string,
+    @Body(zodBody(SuggestSiteName)) body: SuggestSiteName,
+  ) {
+    try {
+      const created = await this.suggestions.suggest(scope, id, body.proposed, body.reason);
+      if (!created) throw notFound('Site');
+      return created;
+    } catch (err) {
+      if (err instanceof SuggestionRefusal) throw conflict(err.message, err.code);
+      throw err;
+    }
   }
 
   @Patch(':id')

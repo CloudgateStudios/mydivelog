@@ -33,6 +33,7 @@ const outsiderEmail = `outsider-${randomUUID()}@itest.invalid`;
 
 let staffId = '';
 let diverId = '';
+let diverToken = '';
 
 /** Local-development identity. No header is trusted; see `staff.guard.ts`. */
 const asStaff = (email: string): void => {
@@ -114,6 +115,13 @@ beforeAll(async () => {
   staffId = await makeUser(staffEmail, true);
   diverId = await makeUser(diverEmail);
   await makeUser(outsiderEmail);
+
+  // Suggesting a name is a diver action, so it needs a diver's session rather
+  // than the staff identity the rest of this file uses.
+  const login = await request(app.getHttpServer())
+    .post('/v1/auth/dev/login')
+    .send({ email: diverEmail });
+  diverToken = login.body.accessToken;
 }, 60_000);
 
 afterAll(async () => {
@@ -525,6 +533,108 @@ describe('imports', () => {
 
 // ---------------------------------------------------------------------------
 
+/** A site in the shared database — the only kind a name can be suggested for. */
+async function makeSharedSite(name = `Shared ${randomUUID().slice(0, 8)}`): Promise<string> {
+  const id = randomUUID();
+  await prisma.site.create({ data: { id, name, isPublic: true } });
+  return id;
+}
+
+/** A diver who has dived there, proposing a name through the real endpoint. */
+async function suggestionOn(siteId: string, proposed: string): Promise<string> {
+  await makeDive({ siteId });
+  const res = await http
+    .post(`/v1/sites/${siteId}/name-suggestions`)
+    .set('authorization', `Bearer ${diverToken}`)
+    .send({ proposed });
+  expect(res.status, JSON.stringify(res.body)).toBe(201);
+  return res.body.id as string;
+}
+
+describe('suggested site names', () => {
+  it('lets a diver who has dived a shared site propose a name', async () => {
+    const siteId = await makeSharedSite('Vista Blue');
+    const id = await suggestionOn(siteId, 'Vista Azul');
+
+    const queue = await http.get('/v1/admin/site-name-suggestions');
+    expect(queue.status).toBe(200);
+    expect(queue.body.data.map((r: { id: string }) => r.id)).toContain(id);
+  });
+
+  it('refuses a private site, which its owner edits directly', async () => {
+    const siteId = await makeSite({ ownerUserId: diverId });
+    await makeDive({ siteId });
+    const res = await http
+      .post(`/v1/sites/${siteId}/name-suggestions`)
+      .set('authorization', `Bearer ${diverToken}`)
+      .send({ proposed: 'Anything' });
+    expect(res.status).toBe(409);
+    expect(res.body.errors[0].code).toBe('site_not_shared');
+  });
+
+  it('will not take a rejection with no reason', async () => {
+    const id = await suggestionOn(await makeSharedSite(), 'Some name');
+    // The diver is emailed this. A refusal with nothing in it reads as the
+    // suggestion having been lost.
+    const res = await http
+      .post(`/v1/admin/site-name-suggestions/${id}/decide`)
+      .send({ outcome: 'rejected' });
+    expect(res.status).toBe(422);
+  });
+
+  it('says when the notice did not send, rather than claiming it did', async () => {
+    const id = await suggestionOn(await makeSharedSite(), 'Some name');
+    // No mail provider is configured in this environment, and that is the
+    // point: the panel prints what this field says, and a decision that
+    // reports a delivery it never made is how a diver waits for a reply
+    // nobody sent.
+    const res = await http
+      .post(`/v1/admin/site-name-suggestions/${id}/decide`)
+      .send({ outcome: 'rejected', note: 'Not that one.' });
+    expect(res.status).toBe(200);
+    expect(res.body.notified).toBe(false);
+  });
+
+  it('shows the diver the answer on their own site page', async () => {
+    const siteId = await makeSharedSite('Vista Blue');
+    const id = await suggestionOn(siteId, 'Bobs Reef');
+    await http
+      .post(`/v1/admin/site-name-suggestions/${id}/decide`)
+      .send({ outcome: 'rejected', note: 'That is the mooring.' });
+
+    const page = await http.get(`/v1/sites/${siteId}`).set('authorization', `Bearer ${diverToken}`);
+    const mine = page.body.suggestions.find((row: { id: string }) => row.id === id);
+    // The durable record. The emailed notice may never arrive; this is here
+    // whether it does or not.
+    expect(mine.status).toBe('rejected');
+    expect(mine.decisionNote).toBe('That is the mooring.');
+  });
+
+  it('renames the site on approval and keeps the old name findable', async () => {
+    const siteId = await makeSharedSite('Vista Blue');
+    const id = await suggestionOn(siteId, 'Vista Azul');
+    expect(
+      (
+        await http.post(`/v1/admin/site-name-suggestions/${id}/decide`).send({
+          outcome: 'approved',
+        })
+      ).status,
+    ).toBe(200);
+
+    const site = await prisma.site.findUniqueOrThrow({ where: { id: siteId } });
+    expect(site.name).toBe('Vista Azul');
+    const aliases = await prisma.siteAlias.findMany({ where: { siteId } });
+    expect(aliases.map((a) => a.name)).toContain('Vista Blue');
+  });
+
+  it('404s a suggestion that does not exist', async () => {
+    const res = await http
+      .post(`/v1/admin/site-name-suggestions/${randomUUID()}/decide`)
+      .send({ outcome: 'approved' });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('the audit log', () => {
   it('is readable, newest first, with the actor resolved', async () => {
     const id = await makeSite();
@@ -605,6 +715,25 @@ describe('the audit log', () => {
       ],
       ['dive.delete', () => http.delete(`/v1/admin/dives/${doomedDive}`).send({ reason })],
       ['dive.restore', () => http.post(`/v1/admin/dives/${doomedDive}/restore`)],
+      [
+        'site.name.approved',
+        async () => {
+          const id = await suggestionOn(await makeSharedSite(), 'An agreed name');
+          return http.post(`/v1/admin/site-name-suggestions/${id}/decide`).send({
+            outcome: 'approved',
+          });
+        },
+      ],
+      [
+        'site.name.rejected',
+        async () => {
+          const id = await suggestionOn(await makeSharedSite(), 'A refused name');
+          return http.post(`/v1/admin/site-name-suggestions/${id}/decide`).send({
+            outcome: 'rejected',
+            note: 'That is the mooring, not the site.',
+          });
+        },
+      ],
     ];
 
     for (const [action, run] of mutations) {

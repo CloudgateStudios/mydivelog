@@ -24,6 +24,15 @@ type Detail = {
     description: string | null;
     aliases: string[];
   };
+  suggestions: {
+    id: string;
+    proposed: string;
+    reason: string | null;
+    status: 'pending' | 'approved' | 'rejected';
+    decisionNote: string | null;
+    decidedAt: string | null;
+    createdAt: string;
+  }[];
   dives: {
     id: string;
     diveNumber: number;
@@ -54,7 +63,7 @@ export default async function SiteDetail({
     throw error;
   });
 
-  const { site, dives } = detail;
+  const { site, dives, suggestions } = detail;
   const tiles = tileSource();
 
   async function save(formData: FormData): Promise<void> {
@@ -79,6 +88,25 @@ export default async function SiteDetail({
     }
     redirect(`${here}?done=1`);
   }
+  async function suggest(formData: FormData): Promise<void> {
+    'use server';
+    const here = `/sites/${id}`;
+    const reason = String(formData.get('reason') ?? '').trim();
+    const response = await apiFetch(`/v1/sites/${id}/name-suggestions`, {
+      method: 'POST',
+      body: JSON.stringify({
+        proposed: String(formData.get('proposed') ?? '').trim(),
+        ...(reason === '' ? {} : { reason }),
+      }),
+    });
+
+    if (!response.ok) {
+      const problem = (await response.json().catch(() => ({}))) as { detail?: string };
+      redirect(`${here}?error=${encodeURIComponent(problem.detail ?? 'That did not send.')}`);
+    }
+    redirect(`${here}?done=suggested`);
+  }
+
   const depths = dives.map((d) => d.maxDepthM).filter((d): d is number => d !== null);
   const map =
     site.latitude !== null && site.longitude !== null
@@ -117,7 +145,9 @@ export default async function SiteDetail({
         )}
         {done && (
           <p className="notice" role="status">
-            Saved.
+            {done === 'suggested'
+              ? 'Sent. A moderator will look at it, and the answer will appear here.'
+              : 'Saved.'}
           </p>
         )}
 
@@ -241,9 +271,54 @@ export default async function SiteDetail({
         )}
 
         {site.shared && (
-          <p className="muted small">
-            This site is in the shared database, so its name belongs to everyone who dives here.
-          </p>
+          <section className="site-shared">
+            <p className="muted small">
+              This site is in the shared database, so its name belongs to everyone who dives here.
+              You can suggest a different one and a moderator will decide.
+            </p>
+
+            {suggestions.length > 0 && (
+              <ul className="name-suggestions">
+                {suggestions.map((s) => (
+                  <li key={s.id}>
+                    <strong>{s.proposed}</strong>{' '}
+                    {/* The durable record of the answer. The email telling a
+                        diver about a rejection can fail to send; this cannot,
+                        which is why the reason is kept on the row and shown
+                        here rather than only put in a message. */}
+                    {s.status === 'pending' && <span className="pill">waiting for review</span>}
+                    {s.status === 'approved' && <span className="pill good">used</span>}
+                    {s.status === 'rejected' && <span className="pill bad">not used</span>}
+                    {s.decisionNote && <p className="muted small">{s.decisionNote}</p>}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {!suggestions.some((s) => s.status === 'pending') && (
+              <details className="site-edit">
+                <summary>Suggest a different name</summary>
+                <form action={suggest} className="stack">
+                  <label>
+                    <span>What is this site called?</span>
+                    <input name="proposed" required maxLength={160} defaultValue="" />
+                  </label>
+                  <label>
+                    <span>How do you know? (optional)</span>
+                    <textarea name="reason" rows={2} maxLength={500} />
+                  </label>
+                  <p>
+                    <SubmitButton className="button primary" pendingLabel="Sending…">
+                      Send for review
+                    </SubmitButton>
+                  </p>
+                  <p className="muted small">
+                    Nothing changes until a moderator agrees. If they do not, you will be told why.
+                  </p>
+                </form>
+              </details>
+            )}
+          </section>
         )}
 
         <h2>Your dives here</h2>
