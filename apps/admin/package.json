@@ -19,15 +19,15 @@
     "@mydivelog/db": "workspace:*",
     "@mydivelog/domain": "workspace:*",
     "jose": "^6.2.12",
-    "next": "^16.3.3",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.2.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   }
 }
