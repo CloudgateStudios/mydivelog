@@ -27,7 +27,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: mydivelog-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -49,7 +49,7 @@ services:
   # Creates the buckets the app expects, then exits. `pnpm services:up` waits
   # for this to complete, so a fresh clone has working storage immediately.
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     container_name: mydivelog-minio-init
     depends_on:
       minio:
