@@ -99,8 +99,9 @@ jobs:
           images=$(matches '(Dockerfile|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$)')
 
           # The accessibility suite drives real pages of both apps against a
-          # real API, so anything any of them is built from counts.
-          web=$(matches '^(apps/(web|api|admin)/|packages/(domain|contracts|db|importers)/|e2e/|playwright\.config\.ts$|lighthouserc\.json$|\.github/workflows/ci\.yml$)')
+          # real API, so anything any of them is built from counts. So does the
+          # compose file it brings Postgres and object storage up from.
+          web=$(matches '^(apps/(web|api|admin)/|packages/(domain|contracts|db|importers)/|e2e/|playwright\.config\.ts$|lighthouserc\.json$|docker-compose\.yml$|\.github/workflows/ci\.yml$)')
 
           {
             echo "code=$code"
