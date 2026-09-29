@@ -26,8 +26,12 @@ services:
       timeout: 5s
       retries: 10
 
+  # MinIO no longer publishes public images (quay.io/minio/* now refuses
+  # anonymous pulls), so this is Chainguard's free build of the same server.
+  # It is distroless: no shell and no `mc`, hence no healthcheck here.
+  # minio-init below polls until the server answers instead.
   minio:
-    image: quay.io/minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: mydivelog-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -40,26 +44,32 @@ services:
       - '${MINIO_CONSOLE_PORT:-59001}:9001'
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
-  # Creates the buckets the app expects, then exits. `pnpm services:up` waits
-  # for this to complete, so a fresh clone has working storage immediately.
+  # Waits for MinIO, creates the buckets the app expects, then exits.
+  # `pnpm services:up` waits for this to complete, so a fresh clone has
+  # working storage immediately.
   minio-init:
-    image: quay.io/minio/mc:latest
+    image: amazon/aws-cli:latest
     container_name: mydivelog-minio-init
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
+    environment:
+      AWS_ACCESS_KEY_ID: mydivelog
+      AWS_SECRET_ACCESS_KEY: mydivelog-dev-secret
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://minio:9000
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 mydivelog mydivelog-dev-secret &&
-      mc mb --ignore-existing local/mydivelog-uploads &&
-      mc mb --ignore-existing local/mydivelog-profiles &&
-      mc mb --ignore-existing local/mydivelog-exports &&
+      tries=0;
+      until aws s3api list-buckets > /dev/null 2>&1; do
+        tries=$$((tries + 1));
+        if [ $$tries -ge 60 ]; then echo 'minio did not come up'; exit 1; fi;
+        sleep 1;
+      done;
+      for b in mydivelog-uploads mydivelog-profiles mydivelog-exports; do
+        aws s3api head-bucket --bucket $$b > /dev/null 2>&1 ||
+        aws s3api create-bucket --bucket $$b > /dev/null || exit 1;
+      done;
       echo 'buckets ready'
       "
 
