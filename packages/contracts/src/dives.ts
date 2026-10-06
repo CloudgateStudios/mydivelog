@@ -363,6 +363,41 @@ export const DiverSite = z.object({
 export type DiverSite = z.infer<typeof DiverSite>;
 
 /**
+ * What a diver may change about a site of their own.
+ *
+ * Their own: a site created by their import and dived only by them, which
+ * nobody else can see. Correcting it is editing their logbook, not editing a
+ * shared record, and it needs no more ceremony than renaming a trip.
+ *
+ * A site promoted into the shared database is a different thing and this
+ * schema is not the way to change one — see the API, which refuses and says
+ * what to do instead. Region and public visibility are absent for the same
+ * reason: they are properties of the shared database rather than of one
+ * diver's logbook.
+ */
+export const UpdateDiverSite = z
+  .object({
+    name: z.string().trim().min(1).max(160).optional(),
+    latitude: z.number().min(-90).max(90).nullish(),
+    longitude: z.number().min(-180).max(180).nullish(),
+    typicalEntry: z.enum(['shore', 'boat', 'dock']).nullish(),
+    description: z.string().max(4000).nullish(),
+  })
+  .refine(
+    (v) =>
+      (v.latitude === undefined || v.latitude === null) ===
+      (v.longitude === undefined || v.longitude === null),
+    {
+      // Half a coordinate is not a location. Defaulting the other half puts
+      // the site at 0°, 0° — in the Gulf of Guinea, with everything else that
+      // was ever half-filled.
+      error: 'Latitude and longitude have to be set or cleared together.',
+      path: ['latitude'],
+    },
+  );
+export type UpdateDiverSite = z.infer<typeof UpdateDiverSite>;
+
+/**
  * A dive with the context a detail view needs.
  *
  * `provenance` is the part that matters: every value any source asserted, and

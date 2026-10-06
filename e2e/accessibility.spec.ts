@@ -432,6 +432,50 @@ test.describe('charts', () => {
     await context.close();
   });
 
+  /**
+   * Naming a site of your own.
+   *
+   * A dive computer gives coordinates and an opaque id, so the importer calls
+   * the site `Unnamed site` and waits. Until this existed only staff could
+   * fix that — on a record belonging to one diver, dived by nobody else, and
+   * visible to nobody else.
+   */
+  test('lets a diver name a site their computer did not', async ({ browser }) => {
+    const email = `sitename-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@mydivelog.invalid`;
+    await importFixtureFor(email, 'uddf-sample.uddf');
+
+    const context = await browser.newContext();
+    await signIn(context, email);
+    const page = await context.newPage();
+
+    await page.goto('/sites');
+    await page.getByRole('link', { name: 'Unnamed site' }).first().click();
+    await expect(page.locator('h1')).toHaveText('Unnamed site');
+
+    // The disclosure says what it is for, which differs by whether there is a
+    // name yet — "Edit this site" is no use to somebody looking for the way
+    // to give it one.
+    const disclosure = page.locator('.site-edit > summary');
+    await expect(disclosure).toHaveText(/give this site a name/i);
+    await disclosure.click();
+
+    // Scanned open. A form that only exists after a click is one the rest of
+    // this suite never looks at.
+    const { violations } = await scan(page).analyze();
+    expect(report(violations), report(violations)).toBe('');
+
+    await page.fill('input[name="name"]', 'Vista Blue');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    await expect(page.locator('h1')).toHaveText('Vista Blue');
+    // The placeholder is not kept as an alias: `Unnamed site` would match
+    // every coordinates-only site a computer ever produces, folding unrelated
+    // places into this one.
+    await expect(page.locator('main')).not.toContainText('Also recorded as Unnamed site');
+    await expect(page.locator('.site-edit > summary')).toHaveText(/edit this site/i);
+    await context.close();
+  });
+
   test('the map says where its tiles come from', async ({ page }) => {
     // Two claims a reader is owed. The attribution is a licence condition of
     // the data; the sentence under it is the one this product used to be able
