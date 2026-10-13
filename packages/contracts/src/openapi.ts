@@ -562,6 +562,32 @@ export function buildOpenApiDocument(version = '0.0.0') {
           responses: { '200': { description: 'The logbook, as a file attachment' } },
         },
       },
+      '/sites/{id}': {
+        get: {
+          operationId: 'getSite',
+          tags: ['sites'],
+          security: bearer,
+          parameters: [pathId],
+          responses: { '200': ok(z.object({})), '401': problem, '404': problem },
+        },
+        patch: {
+          operationId: 'updateSite',
+          tags: ['sites'],
+          security: bearer,
+          description:
+            "Corrects a site of the diver's own — one their import created and only they have " +
+            'dived. A site in the shared database answers 409: its name belongs to everyone ' +
+            'who dives there, and changing it is a suggestion for a moderator.',
+          parameters: [pathId],
+          requestBody: body(dives.UpdateDiverSite),
+          responses: {
+            '200': ok(z.object({})),
+            '401': problem,
+            '404': problem,
+            '409': problem,
+          },
+        },
+      },
       '/imports/template': {
         get: {
           operationId: 'getImportTemplate',
