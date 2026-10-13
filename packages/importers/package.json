@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@mydivelog/domain": "workspace:*",
-    "fast-xml-parser": "^5.3.6"
+    "fast-xml-parser": "^5.11.2"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",
