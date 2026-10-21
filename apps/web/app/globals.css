@@ -1391,6 +1391,65 @@ tbody th {
  * Stands where the plot would be. Bordered like the figure it replaces, so the
  * page keeps its shape whether or not a diver's sources carried coordinates.
  */
+/*
+ * The edit form on a site page, behind a disclosure.
+ *
+ * Closed by default: a site page is mostly for reading, and the form is what
+ * you come for once. `<details>` for the same reasons as everywhere else here
+ * — keyboard handling from the browser, and it opens with no JavaScript.
+ */
+.site-edit {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  margin: 1.5rem 0;
+  max-width: 46rem;
+}
+.site-edit > summary {
+  cursor: pointer;
+  padding: 0.8rem 1rem;
+  list-style: none;
+  color: var(--accent);
+  font-size: 14px;
+}
+.site-edit > summary::-webkit-details-marker {
+  display: none;
+}
+/* A disclosure triangle a person can find, since the marker is hidden. */
+.site-edit > summary::before {
+  content: '▸';
+  color: var(--muted);
+  display: inline-block;
+  width: 1.1rem;
+}
+.site-edit[open] > summary::before {
+  content: '▾';
+}
+.site-edit > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.site-edit form {
+  padding: 0 1rem 1rem;
+}
+.site-edit .row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.site-edit .row > label {
+  flex: 1 1 10rem;
+}
+.site-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 13px;
+}
+.site-edit .button {
+  width: auto;
+}
+
 .site-map-empty {
   border: 1px solid var(--border);
   border-radius: 8px;
