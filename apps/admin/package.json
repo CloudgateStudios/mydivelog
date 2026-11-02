@@ -18,7 +18,7 @@
     "@fontsource/ibm-plex-serif": "^5.3.0",
     "@mydivelog/db": "workspace:*",
     "@mydivelog/domain": "workspace:*",
-    "jose": "^6.2.12",
+    "jose": "^6.2.14",
     "next": "^16.4.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

@@ -22,7 +22,7 @@
     "@nestjs/common": "^12.2.0",
     "@nestjs/core": "^12.2.0",
     "@nestjs/platform-express": "^12.2.0",
-    "jose": "^6.2.12",
+    "jose": "^6.2.14",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "tz-lookup": "^6.1.25",
