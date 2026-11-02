@@ -45,7 +45,7 @@ lockable at the edge.
 | **local** | docker compose | Postgres + MinIO in Docker | — | Everything runs offline, seeded |
 | **preview** | Fly per-PR app | Neon branch from **dev** | Per PR | Every PR gets a real URL and a real database |
 | **dev** | Fly, scales to zero | Neon project `mydivelog-dev` | Automatic on push to `main` | Integration testing, demos |
-| **prod** | Fly, 1 API + 1 web always running | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
+| **prod** | Fly, scales to zero while pre-launch | Neon project `mydivelog-prod`, PITR | Manual, with approval | Real users |
 
 Two deployed environments, not three. A separate staging tier only earns its keep once
 there are enough people that a shared dev environment becomes contended; until then it is
@@ -59,10 +59,20 @@ that mistake impossible rather than merely discouraged. Branching still earns it
 *inside* the dev project, where per-PR preview databases branch from data that is entirely
 synthetic.
 
-**dev scales to zero.** Idle cost is roughly nothing, which is what makes a permanent dev
-environment worth having at this stage. Prod API and web stay running; admin and worker suspend when idle. Each service
-has one machine per environment. Single-machine production accepts interruptions
-during restarts, deployments, or host failures.
+**dev and prod scale to zero.** All services suspend when idle and wake on
+requests, including the production API and web while the project is pre-launch.
+Each service has one machine per environment. The first visit after inactivity
+may take longer while the web, API, and database wake up. Suspended machines
+still incur root filesystem storage charges; incoming traffic can wake them.
+Single-machine production accepts interruptions during restarts, deployments,
+or host failures.
+
+Production deployment is manual: merging this configuration does not change
+the running production machines. Run the Deploy workflow with environment
+`prod` and services `api,web` to apply it, then verify both machines suspend
+after traffic subsides and wake on a subsequent visit. Before a public launch,
+reassess whether to keep them warm; restore `auto_stop_machines = "off"` and
+`min_machines_running = 1` in both production configs if needed.
 
 Setup is documented step by step in
 [the environment setup runbook](./runbooks/environment-setup.md).
