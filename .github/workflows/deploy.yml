@@ -101,14 +101,31 @@ jobs:
           if [ "$SERVICE" = "worker" ]; then
             extra_flags+=(--flycast --no-public-ips)
           fi
-          flyctl deploy . \
+          # One retry. Fly's own side occasionally drops a deploy before any
+          # machine is touched: the remote builder's connection closes mid-build
+          # ("error reading from server: EOF"), or the release_command machine
+          # "can't start at the moment". Both failed main on 2026-11-26 and the
+          # next push deployed cleanly. A second attempt after a pause covers
+          # that; a real build or migration failure fails twice and still
+          # stops the matrix.
+          attempt=1
+          max_attempts=2
+          until flyctl deploy . \
             --config "infra/fly/${SERVICE}.${ENVIRONMENT}.toml" \
             --dockerfile "apps/${SERVICE}/Dockerfile" \
             --app "mydivelog-${SERVICE}-${ENVIRONMENT}" \
             --ha=false \
             "${extra_flags[@]}" \
             --strategy rolling \
-            --wait-timeout 5m
+            --wait-timeout 5m; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::flyctl deploy failed for ${SERVICE} after ${attempt} attempts"
+              exit 1
+            fi
+            echo "::warning::flyctl deploy failed for ${SERVICE} (attempt ${attempt}/${max_attempts}); retrying in 30s"
+            attempt=$((attempt + 1))
+            sleep 30
+          done
 
   smoke:
     name: Smoke test
